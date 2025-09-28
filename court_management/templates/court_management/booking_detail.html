@@ -1,0 +1,172 @@
+{% extends 'court_management/base.html' %}
+
+{% block title %}Booking Details - Badminton Court Management{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-10">
+        <h1>Booking Details</h1>
+    </div>
+    <div class="col-md-2 text-end">
+        <a href="{% url 'booking-list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h4>Booking Information</h4>
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 150px;">ID:</th>
+                        <td>{{ booking.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Customer:</th>
+                        <td>{{ booking.customer.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Court:</th>
+                        <td>{{ booking.court.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Start Time:</th>
+                        <td>{{ booking.start_time|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>End Time:</th>
+                        <td>{{ booking.end_time|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Duration:</th>
+                        <td>{{ booking.duration_hours|floatformat:1 }} hours</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            <span class="badge bg-{% if booking.status == 'confirmed' %}primary{% elif booking.status == 'in_progress' %}success{% elif booking.status == 'completed' %}secondary{% else %}danger{% endif %}">
+                                {{ booking.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Payment Status:</th>
+                        <td>
+                            <span class="badge bg-{% if booking.payment_status == 'paid' %}success{% elif booking.payment_status == 'pending' %}warning{% else %}danger{% endif %}">
+                                {{ booking.payment_status }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Fee:</th>
+                        <td>${{ booking.fee }}</td>
+                    </tr>
+                    <tr>
+                        <th>Created:</th>
+                        <td>{{ booking.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Updated:</th>
+                        <td>{{ booking.updated_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                </table>
+                
+                {% if booking.notes %}
+                    <h5>Notes</h5>
+                    <p>{{ booking.notes }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+                <h4>Actions</h4>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'booking-update' booking.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Edit Booking
+                    </a>
+                    
+                    {% if booking.payment_status != 'paid' %}
+                        <a href="{% url 'make-payment' booking.pk %}" class="btn btn-success">
+                            <i class="bi bi-credit-card"></i> Process Payment
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'booking-delete' booking.pk %}" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Delete Booking
+                    </a>
+                </div>
+                
+                <h4 class="mt-4">Customer Information</h4>
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 150px;">Name:</th>
+                        <td>{{ booking.customer.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone:</th>
+                        <td>{{ booking.customer.phone }}</td>
+                    </tr>
+                    {% if booking.customer.email %}
+                        <tr>
+                            <th>Email:</th>
+                            <td>{{ booking.customer.email }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if booking.customer.address %}
+                        <tr>
+                            <th>Address:</th>
+                            <td>{{ booking.customer.address }}</td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <th>Member Since:</th>
+                        <td>{{ booking.customer.membership_date|date:"Y-m-d" }}</td>
+                    </tr>
+                </table>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'customer-booking-history' booking.customer.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-calendar-history"></i> View Customer History
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if booking.payment_set.all %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Payment History</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Transaction ID</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in booking.payment_set.all %}
+                            <tr>
+                                <td>{{ payment.payment_date|date:"Y-m-d H:i" }}</td>
+                                <td>${{ payment.amount }}</td>
+                                <td>{{ payment.get_payment_method_display }}</td>
+                                <td>{{ payment.transaction_id|default:"-" }}</td>
+                                <td>{{ payment.notes|default:"-" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

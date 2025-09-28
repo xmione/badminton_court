@@ -1,0 +1,112 @@
+{% extends 'court_management/base.html' %}
+
+{% block title %}Dashboard - Badminton Court Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Dashboard</h1>
+        <p class="lead">Welcome to the Badminton Court Management System</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Today's Bookings</h5>
+                <h2>{{ today_bookings|length }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Active Courts</h5>
+                <h2>{{ active_courts }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Customers</h5>
+                <h2>{{ total_customers }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">Active Employees</h5>
+                <h2>{{ active_employees }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Today's Schedule</h5>
+            </div>
+            <div class="card-body">
+                {% if today_bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Court</th>
+                                    <th>Customer</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in today_bookings %}
+                                    <tr>
+                                        <td>{{ booking.start_time|date:"H:i" }} - {{ booking.end_time|date:"H:i" }}</td>
+                                        <td>{{ booking.court.name }}</td>
+                                        <td>{{ booking.customer.name }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if booking.status == 'confirmed' %}primary{% elif booking.status == 'in_progress' %}success{% elif booking.status == 'completed' %}secondary{% else %}danger{% endif %}">
+                                                {{ booking.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>No bookings scheduled for today.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for activity in recent_activities %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ activity.title }}</strong>
+                                <br>
+                                <small class="text-muted">{{ activity.description }}</small>
+                            </div>
+                            <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item">No recent activity.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
