@@ -56,11 +56,19 @@ param(
     [switch]$Force
 )
 
+# Import common functions
+. "$PSScriptRoot\Scripts\InstallTool.ps1"
+
 # Load version configuration
  $versions = Get-Content "$PSScriptRoot\versions.json" | ConvertFrom-Json
 
- $pythonVersion = $versions.python.version
- $pythonInstallerUrl = $versions.python.installer_url
+# Get Python configuration from system_tools
+ $pythonTool = $versions.system_tools | Where-Object { $_.appName -eq "Python" }
+if (-not $pythonTool) {
+    Write-Error "Python configuration not found in versions.json"
+    exit 1
+}
+
  $venvDir = "venv"
  $venvActivateScript = ".\$venvDir\Scripts\Activate.ps1"
  $pythonExe = ".\$venvDir\Scripts\python.exe"
@@ -102,34 +110,86 @@ function Find-PythonCommand {
 }
 
 function Install-Python {
-    Write-Host "[INFO] No suitable Python installation found. Downloading Python $pythonVersion..."
-
+    Write-Host "[INFO] Installing Python using Install-Tool function..."
+    
     try {
-        # Download Python installer
-        $installerPath = "python-installer.exe"
-        Write-Host "[INFO] Downloading from: $pythonInstallerUrl"
-        Invoke-WebRequest -Uri $pythonInstallerUrl -OutFile $installerPath -UseBasicParsing
-
-        # Install Python silently
-        Write-Host "[INFO] Installing Python silently..."
-        $process = Start-Process -FilePath $installerPath -ArgumentList "/quiet InstallAllUsers=1 PrependPath=1 Include_test=0" -Wait -PassThru
-
-        # Clean up installer
-        Remove-Item $installerPath -Force
-
-        if ($process.ExitCode -eq 0) {
-            Write-Host "[OK] Python $pythonVersion installed successfully."
+        # Use the Install-Tool function to install Python
+        $progressCallback = {
+            param($Step, $Status)
+            Write-Host "[INFO] $Step - $Status"
+        }
+        
+        $installSuccess = Install-Tool `
+            -appName $pythonTool.appName `
+            -installCommand ([scriptblock]::Create($pythonTool.installCommand)) `
+            -checkCommand ([scriptblock]::Create($pythonTool.checkCommand)) `
+            -envPath $pythonTool.envPath `
+            -manualInstallUrl $pythonTool.manualInstallUrl `
+            -manualInstallPath $pythonTool.manualInstallPath `
+            -ForceUpdate:$Force `
+            -MaxRetries $pythonTool.maxRetries `
+            -ProgressCallback $progressCallback
+        
+        if ($installSuccess) {
+            Write-Host "[OK] Python installed successfully."
             Write-Host "[INFO] Please restart your terminal/PowerShell session and run this script again."
             Write-Host "       (This is needed for the PATH to be updated)"
             exit 0
-        }
-        else {
-            Write-Error "[ERROR] Python installation failed with exit code: $($process.ExitCode)"
+        } else {
+            # Let's try to manually verify if Python is installed
+            Write-Host "[WARNING] Install-Tool reported failure, let's manually check..."
+            
+            $requiredVersion = "3.12.3"
+            $pythonPaths = @(
+                "$env:LocalAppData\Programs\Python\Python312\python.exe",
+                "$env:ProgramFiles\Python312\python.exe",
+                "$env:ProgramFiles\Python39\python.exe"
+            )
+            
+            foreach ($path in $pythonPaths) {
+                if (Test-Path $path) {
+                    try {
+                        $installedVersion = & $path --version 2>&1
+                        Write-Host "[INFO] Found Python at $path with version: $installedVersion"
+                        if ($installedVersion -match $requiredVersion) {
+                            Write-Host "[OK] Python $requiredVersion is installed correctly."
+                            Write-Host "[INFO] Please restart your terminal/PowerShell session and run this script again."
+                            exit 0
+                        }
+                    } catch {
+                        # Store the error message in a variable to avoid the $_ issue
+                        $errorMessage = $_.Exception.Message
+                        Write-Host "[WARNING] Error checking Python version at $(path): $($errorMessage)"
+                    }
+                }
+            }
+            
+            # Check if Python is in PATH
+            $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+            if ($pythonCmd) {
+                try {
+                    $installedVersion = & $pythonCmd.Source --version 2>&1
+                    Write-Host "[INFO] Found Python in PATH at $($pythonCmd.Source) with version: $installedVersion"
+                    if ($installedVersion -match $requiredVersion) {
+                        Write-Host "[OK] Python $requiredVersion is installed correctly."
+                        Write-Host "[INFO] Please restart your terminal/PowerShell session and run this script again."
+                        exit 0
+                    }
+                } catch {
+                    # Store the error message in a variable to avoid the $_ issue
+                    $errorMessage = $_.Exception.Message
+                    Write-Host "[WARNING] Error checking Python version in PATH: $errorMessage"
+                }
+            }
+            
+            Write-Error "[ERROR] Python installation verification failed."
             exit 1
         }
     }
     catch {
-        Write-Error "[ERROR] Failed to download or install Python: $($_.Exception.Message)"
+        # Store the error message in a variable to avoid the $_ issue
+        $errorMessage = $_.Exception.Message
+        Write-Error "[ERROR] Failed to install Python: $errorMessage"
         exit 1
     }
 }
@@ -259,7 +319,7 @@ function Start-Setup {
 # Main execution
 Write-Host "[INFO] Starting Python environment setup..."
 Write-Host "[INFO] Working directory: $(Get-Location)"
-Write-Host "[INFO] Using Python version: $pythonVersion"
+Write-Host "[INFO] Using Python version: $($pythonTool.version)"
 
 # Check if Force flag was used
 if ($Force) {

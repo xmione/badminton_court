@@ -131,6 +131,11 @@ MaxRetries: $MaxRetries
             }
         }
 
+        # Add a delay after installation before verification
+        # This is especially important for Python which needs to register itself
+        Write-Message "Waiting 10 seconds after installation before verification..." -Level "INFO"
+        Start-Sleep -Seconds 10
+
         # Re-check if installation succeeded
         $isInstalled = & $checkCommand -ErrorAction SilentlyContinue
         if (-not $isInstalled) {
@@ -144,6 +149,10 @@ MaxRetries: $MaxRetries
             try {
                 DownloadWithProgress -url $manualInstallUrl -outputFile $manualInstallPath
                 Start-Process -FilePath $manualInstallPath -ArgumentList '/silent' -Wait
+
+                # Add a delay after manual installation
+                Write-Message "Waiting 10 seconds after manual installation before verification..." -Level "INFO"
+                Start-Sleep -Seconds 10
 
                 # Final verification
                 $isInstalled = & $checkCommand -ErrorAction SilentlyContinue

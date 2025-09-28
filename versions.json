@@ -167,8 +167,10 @@
     },
     {
       "appName": "Python",
-      "installCommand": "$installerUrl = \"https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe\"; $installerPath = \"$env:TEMP\\python-installer.exe\"; Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList \"/quiet InstallAllUsers=1 PrependPath=1\" -Wait",
-      "checkCommand": "$requiredVersion = \"3.12.3\"; $pythonPath = \"$env:LocalAppData\\Programs\\Python\\Python$($requiredVersion.Split('.')[0])$($requiredVersion.Split('.')[1])\\python.exe\"; if (Test-Path $pythonPath) { $installedVersion = & $pythonPath --version 2>&1; return $installedVersion -match $requiredVersion } else { return $false }",
+      "version": "3.12.3",
+      "installer_url": "https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe",
+      "installCommand": "$installerUrl = \"https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe\"; $installerPath = \"$env:TEMP\\python-installer.exe\"; Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList \"/quiet InstallAllUsers=1 PrependPath=1\" -Wait; Remove-Item $installerPath -Force",
+      "checkCommand": "$requiredVersion = \"3.12.3\"; $pythonPaths = @(\"$env:LocalAppData\\Programs\\Python\\Python312\\python.exe\", \"$env:ProgramFiles\\Python312\\python.exe\", \"$env:ProgramFiles\\Python39\\python.exe\"); foreach ($path in $pythonPaths) { if (Test-Path $path) { try { $installedVersion = & $path --version 2>&1; if ($installedVersion -match $requiredVersion) { return $true } } catch { } } }; $pythonCmd = Get-Command python -ErrorAction SilentlyContinue; if ($pythonCmd) { try { $installedVersion = & $pythonCmd.Source --version 2>&1; if ($installedVersion -match $requiredVersion) { return $true } } catch { } }; return $false",
       "envPath": "$env:LocalAppData\\Programs\\Python\\Python312",
       "manualInstallUrl": null,
       "manualInstallPath": null,
