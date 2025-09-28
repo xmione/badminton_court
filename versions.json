@@ -1,26 +1,124 @@
 {
-    "system_tools":  {
-                         "visual_studio_build_tools":  {
-                                                           "package_id":  "Microsoft.VisualStudio.2022.BuildTools",
-                                                           "version":  "17.14.36121.58",
-                                                           "components":  [
-                                                                              "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-                                                                              "Microsoft.VisualStudio.Component.Windows10SDK.19041",
-                                                                              "Microsoft.VisualStudio.Component.VC.CMake.Project"
-                                                                          ]
-                                                       },
-                         "windows_sdk":  {
-                                             "version":  "10.0.19041.0",
-                                             "display_name":  "Windows 10 SDK (19041)"
-                                         },
-                         "docker_desktop":  {
-                                                "version":  "4.47.0.206054",
-                                                "download_url":  "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe",
-                                                "expected_version":  "4.47.0.206054"
-                                            }
-                     },
-    "python":  {
-                   "version":  "3.12.10",
-                   "installer_url":  "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe"
-               }
+  "system_tools": [
+    {
+      "appName": "Chocolatey",
+      "installCommand": "choco install chocolatey -y",
+      "checkCommand": "Test-Path \"C:\\ProgramData\\chocolatey\\bin\\choco.exe\"",
+      "envPath": "C:\\ProgramData\\chocolatey\\bin",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "MinGW",
+      "installCommand": "choco install mingw -y",
+      "checkCommand": "Test-Path \"C:\\ProgramData\\mingw64\\mingw64\\bin\\gcc.exe\"",
+      "envPath": "C:\\ProgramData\\mingw64\\mingw64\\bin",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "nodejs",
+      "installCommand": "choco install nodejs --version=22.9.0 -y",
+      "checkCommand": "Test-Path \"C:\\Program Files\\nodejs\\node.exe\"",
+      "envPath": "C:\\Program Files\\nodejs",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "pnpm",
+      "installCommand": "choco install pnpm --version=9.15.5 --force --allow-downgrade -y",
+      "checkCommand": "Test-Path \"C:\\ProgramData\\chocolatey\\bin\\pnpm.exe\"",
+      "envPath": "C:\\ProgramData\\chocolatey\\bin",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "git",
+      "installCommand": "winget install --id Git.Git",
+      "checkCommand": "Test-Path \"C:\\Program Files\\Git\\cmd\\git.exe\"",
+      "envPath": "C:\\Program Files\\Git\\cmd",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "gh",
+      "installCommand": "winget install --id GitHub.cli",
+      "checkCommand": "Test-Path \"C:\\Program Files\\GitHub CLI\\gh.exe\"",
+      "envPath": "C:\\Program Files\\GitHub CLI",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "nvm",
+      "installCommand": "winget install -e --id CoreyButler.NVMforWindows",
+      "checkCommand": "Test-Path \"$env:LOCALAPPDATA\\nvm\\nvm.exe\"",
+      "envPath": "$env:LOCALAPPDATA\\Local\\nvm",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "docker-desktop",
+      "installCommand": "choco install docker-desktop --version=4.34.2 -y",
+      "checkCommand": "Test-Path \"C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe\"",
+      "envPath": "C:\\Program Files\\Docker\\Docker",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": ".NET 9.0.100",
+      "installCommand": "$dotnetInstallScriptUrl = \"https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.ps1\"; Invoke-WebRequest -Uri $dotnetInstallScriptUrl -OutFile \"dotnet-install.ps1\"; .\\dotnet-install.ps1 -Version \"9.0.100\" -InstallDir \"$HOME\\.dotnet\"",
+      "checkCommand": "$dotnetExe = \"$HOME\\.dotnet\\dotnet.exe\"; if (Test-Path $dotnetExe) { $installedVersion = & $dotnetExe --version; return $installedVersion.Trim() -eq \"9.0.100\" } else { return $false }",
+      "envPath": "$HOME\\.dotnet",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "OpenSSH",
+      "installCommand": "winget install --id Microsoft.OpenSSH.Beta -e --source winget",
+      "checkCommand": "$sshPath = \"C:\\Windows\\System32\\OpenSSH\\ssh.exe\"; $sshService = Get-Service -Name \"ssh-agent\" -ErrorAction SilentlyContinue; return (Test-Path $sshPath) -and ($sshService -ne $null)",
+      "envPath": "C:\\Windows\\System32\\OpenSSH",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "Vercel CLI",
+      "installCommand": "& \"$ScriptDir\\ivercel-win.ps1\"",
+      "checkCommand": "Get-Command vercel -ErrorAction SilentlyContinue",
+      "envPath": "$env:APPDATA\\pnpm\\bin",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "Git Credential Manager",
+      "installCommand": "winget install --id Git.GCM --exact --version 2.6.1 -e",
+      "checkCommand": "Test-Path \"$env:ProgramFiles\\Git\\mingw64\\bin\\git-credential-manager.exe\"",
+      "envPath": "$env:ProgramFiles\\Git\\mingw64\\bin",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "GraphViz",
+      "installCommand": "winget install Graphviz",
+      "checkCommand": "$gpvrPath = \"C:\\Program Files\\Graphviz\\bin\\gvpr.exe\"; $cmdExists = Get-Command gvpr -ErrorAction SilentlyContinue; return ($gpvrPath -and $cmdExists)",
+      "envPath": "C:\\Program Files\\Graphviz\\bin",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    },
+    {
+      "appName": "GPG",
+      "installCommand": "choco install gpg4win -y",
+      "checkCommand": "Get-Command gpg -ErrorAction SilentlyContinue",
+      "envPath": "C:\\Program Files (x86)\\GnuPG\\bin",
+      "manualInstallUrl": "https://files.gpg4win.org/gpg4win-4.3.0.exe",
+      "manualInstallPath": "$env:TEMP\\gpg4win-4.3.0.exe"
+    },
+    {
+      "appName": "Python",
+      "installCommand": "$installerUrl = \"https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe\"; $installerPath = \"$env:TEMP\\python-installer.exe\"; Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList \"/quiet InstallAllUsers=1 PrependPath=1\" -Wait",
+      "checkCommand": "$requiredVersion = \"3.12.3\"; $pythonPath = \"$env:LocalAppData\\Programs\\Python\\Python$($requiredVersion.Split('.')[0])$($requiredVersion.Split('.')[1])\\python.exe\"; if (Test-Path $pythonPath) { $installedVersion = & $pythonPath --version 2>&1; return $installedVersion -match $requiredVersion } else { return $false }",
+      "envPath": "$env:LocalAppData\\Programs\\Python\\Python312",
+      "manualInstallUrl": null,
+      "manualInstallPath": null
+    }
+  ]
 }

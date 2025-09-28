@@ -1,20 +1,21 @@
 <#
 .SYNOPSIS
-    Updates system components to match versions specified in a JSON configuration file.
+    Updates system components to match versions specified in configuration files.
 
 .DESCRIPTION
-    This script compares currently installed software versions against a versions.json file and updates any mismatched components to match the configuration. It handles:
-    - Visual Studio Build Tools
-    - Windows SDK
-    - Docker Desktop
-    - Python interpreter
-    - Python packages
+    This script compares currently installed software versions against configuration files and updates any mismatched components. It handles:
+    - System Tools (using versions.json with Install-Tool function)
+    - Python packages (using requirements.txt)
 
-    The script will automatically download and install/update components as needed to match the JSON configuration.
+    The script will automatically download and install/update components as needed to match the configuration.
 
 .PARAMETER JsonPath
     Specifies the path to the versions.json configuration file.
     Default: "..\versions.json" (root folder relative to script location)
+
+.PARAMETER RequirementsPath
+    Specifies the path to the requirements.txt file.
+    Default: "..\requirements.txt" (root folder relative to script location)
 
 .PARAMETER ForceUpdate
     Forces updates even if versions already match.
@@ -22,11 +23,11 @@
 
 .EXAMPLE
     .\Scripts\Update-SetupFromJson.ps1
-    Updates components to match versions in the default versions.json file in the root folder
+    Updates components to match versions in the default configuration files
 
 .EXAMPLE
-    .\Scripts\Update-SetupFromJson.ps1 -JsonPath "C:\configs\my_versions.json" -ForceUpdate
-    Updates components using a custom JSON file and forces updates even if versions match
+    .\Scripts\Update-SetupFromJson.ps1 -JsonPath "C:\configs\my_versions.json" -RequirementsPath "C:\configs\my_requirements.txt" -ForceUpdate
+    Updates components using custom configuration files and forces updates
 
 .NOTES
     File Name      : Scripts\Update-SetupFromJson.ps1
@@ -39,14 +40,10 @@
     - Requires internet connection for downloading installers
     - May require system restarts after updates
     - Test in non-production environment first
-
-    Version History:
-    1.0 - Initial release
-    1.1 - Fixed path resolution for versions.json file
-    1.2 - Fixed Visual Studio detection and update using vswhere
 #>
 param (
     [string]$JsonPath = "..\versions.json",
+    [string]$RequirementsPath = "..\requirements.txt",
     [switch]$ForceUpdate = $false
 )
 
@@ -58,234 +55,163 @@ if (-not ([System.IO.Path]::IsPathRooted($JsonPath))) {
     $JsonPath = Join-Path -Path $ScriptDir -ChildPath $JsonPath
 }
 
-# Function to check and install Visual Studio Build Tools
-function Update-VisualStudioBuildTools {
+# If RequirementsPath is relative, make it relative to the script directory
+if (-not ([System.IO.Path]::IsPathRooted($RequirementsPath))) {
+    $RequirementsPath = Join-Path -Path $ScriptDir -ChildPath $RequirementsPath
+}
+
+# Enable TLS12 for secure downloads
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 
+
+# Log file path
+ $logFileName = "install_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+
+# Redirect all output to the log file
+Start-Transcript -Path $logFileName -Append
+
+# Function to log messages
+function Write-Message {
     param (
-        [object]$vsConfig
+        [string]$message
     )
-    
-    $requiredVersion = $vsConfig.version
-    $requiredComponents = $vsConfig.components
-    $packageId = $vsConfig.package_id
-    
-    Write-Host "Checking Visual Studio Build Tools..." -ForegroundColor Cyan
-    
-    # Try to find vswhere.exe
-    $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-    if (-not (Test-Path $vswherePath)) {
-        # Try in the current directory
-        $vswherePath = Get-Command vswhere -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
-        if (-not $vswherePath) {
-            Write-Warning "vswhere.exe not found. Cannot determine Visual Studio Build Tools version."
-            return
-        }
-    }
-    
-    # Find Visual Studio Build Tools installations
-    $vsArgs = @(
-        "-latest",
-        "-products", "Microsoft.VisualStudio.Product.BuildTools",
-        "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-        "-property", "installationVersion",
-        "-format", "json"
-    )
-    
-    $vsInfo = & $vswherePath $vsArgs | ConvertFrom-Json
-    
-    if (-not $vsInfo) {
-        Write-Host "Visual Studio Build Tools not installed. Installing required version..." -ForegroundColor Yellow
-        
-        # Check if Visual Studio Installer is available
-        $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
-        if (-not (Test-Path $vsInstallerPath)) {
-            Write-Warning "Visual Studio Installer not found. Skipping Visual Studio Build Tools update."
-            return
-        }
-        
-        # Install Visual Studio Build Tools
-        $componentsArgs = $requiredComponents -join " --add "
-        $installArgs = "install --installPath `"C:\BuildTools`" --add $componentsArgs --quiet --norestart"
-        Start-Process -FilePath $vsInstallerPath -ArgumentList $installArgs -Wait
-        Write-Host "Visual Studio Build Tools installed." -ForegroundColor Green
-        return
-    }
-    
-    # Check version
-    $installedVersion = $vsInfo.installationVersion
-    
-    if ($installedVersion -ne $requiredVersion -or $ForceUpdate) {
-        Write-Host "Visual Studio Build Tools version mismatch. Current: $installedVersion, Required: $requiredVersion" -ForegroundColor Yellow
-        Write-Host "Updating Visual Studio Build Tools..." -ForegroundColor Yellow
-        
-        # Check if Visual Studio Installer is available
-        $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
-        if (-not (Test-Path $vsInstallerPath)) {
-            Write-Warning "Visual Studio Installer not found. Skipping Visual Studio Build Tools update."
-            return
-        }
-        
-        # Update Visual Studio Build Tools
-        $updateArgs = "update --installPath `"C:\BuildTools`" --quiet --norestart"
-        Start-Process -FilePath $vsInstallerPath -ArgumentList $updateArgs -Wait
-        Write-Host "Visual Studio Build Tools updated." -ForegroundColor Green
-    } else {
-        Write-Host "Visual Studio Build Tools version matches: $requiredVersion" -ForegroundColor Green
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Write-Host "$timestamp - $message"   
+}
+
+Write-Message "Starting installation of system tools and packages."
+
+# Function to check if Chocolatey exists, if not, install it
+function Test-Chocolatey {
+    if (-not (Test-Path "C:\ProgramData\chocolatey\bin\choco.exe")) {
+        Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+        Write-Message "Chocolatey installed successfully."
     }
 }
 
-# Function to check and install Windows SDK
-function Update-WindowsSDK {
+# Function to download a file with progress tracking
+function DownloadWithProgress {
     param (
-        [object]$sdkConfig
+        [string]$url,
+        [string]$outputFile
     )
+
+    Write-Message "Starting download of $url..."
+
+    # Use Invoke-WebRequest with the -OutFile parameter
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $outputFile -UseBasicParsing
+    } catch {
+        Write-Message "Error downloading file: $_"
+    }
     
-    $requiredVersion = $sdkConfig.version
-    Write-Host "Checking Windows SDK..." -ForegroundColor Cyan
-    
-    # Check registry for installed SDKs
-    $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -ErrorAction SilentlyContinue
-    $sdkFound = $false
-    
-    foreach ($sdk in $installedSDKs) {
-        $sdkPath = $sdk.GetValue("KitsRoot10")
-        if ($sdkPath) {
-            $sdkVersionPath = Join-Path $sdkPath "Include"
-            if (Test-Path $sdkVersionPath) {
-                $versions = Get-ChildItem -Path $sdkVersionPath -Directory | Select-Object -ExpandProperty Name
-                if ($versions -contains $requiredVersion) {
-                    $sdkFound = $true
-                    break
-                }
+    Write-Message "Download completed: $outputFile"
+}
+
+# Function to install a tool
+function Install-Tool {
+    param (
+        [string]$appName,
+        [scriptblock]$installCommand,
+        [scriptblock]$checkCommand,
+        [string]$envPath,
+        [string]$manualInstallUrl = $null,
+        [string]$manualInstallPath = $null,
+        [switch]$ForceUpdate = $false
+    ) 
+
+    $message = @" 
+
+====================================================================================================================    
+appName: $appName 
+installCommand: $installCommand 
+checkCommand: $checkCommand 
+envPath: $envPath 
+manualInstallUrl: $manualInstallUrl 
+manualInstallPath: $manualInstallPath 
+====================================================================================================================
+"@ 
+
+    Write-Message $message
+
+    $isInstalled = & $checkCommand -ErrorAction SilentlyContinue
+
+    if (-not $isInstalled -or $ForceUpdate) {
+        Write-Message "Installing $appName..."
+
+        Test-Chocolatey
+        $installFailed = $false
+
+        try {
+            if ($installCommand) {
+                Write-Message "Running custom install command for $appName..."
+                & $installCommand
+            } else {
+                Write-Message "Installing $appName via Chocolatey..."
+                Start-Process -NoNewWindow -Wait "choco" -ArgumentList "install $appName -y"
             }
-        }
-    }
-    
-    if (-not $sdkFound -or $ForceUpdate) {
-        Write-Host "Windows SDK $requiredVersion not found. Installing..." -ForegroundColor Yellow
-        
-        # Download and install SDK (simplified - you might need to adjust the installer URL)
-        $sdkInstallerUrl = "https://go.microsoft.com/fwlink/p/?LinkID=2033908" # Windows 10 SDK installer
-        $installerPath = "$env:TEMP\WindowsSDKInstaller.exe"
-        
-        try {
-            Invoke-WebRequest -Uri $sdkInstallerUrl -OutFile $installerPath
-            Start-Process -FilePath $installerPath -ArgumentList "/quiet /norestart" -Wait
-            Write-Host "Windows SDK $requiredVersion installed." -ForegroundColor Green
         } catch {
-            Write-Warning "Failed to download or install Windows SDK: $_"
+            Write-Message "Installation for $appName threw an exception: $_"
+            $installFailed = $true
+        }
+
+        # Re-check if installation succeeded
+        $isInstalled = & $checkCommand -ErrorAction SilentlyContinue
+        if (-not $isInstalled) {
+            Write-Message "$appName installation failed verification."
+            $installFailed = $true
+        }
+
+        # Attempt manual install if needed
+        if ($installFailed -and $manualInstallUrl -and $manualInstallPath) {
+            Write-Message "Attempting manual install for $appName..."
+            DownloadWithProgress -url $manualInstallUrl -outputFile $manualInstallPath
+            Start-Process -FilePath $manualInstallPath -ArgumentList '/silent' -Wait
+
+            # Final verification
+            $isInstalled = & $checkCommand -ErrorAction SilentlyContinue
+            if ($isInstalled) {
+                Write-Message "$appName manual installation completed and verified."
+            } else {
+                Write-Message "$appName manual installation failed verification."
+            }
+        } elseif ($installFailed) {
+            Write-Message "Installation failed and no manual install method available for $appName."
+        } else {
+            Write-Message "$appName installed successfully."
         }
     } else {
-        Write-Host "Windows SDK version matches: $requiredVersion" -ForegroundColor Green
+        Write-Message "$appName is already installed."
+    }
+
+    # If verified, ensure PATH is updated
+    if ($isInstalled) {
+        $currentPath = [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::User)
+        Write-Message "currentPath = $currentPath"
+
+        if (-not ($currentPath -like "*$envPath*")) {
+            $newPath = $currentPath + ";$envPath"
+            [System.Environment]::SetEnvironmentVariable('Path', $newPath, [System.EnvironmentVariableTarget]::User)
+            $env:Path = $newPath
+            Write-Message "Added $appName to the system PATH."
+        } else {
+            Write-Message "$appName is already in the system PATH."
+        }
     }
 }
 
-# Function to check and install Docker Desktop
-function Update-DockerDesktop {
+# Function to check and install Python packages from requirements.txt
+function Update-PythonPackagesFromRequirements {
     param (
-        [object]$dockerConfig
+        [string]$requirementsPath
     )
     
-    $requiredVersion = $dockerConfig.version
-    Write-Host "Checking Docker Desktop..." -ForegroundColor Cyan
+    Write-Host "Checking Python packages from requirements.txt..." -ForegroundColor Cyan
     
-    # Check if Docker Desktop is installed
-    $dockerPath = "${env:ProgramFiles}\Docker\Docker\Docker Desktop.exe"
-    if (-not (Test-Path $dockerPath)) {
-        Write-Host "Docker Desktop not installed. Installing..." -ForegroundColor Yellow
-        
-        # Download and install Docker Desktop
-        $installerUrl = $dockerConfig.download_url
-        $installerPath = "$env:TEMP\DockerDesktopInstaller.exe"
-        
-        try {
-            Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
-            Start-Process -FilePath $installerPath -ArgumentList "install --quiet" -Wait
-            Write-Host "Docker Desktop installed." -ForegroundColor Green
-        } catch {
-            Write-Warning "Failed to download or install Docker Desktop: $_"
-        }
+    # Check if requirements.txt exists
+    if (-not (Test-Path $requirementsPath)) {
+        Write-Warning "requirements.txt not found at $requirementsPath. Skipping package updates."
         return
     }
-    
-    # Check version
-    $installedVersion = (Get-Item $dockerPath).VersionInfo.ProductVersion
-    if ($installedVersion -ne $requiredVersion -or $ForceUpdate) {
-        Write-Host "Docker Desktop version mismatch. Current: $installedVersion, Required: $requiredVersion" -ForegroundColor Yellow
-        Write-Host "Updating Docker Desktop..." -ForegroundColor Yellow
-        
-        # Download and install the new version
-        $installerUrl = $dockerConfig.download_url
-        $installerPath = "$env:TEMP\DockerDesktopInstaller.exe"
-        
-        try {
-            Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
-            Start-Process -FilePath $installerPath -ArgumentList "update --quiet" -Wait
-            Write-Host "Docker Desktop updated to $requiredVersion" -ForegroundColor Green
-        } catch {
-            Write-Warning "Failed to update Docker Desktop: $_"
-        }
-    } else {
-        Write-Host "Docker Desktop version matches: $requiredVersion" -ForegroundColor Green
-    }
-}
-
-# Function to check and install Python
-function Update-Python {
-    param (
-        [object]$pythonConfig
-    )
-    
-    $requiredVersion = $pythonConfig.version
-    Write-Host "Checking Python..." -ForegroundColor Cyan
-    
-    # Check if Python is installed
-    $pythonPath = "$env:LocalAppData\Programs\Python\Python$($requiredVersion.Split('.')[0])$($requiredVersion.Split('.')[1])\python.exe"
-    if (-not (Test-Path $pythonPath)) {
-        Write-Host "Python $requiredVersion not installed. Installing..." -ForegroundColor Yellow
-        
-        # Download and install Python
-        $installerUrl = $pythonConfig.installer_url
-        $installerPath = "$env:TEMP\python-installer.exe"
-        
-        try {
-            Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
-            Start-Process -FilePath $installerPath -ArgumentList "/quiet InstallAllUsers=1 PrependPath=1" -Wait
-            Write-Host "Python $requiredVersion installed." -ForegroundColor Green
-        } catch {
-            Write-Warning "Failed to download or install Python: $_"
-        }
-        return
-    }
-    
-    # Check version
-    $installedVersion = & $pythonPath --version 2>&1
-    if ($installedVersion -notmatch $requiredVersion -or $ForceUpdate) {
-        Write-Host "Python version mismatch. Current: $installedVersion, Required: $requiredVersion" -ForegroundColor Yellow
-        Write-Host "Updating Python..." -ForegroundColor Yellow
-        
-        # Download and install the new version
-        $installerUrl = $pythonConfig.installer_url
-        $installerPath = "$env:TEMP\python-installer.exe"
-        
-        try {
-            Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
-            Start-Process -FilePath $installerPath -ArgumentList "/quiet InstallAllUsers=1 PrependPath=1" -Wait
-            Write-Host "Python updated to $requiredVersion" -ForegroundColor Green
-        } catch {
-            Write-Warning "Failed to update Python: $_"
-        }
-    } else {
-        Write-Host "Python version matches: $requiredVersion" -ForegroundColor Green
-    }
-}
-
-# Function to check and install Python packages
-function Update-PythonPackages {
-    param (
-        [object]$packagesConfig
-    )
-    
-    Write-Host "Checking Python packages..." -ForegroundColor Cyan
     
     # Find Python executable
     $pythonExe = Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
@@ -294,31 +220,13 @@ function Update-PythonPackages {
         return
     }
     
-    # Get installed packages
-    $installedPackages = & $pythonExe -m pip list --format=json | ConvertFrom-Json
-    
-    foreach ($package in $packagesConfig.PSObject.Properties) {
-        $packageName = $package.Name
-        $requiredVersion = $package.Value
-        
-        $installedPackage = $installedPackages | Where-Object { $_.name -eq $packageName }
-        
-        if (-not $installedPackage -or $installedPackage.version -ne $requiredVersion -or $ForceUpdate) {
-            if ($installedPackage) {
-                Write-Host "Python package $packageName version mismatch. Current: $($installedPackage.version), Required: $requiredVersion" -ForegroundColor Yellow
-            } else {
-                Write-Host "Python package $packageName not installed. Installing..." -ForegroundColor Yellow
-            }
-            
-            try {
-                & $pythonExe -m pip install "$packageName==$requiredVersion" --quiet
-                Write-Host "Python package $packageName updated to $requiredVersion" -ForegroundColor Green
-            } catch {
-                Write-Warning "Failed to update Python package $packageName: $_"
-            }
-        } else {
-            Write-Host "Python package $packageName version matches: $requiredVersion" -ForegroundColor Green
-        }
+    # Install/upgrade packages from requirements.txt
+    try {
+        Write-Host "Installing/upgrading Python packages from requirements.txt..." -ForegroundColor Yellow
+        & $pythonExe -m pip install -r $requirementsPath --upgrade
+        Write-Host "Python packages updated successfully from requirements.txt" -ForegroundColor Green
+    } catch {
+        Write-Warning "Failed to update Python packages from requirements.txt: $_"
     }
 }
 
@@ -327,22 +235,32 @@ try {
     # Resolve the JSON path to ensure it's absolute
     $JsonPath = Resolve-Path $JsonPath -ErrorAction Stop
     
+    # Resolve the requirements path to ensure it's absolute
+    $RequirementsPath = Resolve-Path $RequirementsPath -ErrorAction Stop
+    
     # Read JSON file
     $jsonContent = Get-Content -Path $JsonPath -Raw | ConvertFrom-Json
     
-    # Update system tools
-    Update-VisualStudioBuildTools -vsConfig $jsonContent.system_tools.visual_studio_build_tools
-    Update-WindowsSDK -sdkConfig $jsonContent.system_tools.windows_sdk
-    Update-DockerDesktop -dockerConfig $jsonContent.system_tools.docker_desktop
+    # Update system tools using Install-Tool function
+    Write-Host "Updating system tools..." -ForegroundColor Cyan
+    foreach ($tool in $jsonContent.system_tools) {
+        Install-Tool -appName $tool.appName `
+                    -installCommand ([scriptblock]::Create($tool.installCommand)) `
+                    -checkCommand ([scriptblock]::Create($tool.checkCommand)) `
+                    -envPath $tool.envPath `
+                    -manualInstallUrl $tool.manualInstallUrl `
+                    -manualInstallPath $tool.manualInstallPath `
+                    -ForceUpdate:$ForceUpdate
+    }
     
-    # Update Python
-    Update-Python -pythonConfig $jsonContent.python
-    
-    # Update Python packages
-    Update-PythonPackages -packagesConfig $jsonContent.python_packages
+    # Update Python packages from requirements.txt
+    Update-PythonPackagesFromRequirements -requirementsPath $RequirementsPath
     
     Write-Host "Setup update complete!" -ForegroundColor Green
 } catch {
     Write-Error "Error updating setup: $_"
     exit 1
+} finally {
+    # Stop logging
+    Stop-Transcript
 }
