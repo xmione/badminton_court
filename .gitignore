@@ -175,3 +175,4 @@ cython_debug/
 ehthumbs.db
 Thumbs.db
 *.exe
+setup_log.txt
