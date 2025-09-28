@@ -1,24 +1,18 @@
 # bootstrap.ps1
 # Description:
-#   - Installs Python 3.12.3 system-wide to 'C:\Program Files\Python312' if not found
-#     (via official installer with /quiet /InstallAllUsers=1 /PrependPath=1)
+#   - Installs Python (version from versions.json)
 #   - Creates and activates virtual environment (venv)
 #   - Runs setup_install.py inside venv to complete Python-side setup
-# Note: To uninstall system-wide python version, run:
-# Get-WmiObject -Query "SELECT * FROM Win32_Product WHERE Name LIKE 'Python %'" | ForEach-Object { $_.Uninstall() }
-
-# To Run and Create Virtual Environment:
-# .\bootstrap -Force
-
-# To Run using existing Virtual Environment:
-# .\bootstrap
 
 param(
     [switch]$Force
 )
 
- $pythonVersion = "3.12.3"
- $pythonInstallerUrl = "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVersion-amd64.exe"
+# Load version configuration
+ $versions = Get-Content "$PSScriptRoot\versions.json" | ConvertFrom-Json
+
+ $pythonVersion = $versions.python.version
+ $pythonInstallerUrl = $versions.python.installer_url
  $venvDir = "venv"
  $venvActivateScript = ".\$venvDir\Scripts\Activate.ps1"
  $pythonExe = ".\$venvDir\Scripts\python.exe"
@@ -201,7 +195,7 @@ function Start-Setup {
             Write-Host "       .\$venvDir\Scripts\python.exe"
             Write-Host ""
             Write-Host "[INFO] To start the application with Docker Compose:"
-            Write-Host "       docker-compose up"
+            Write-Host "       docker compose up"
         }
         else {
             Write-Error "[ERROR] Setup script failed with exit code: $LASTEXITCODE"
@@ -217,6 +211,7 @@ function Start-Setup {
 # Main execution
 Write-Host "[INFO] Starting Python environment setup..."
 Write-Host "[INFO] Working directory: $(Get-Location)"
+Write-Host "[INFO] Using Python version: $pythonVersion"
 
 # Check if Force flag was used
 if ($Force) {

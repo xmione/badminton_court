@@ -12,6 +12,9 @@ param (
     [string]$LogFile = "$PSScriptRoot\setup_log.txt"
 )
 
+# Load version configuration
+ $versions = Get-Content "$PSScriptRoot\versions.json" | ConvertFrom-Json
+
 # Enhanced logging and progress tracking
  $Global:SetupStartTime = Get-Date
  $Global:LogFile = $LogFile
@@ -73,7 +76,6 @@ function Test-Prerequisites {
         Write-Log "Low disk space detected. At least 5GB recommended." -Level "WARNING"
     }
     
-    # Check if winget is available
     if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
         Write-Log "Winget not found. Please install Windows Package Manager." -Level "ERROR"
         return $false
@@ -224,26 +226,6 @@ function InstallWingetApp {
     return $false
 }
 
-function Find-VSComponent {
-    param([string]$ComponentName)
-    
-    $vsPaths = @(
-        "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools",
-        "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community",
-        "${env:ProgramFiles}\Microsoft Visual Studio\2022\Professional",
-        "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise",
-        "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\BuildTools"
-    )
-    
-    foreach ($basePath in $vsPaths) {
-        $componentPath = Join-Path $basePath $ComponentName
-        if (Test-Path $componentPath) {
-            return $componentPath
-        }
-    }
-    return $null
-}
-
 function Test-VSBuildTools {
     # Check for link.exe
     $linker = Get-Command link.exe -ErrorAction SilentlyContinue
@@ -279,25 +261,22 @@ function Test-VSBuildTools {
 function Install-VSBuildTools {
     param([bool]$ForceReinstall = $false)
     
-    $vsId = "Microsoft.VisualStudio.2022.BuildTools"
+    $vsConfig = $versions.system_tools.visual_studio_build_tools
     
     if ($ForceReinstall) {
         Write-Log "Force mode: Uninstalling Visual Studio Build Tools..." -Level "INFO"
-        Uninstall-WingetApp $vsId | Out-Null
+        Uninstall-WingetApp $vsConfig.package_id | Out-Null
     }
     
     if (-not (Test-VSBuildTools)) {
-        Write-Log "Installing Visual Studio Build Tools with C++ and Windows 10 SDK..." -Level "INFO"
+        Write-Log "Installing Visual Studio Build Tools version $($vsConfig.version)..." -Level "INFO"
         
-        $vsOverride = @(
-            "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-            "--add Microsoft.VisualStudio.Component.Windows10SDK.19041",
-            "--add Microsoft.VisualStudio.Component.VC.CMake.Project",
-            "--quiet", "--wait", "--norestart"
-        ) -join " "
+        $vsOverride = $vsConfig.components | ForEach-Object { "--add $_" }
+        $vsOverride += "--quiet", "--wait", "--norestart"
+        $vsOverrideString = $vsOverride -join " "
         
-        if (InstallWingetApp -PackageId $vsId -Override $vsOverride) {
-            Write-Log "Visual Studio Build Tools installation completed" -Level "SUCCESS"
+        if (InstallWingetApp -PackageId $vsConfig.package_id -Override $vsOverrideString) {
+            Write-Log "Visual Studio Build Tools version $($vsConfig.version) installation completed" -Level "SUCCESS"
             return $true
         }
         else {
@@ -312,8 +291,10 @@ function Install-VSBuildTools {
 }
 
 function Test-WindowsSDK {
+    $sdkConfig = $versions.system_tools.windows_sdk
+    
     $sdkPaths = @(
-        "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\10.0.19041.0\um\x64\kernel32.lib",
+        "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\$($sdkConfig.version)\um\x64\kernel32.lib",
         "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\10.0.20348.0\um\x64\kernel32.lib",
         "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\10.0.22000.0\um\x64\kernel32.lib"
     )
@@ -330,7 +311,8 @@ function Test-WindowsSDK {
 
 function Install-WindowsSDK {
     if (-not (Test-WindowsSDK)) {
-        Write-Log "Installing Windows 10 SDK..." -Level "INFO"
+        $sdkConfig = $versions.system_tools.windows_sdk
+        Write-Log "Installing Windows SDK version $($sdkConfig.version) ($($sdkConfig.display_name))..." -Level "INFO"
         
         $vsInstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
         
@@ -354,7 +336,7 @@ function Install-WindowsSDK {
                 & $vsInstallerPath modify --installPath $installPath --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --quiet --norestart --force
                 
                 if (Test-WindowsSDK) {
-                    Write-Log "Windows 10 SDK installation completed" -Level "SUCCESS"
+                    Write-Log "Windows SDK version $($sdkConfig.version) installation completed" -Level "SUCCESS"
                     return $true
                 }
             }
@@ -367,7 +349,8 @@ function Install-WindowsSDK {
         return $false
     }
     else {
-        Write-Log "Windows SDK already installed" -Level "SUCCESS"
+        $sdkConfig = $versions.system_tools.windows_sdk
+        Write-Log "Windows SDK version $($sdkConfig.version) already installed" -Level "SUCCESS"
         return $true
     }
 }
@@ -382,7 +365,7 @@ function Test-DockerDesktop {
     $dockerExe = Get-Command docker -ErrorAction SilentlyContinue
     if ($dockerExe) {
         try {
-            & docker version 2>&1
+            & docker version --format "{{.Client.Version}}" 2>$null
             if ($LASTEXITCODE -eq 0) {
                 Write-Log "Docker is installed and accessible" -Level "INFO"
                 return $true
@@ -399,23 +382,40 @@ function Test-DockerDesktop {
 function Install-DockerDesktop {
     param([bool]$ForceReinstall = $false)
     
-    $dockerId = "Docker.DockerDesktop"
+    $dockerConfig = $versions.system_tools.docker_desktop
     
     if ($ForceReinstall) {
         Write-Log "Force mode: Uninstalling Docker Desktop..." -Level "INFO"
-        Uninstall-WingetApp $dockerId | Out-Null
+        # Note: Docker Desktop doesn't have a reliable uninstall method via script
+        # We'll just try to install over it
     }
     
     if (-not (Test-DockerDesktop)) {
-        Write-Log "Installing Docker Desktop..." -Level "INFO"
+        Write-Log "Installing Docker Desktop version $($dockerConfig.version)..." -Level "INFO"
         
-        if (InstallWingetApp -PackageId $dockerId) {
-            Write-Log "Docker Desktop installation completed" -Level "SUCCESS"
-            Write-Log "Please start Docker Desktop manually after installation" -Level "INFO"
-            return $true
+        try {
+            $installerPath = "$env:TEMP\DockerDesktopInstaller.exe"
+            
+            Write-Log "Downloading Docker Desktop installer from: $($dockerConfig.download_url)" -Level "INFO"
+            Invoke-WebRequest -Uri $dockerConfig.download_url -OutFile $installerPath -UseBasicParsing
+            
+            Write-Log "Installing Docker Desktop..." -Level "INFO"
+            $process = Start-Process -FilePath $installerPath -ArgumentList "install --quiet" -Wait -PassThru
+            
+            Remove-Item $installerPath -Force
+            
+            if ($process.ExitCode -eq 0) {
+                Write-Log "Docker Desktop version $($dockerConfig.version) installation completed" -Level "SUCCESS"
+                Write-Log "Please start Docker Desktop manually after installation" -Level "INFO"
+                return $true
+            }
+            else {
+                Write-Log "Docker Desktop installation failed with exit code: $($process.ExitCode)" -Level "ERROR"
+                return $false
+            }
         }
-        else {
-            Write-Log "Docker Desktop installation failed" -Level "ERROR"
+        catch {
+            Write-Log "Failed to install Docker Desktop: $($_.Exception.Message)" -Level "ERROR"
             return $false
         }
     }
@@ -508,6 +508,7 @@ if (RelaunchAsAdmin) {
         Write-Log "=== SYSTEM SETUP STARTED ===" -Level "INFO"
         Write-Log "Script version: Enhanced v2.0" -Level "INFO"
         Write-Log "Parameters: Force=$Force, NoRestart=$NoRestart, Verbose=$Verbose" -Level "INFO"
+        Write-Log "Using version configuration from versions.json" -Level "INFO"
         
         Get-SystemInfo
         
@@ -529,6 +530,7 @@ if (RelaunchAsAdmin) {
         # Step 3: Docker Desktop
         Write-Progress-Step "Installing Docker Desktop" 3 5
         $results["Docker Desktop"] = Install-DockerDesktop -ForceReinstall $Force
+        if ($results["Docker Desktop"]) { $needRestart = $true }
         
         # Step 4: VCVars Setup
         Write-Progress-Step "Setting up VCVars environment" 4 5
