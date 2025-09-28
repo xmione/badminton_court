@@ -11,6 +11,7 @@
     - Python packages
 
     The script creates a backup of the original JSON file before making changes.
+    Missing Python packages are removed from the JSON file.
 
 .PARAMETER JsonPath
     Specifies the path to the versions.json configuration file.
@@ -20,6 +21,10 @@
     Creates a timestamped backup of the original JSON file before updating.
     Default: $true
 
+.PARAMETER RemoveMissingPackages
+    Removes Python packages from the JSON file if they are not installed.
+    Default: $true
+
 .EXAMPLE
     .\Scripts\Update-JsonFromSetup.ps1
     Updates the default versions.json file in the root folder with current system versions
@@ -27,6 +32,10 @@
 .EXAMPLE
     .\Scripts\Update-JsonFromSetup.ps1 -JsonPath "C:\configs\my_versions.json" -Backup:$false
     Updates a custom JSON file without creating a backup
+
+.EXAMPLE
+    .\Scripts\Update-JsonFromSetup.ps1 -RemoveMissingPackages:$false
+    Updates versions.json but keeps missing packages in the file
 
 .NOTES
     File Name      : Scripts\Update-JsonFromSetup.ps1
@@ -39,15 +48,12 @@
     - Requires Python to be in PATH for package version detection
     - Only updates versions for components that are currently installed
     - Test in non-production environment first
-
-    Version History:
-    1.0 - Initial release
-    1.1 - Fixed path resolution for versions.json file
-    1.2 - Fixed Visual Studio detection using vswhere instead of vs_installer
+     
 #>
 param (
     [string]$JsonPath = "..\versions.json",
-    [switch]$Backup = $true
+    [switch]$Backup = $true,
+    [switch]$RemoveMissingPackages = $true
 )
 
 # Get the script directory
@@ -124,13 +130,28 @@ function Get-VisualStudioBuildToolsVersion {
 
 # Function to get Windows SDK version
 function Get-WindowsSDKVersion {
+    # Check registry for installed SDKs
     $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -ErrorAction SilentlyContinue
+    if (-not $installedSDKs) {
+        # Try 32-bit registry view
+        $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows Kits\Installed Roots" -ErrorAction SilentlyContinue
+    }
+    
+    if (-not $installedSDKs) {
+        # Try alternative registry path
+        $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Kits" -ErrorAction SilentlyContinue
+    }
+    
     if (-not $installedSDKs) {
         return $null
     }
     
     foreach ($sdk in $installedSDKs) {
         $sdkPath = $sdk.GetValue("KitsRoot10")
+        if (-not $sdkPath) {
+            $sdkPath = $sdk.GetValue("InstallationFolder")
+        }
+        
         if ($sdkPath) {
             $sdkVersionPath = Join-Path $sdkPath "Include"
             if (Test-Path $sdkVersionPath) {
@@ -149,6 +170,11 @@ function Get-WindowsSDKVersion {
 # Function to get Docker Desktop version
 function Get-DockerDesktopVersion {
     $dockerPath = "${env:ProgramFiles}\Docker\Docker\Docker Desktop.exe"
+    if (-not (Test-Path $dockerPath)) {
+        # Try AppData location
+        $dockerPath = "$env:LOCALAPPDATA\Docker\Docker Desktop.exe"
+    }
+    
     if (-not (Test-Path $dockerPath)) {
         return $null
     }
@@ -190,7 +216,13 @@ function Get-PythonPackagesVersions {
     $packages = @{}
     
     foreach ($package in $installedPackages) {
+        # Store both original name and lowercase for case-insensitive matching
         $packages[$package.name] = $package.version
+        $packages[$package.name.ToLower()] = $package.version
+        
+        # Handle common name variations (e.g., package-name vs package_name)
+        $normalized = $package.name.ToLower().Replace('_', '-')
+        $packages[$normalized] = $package.version
     }
     
     return $packages
@@ -256,12 +288,59 @@ try {
     # Update Python packages
     $packagesInfo = Get-PythonPackagesVersions
     if ($packagesInfo.Count -gt 0) {
+        $missingPackages = @()
+        $packagesToRemove = @()
+        
+        # Create a new ordered dictionary for packages
+        $newPackages = [ordered]@{}
+        
         foreach ($package in $jsonContent.python_packages.PSObject.Properties.Name) {
+            # Try exact match first
             if ($packagesInfo.ContainsKey($package)) {
-                $jsonContent.python_packages.$package = $packagesInfo[$package]
+                $newPackages[$package] = $packagesInfo[$package]
                 Write-Host "Updated Python package $package to $($packagesInfo[$package])" -ForegroundColor Green
+                continue
+            }
+            
+            # Try case-insensitive match
+            $lowercasePackage = $package.ToLower()
+            if ($packagesInfo.ContainsKey($lowercasePackage)) {
+                $newPackages[$package] = $packagesInfo[$lowercasePackage]
+                Write-Host "Updated Python package $package to $($packagesInfo[$lowercasePackage])" -ForegroundColor Green
+                continue
+            }
+            
+            # Try normalized name (underscores to hyphens)
+            $normalizedPackage = $package.ToLower().Replace('_', '-')
+            if ($packagesInfo.ContainsKey($normalizedPackage)) {
+                $newPackages[$package] = $packagesInfo[$normalizedPackage]
+                Write-Host "Updated Python package $package (normalized as $normalizedPackage) to $($packagesInfo[$normalizedPackage])" -ForegroundColor Green
+                continue
+            }
+            
+            # Package not found
+            $missingPackages += $package
+            if ($RemoveMissingPackages) {
+                $packagesToRemove += $package
+                Write-Host "Removing missing Python package $package from JSON file" -ForegroundColor Yellow
             } else {
                 Write-Warning "Python package $package not found. Version not updated."
+            }
+        }
+        
+        # Update the python_packages object
+        if ($RemoveMissingPackages -and $packagesToRemove.Count -gt 0) {
+            $jsonContent.python_packages = $newPackages
+            Write-Host "Removed $($packagesToRemove.Count) missing packages from JSON file" -ForegroundColor Yellow
+        }
+        
+        if ($missingPackages.Count -gt 0) {
+            Write-Host "`nMissing packages: $($missingPackages -join ', ')" -ForegroundColor Yellow
+            if (-not $RemoveMissingPackages) {
+                Write-Host "You may need to install these packages manually:" -ForegroundColor Yellow
+                foreach ($pkg in $missingPackages) {
+                    Write-Host "  pip install $pkg" -ForegroundColor Yellow
+                }
             }
         }
     } else {
@@ -270,7 +349,7 @@ try {
     
     # Save updated JSON
     $jsonContent | ConvertTo-Json -Depth 10 | Set-Content -Path $JsonPath
-    Write-Host "JSON file updated successfully!" -ForegroundColor Green
+    Write-Host "`nJSON file updated successfully!" -ForegroundColor Green
 } catch {
     Write-Error "Error updating JSON file: $_"
     exit 1
