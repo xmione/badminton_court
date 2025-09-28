@@ -6,7 +6,44 @@
       "checkCommand": "Test-Path \"C:\\ProgramData\\chocolatey\\bin\\choco.exe\"",
       "envPath": "C:\\ProgramData\\chocolatey\\bin",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": true,
+      "maxRetries": 1
+    },
+    {
+      "appName": "Visual Studio Build Tools",
+      "installCommand": "$vsOverride = $versions.system_tools.visual_studio_build_tools.components | ForEach-Object { \"--add $_\" }; $vsOverride += \"--quiet\", \"--wait\", \"--norestart\"; $vsOverrideString = $vsOverride -join \" \"; winget install --id Microsoft.VisualStudio.2022.BuildTools --override $vsOverrideString",
+      "checkCommand": "$linker = Get-Command link.exe -ErrorAction SilentlyContinue; if ($linker) { return $true } else { $commonPaths = @(\"${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\", \"${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\"); foreach ($basePath in $commonPaths) { if (Test-Path $basePath) { $msvcDirs = Get-ChildItem -Path $basePath -Directory | Sort-Object Name -Descending; foreach ($dir in $msvcDirs) { $binPath = Join-Path $dir.FullName \"bin\\Hostx64\\x64\"; $linkPath = Join-Path $binPath \"link.exe\"; if (Test-Path $linkPath) { return $true } } } }; return $false }",
+      "envPath": "${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC",
+      "manualInstallUrl": null,
+      "manualInstallPath": null,
+      "isCoreTool": true,
+      "maxRetries": 3,
+      "components": [
+        "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+        "Microsoft.VisualStudio.Component.Windows10SDK.19041",
+        "Microsoft.VisualStudio.Component.VC.CMake.Project"
+      ]
+    },
+    {
+      "appName": "Windows SDK",
+      "installCommand": "winget install --id Microsoft.WindowsSDK --exact --version 10.0.22621.1",
+      "checkCommand": "$sdkVersion = \"10.0.22621.1\"; $sdkPaths = @(\"${env:ProgramFiles(x86)}\\Windows Kits\\10\\Lib\\$sdkVersion\\um\\x64\\kernel32.lib\", \"${env:ProgramFiles(x86)}\\Windows Kits\\10\\Lib\\10.0.20348.0\\um\\x64\\kernel32.lib\", \"${env:ProgramFiles(x86)}\\Windows Kits\\10\\Lib\\10.0.22000.0\\um\\x64\\kernel32.lib\"); foreach ($path in $sdkPaths) { if (Test-Path $path) { return $true } }; return $false",
+      "envPath": "${env:ProgramFiles(x86)}\\Windows Kits\\10\\bin\\10.0.22621.0\\x64",
+      "manualInstallUrl": null,
+      "manualInstallPath": null,
+      "isCoreTool": true,
+      "maxRetries": 2
+    },
+    {
+      "appName": "Docker Desktop",
+      "installCommand": "$installerPath = \"$env:TEMP\\DockerDesktopInstaller.exe\"; Invoke-WebRequest -Uri $versions.system_tools.docker_desktop.download_url -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList \"install --quiet\" -Wait; Remove-Item $installerPath -Force",
+      "checkCommand": "$dockerProcess = Get-Process -Name \"Docker Desktop\" -ErrorAction SilentlyContinue; if ($dockerProcess) { return $true } else { $dockerExe = Get-Command docker -ErrorAction SilentlyContinue; if ($dockerExe) { try { & docker version --format \"{{.Client.Version}}\" 2>$null; if ($LASTEXITCODE -eq 0) { return $true } } catch {} } }; return $false",
+      "envPath": "C:\\Program Files\\Docker\\Docker",
+      "manualInstallUrl": null,
+      "manualInstallPath": null,
+      "isCoreTool": true,
+      "maxRetries": 2
     },
     {
       "appName": "MinGW",
@@ -14,7 +51,9 @@
       "checkCommand": "Test-Path \"C:\\ProgramData\\mingw64\\mingw64\\bin\\gcc.exe\"",
       "envPath": "C:\\ProgramData\\mingw64\\mingw64\\bin",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": false,
+      "maxRetries": 1
     },
     {
       "appName": "nodejs",
@@ -22,7 +61,9 @@
       "checkCommand": "Test-Path \"C:\\Program Files\\nodejs\\node.exe\"",
       "envPath": "C:\\Program Files\\nodejs",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": false,
+      "maxRetries": 1
     },
     {
       "appName": "pnpm",
@@ -30,7 +71,9 @@
       "checkCommand": "Test-Path \"C:\\ProgramData\\chocolatey\\bin\\pnpm.exe\"",
       "envPath": "C:\\ProgramData\\chocolatey\\bin",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": false,
+      "maxRetries": 1
     },
     {
       "appName": "git",
@@ -38,7 +81,9 @@
       "checkCommand": "Test-Path \"C:\\Program Files\\Git\\cmd\\git.exe\"",
       "envPath": "C:\\Program Files\\Git\\cmd",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": false,
+      "maxRetries": 2
     },
     {
       "appName": "gh",
@@ -46,7 +91,9 @@
       "checkCommand": "Test-Path \"C:\\Program Files\\GitHub CLI\\gh.exe\"",
       "envPath": "C:\\Program Files\\GitHub CLI",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": false,
+      "maxRetries": 2
     },
     {
       "appName": "nvm",
@@ -54,15 +101,9 @@
       "checkCommand": "Test-Path \"$env:LOCALAPPDATA\\nvm\\nvm.exe\"",
       "envPath": "$env:LOCALAPPDATA\\Local\\nvm",
       "manualInstallUrl": null,
-      "manualInstallPath": null
-    },
-    {
-      "appName": "docker-desktop",
-      "installCommand": "choco install docker-desktop --version=4.34.2 -y",
-      "checkCommand": "Test-Path \"C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe\"",
-      "envPath": "C:\\Program Files\\Docker\\Docker",
-      "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": false,
+      "maxRetries": 1
     },
     {
       "appName": ".NET 9.0.100",
@@ -70,7 +111,9 @@
       "checkCommand": "$dotnetExe = \"$HOME\\.dotnet\\dotnet.exe\"; if (Test-Path $dotnetExe) { $installedVersion = & $dotnetExe --version; return $installedVersion.Trim() -eq \"9.0.100\" } else { return $false }",
       "envPath": "$HOME\\.dotnet",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": false,
+      "maxRetries": 2
     },
     {
       "appName": "OpenSSH",
@@ -78,7 +121,9 @@
       "checkCommand": "$sshPath = \"C:\\Windows\\System32\\OpenSSH\\ssh.exe\"; $sshService = Get-Service -Name \"ssh-agent\" -ErrorAction SilentlyContinue; return (Test-Path $sshPath) -and ($sshService -ne $null)",
       "envPath": "C:\\Windows\\System32\\OpenSSH",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": false,
+      "maxRetries": 1
     },
     {
       "appName": "Vercel CLI",
@@ -86,7 +131,9 @@
       "checkCommand": "Get-Command vercel -ErrorAction SilentlyContinue",
       "envPath": "$env:APPDATA\\pnpm\\bin",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": false,
+      "maxRetries": 1
     },
     {
       "appName": "Git Credential Manager",
@@ -94,7 +141,9 @@
       "checkCommand": "Test-Path \"$env:ProgramFiles\\Git\\mingw64\\bin\\git-credential-manager.exe\"",
       "envPath": "$env:ProgramFiles\\Git\\mingw64\\bin",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": false,
+      "maxRetries": 2
     },
     {
       "appName": "GraphViz",
@@ -102,7 +151,9 @@
       "checkCommand": "$gpvrPath = \"C:\\Program Files\\Graphviz\\bin\\gvpr.exe\"; $cmdExists = Get-Command gvpr -ErrorAction SilentlyContinue; return ($gpvrPath -and $cmdExists)",
       "envPath": "C:\\Program Files\\Graphviz\\bin",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": false,
+      "maxRetries": 1
     },
     {
       "appName": "GPG",
@@ -110,7 +161,9 @@
       "checkCommand": "Get-Command gpg -ErrorAction SilentlyContinue",
       "envPath": "C:\\Program Files (x86)\\GnuPG\\bin",
       "manualInstallUrl": "https://files.gpg4win.org/gpg4win-4.3.0.exe",
-      "manualInstallPath": "$env:TEMP\\gpg4win-4.3.0.exe"
+      "manualInstallPath": "$env:TEMP\\gpg4win-4.3.0.exe",
+      "isCoreTool": false,
+      "maxRetries": 1
     },
     {
       "appName": "Python",
@@ -118,7 +171,9 @@
       "checkCommand": "$requiredVersion = \"3.12.3\"; $pythonPath = \"$env:LocalAppData\\Programs\\Python\\Python$($requiredVersion.Split('.')[0])$($requiredVersion.Split('.')[1])\\python.exe\"; if (Test-Path $pythonPath) { $installedVersion = & $pythonPath --version 2>&1; return $installedVersion -match $requiredVersion } else { return $false }",
       "envPath": "$env:LocalAppData\\Programs\\Python\\Python312",
       "manualInstallUrl": null,
-      "manualInstallPath": null
+      "manualInstallPath": null,
+      "isCoreTool": true,
+      "maxRetries": 2
     }
   ]
 }
