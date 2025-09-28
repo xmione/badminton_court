@@ -1,5 +1,8 @@
 from django import forms
-from .models import Booking, Payment, Customer, Court
+from .models import (
+    Booking, Payment, Customer, Court, 
+    Employee, WorkSchedule, TimeEntry
+)
 
 class BookingForm(forms.ModelForm):
     class Meta:
@@ -48,6 +51,22 @@ class PaymentForm(forms.ModelForm):
         fields = ['amount', 'payment_method', 'transaction_id', 'notes']
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+
+class CustomerForm(forms.ModelForm):
+    class Meta:
+        model = Customer
+        fields = ['name', 'email', 'phone', 'address', 'active']
+        widgets = {
+            'address': forms.Textarea(attrs={'rows': 3}),
+        }
+
+class CourtForm(forms.ModelForm):
+    class Meta:
+        model = Court
+        fields = ['name', 'description', 'hourly_rate', 'active']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
         }
 
 class EmployeeForm(forms.ModelForm):
@@ -100,4 +119,4 @@ class TimeEntryForm(forms.ModelForm):
             if clock_in >= clock_out:
                 raise forms.ValidationError("Clock out time must be after clock in time.")
         
-        return cleaned_data        
+        return cleaned_data

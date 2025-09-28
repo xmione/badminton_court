@@ -96,7 +96,7 @@ function Install-BuildTools {
     Write-Host "[INFO] Checking for Visual Studio Build Tools..."
 
     $vcvarsPath = Get-VcvarsPathFromEnv
-    if (Test-Path $vcvarsPath) {
+    if ($vcvarsPath -and (Test-Path $vcvarsPath)) {
         Write-Host "[OK] Visual Studio Build Tools already installed."
         return
     }
@@ -122,7 +122,7 @@ function Install-BuildTools {
         Write-Host "[OK] Visual Studio Build Tools installed."
 
         $vcvarsPath = Get-VcvarsPathFromEnv
-        if ($vcvarsPath) {
+        if ($vcvarsPath -and (Test-Path $vcvarsPath)) {
             & $vcvarsPath | Out-Null
             Write-Host "[OK] vcvars64.bat executed to set up environment."
         }

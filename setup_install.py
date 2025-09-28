@@ -87,13 +87,11 @@ def purge_pip_cache():
 
 def install_requirements():
     print("📦 Installing requirements...")
-    vcvars_bat = find_vcvars_bat()
-    msvc_env = get_vcvars_env(vcvars_bat) if vcvars_bat else None
-
     try:
+        # Install all requirements in one step
         subprocess.run(
             [sys.executable, "-m", "pip", "install", "-r", "requirements.txt"],
-            check=True, env=msvc_env or os.environ
+            check=True
         )
         print("✅ Requirements installed.")
     except subprocess.CalledProcessError as e:
@@ -115,10 +113,12 @@ def setup_django():
         # Collect static files
         subprocess.run([sys.executable, "manage.py", "collectstatic", "--noinput"], check=True)
         print("✅ Static files collected.")
-        
     except subprocess.CalledProcessError as e:
         print("❌ Django setup failed:", e)
-        sys.exit(1)
+        print("⚠️ If you want to use PostgreSQL for local development, make sure it's running on localhost:5432.")
+        print("⚠️ Or update your settings.py to use SQLite for local development.")
+        # Continue with the setup process even if Django setup fails
+        print("⚠️ Continuing with setup process...")
 
 def check_docker():
     print("🐳 Checking if Docker is installed...")

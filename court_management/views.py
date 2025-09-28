@@ -3,26 +3,241 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.utils import timezone
-from .models import Customer, Court, Booking, Payment
-from .forms import BookingForm, PaymentForm
-import pandas as pd
-from django.http import HttpResponse
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncDate, TruncMonth
+from django.http import HttpResponse
 import matplotlib.pyplot as plt
 import io
 import base64
-from datetime import datetime, timedelta
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.urls import reverse_lazy
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-from django.utils import timezone
-from .models import Employee, WorkSchedule, TimeEntry
-from .forms import EmployeeForm, WorkScheduleForm, TimeEntryForm
-from datetime import datetime, timedelta
+import pandas as pd
 import calendar
+from datetime import datetime, timedelta
 
+from .models import (
+    Customer, Court, Booking, Payment, 
+    Employee, WorkSchedule, TimeEntry
+)
+from .forms import (
+    BookingForm, PaymentForm, 
+    EmployeeForm, WorkScheduleForm, TimeEntryForm,
+    CustomerForm, CourtForm
+)
+
+def index(request):
+    # Get today's bookings
+    today = timezone.now().date()
+    today_bookings = Booking.objects.filter(start_time__date=today).order_by('start_time')
+    
+    # Get active courts
+    active_courts = Court.objects.filter(active=True).count()
+    
+    # Get total customers
+    total_customers = Customer.objects.filter(active=True).count()
+    
+    # Get active employees
+    active_employees = Employee.objects.filter(active=True).count()
+    
+    # Get recent activities (last 5 bookings)
+    recent_bookings = Booking.objects.order_by('-created_at')[:5]
+    
+    # Format recent activities for display
+    recent_activities = []
+    for booking in recent_bookings:
+        activity = {
+            'title': f"New booking by {booking.customer.name}",
+            'description': f"Court {booking.court.name} at {booking.start_time.strftime('%Y-%m-%d %H:%M')}",
+            'timestamp': booking.created_at
+        }
+        recent_activities.append(activity)
+    
+    context = {
+        'today_bookings': today_bookings,
+        'active_courts': active_courts,
+        'total_customers': total_customers,
+        'active_employees': active_employees,
+        'recent_activities': recent_activities,
+    }
+    
+    return render(request, 'court_management/index.html', context)
+
+# Booking Views
+class BookingListView(ListView):
+    model = Booking
+    template_name = 'court_management/booking_list.html'
+    context_object_name = 'bookings'
+    
+    def get_queryset(self):
+        return Booking.objects.all().order_by('start_time')
+
+class BookingDetailView(DetailView):
+    model = Booking
+    template_name = 'court_management/booking_detail.html'
+    context_object_name = 'booking'
+
+class BookingCreateView(CreateView):
+    model = Booking
+    form_class = BookingForm
+    template_name = 'court_management/booking_form.html'
+    success_url = reverse_lazy('booking-list')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Booking created successfully!')
+        return response
+
+class BookingUpdateView(UpdateView):
+    model = Booking
+    form_class = BookingForm
+    template_name = 'court_management/booking_form.html'
+    success_url = reverse_lazy('booking-list')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Booking updated successfully!')
+        return response
+
+class BookingDeleteView(DeleteView):
+    model = Booking
+    template_name = 'court_management/booking_confirm_delete.html'
+    success_url = reverse_lazy('booking-list')
+    
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        messages.success(self.request, 'Booking deleted successfully!')
+        return response
+
+def customer_booking_history(request, customer_id):
+    customer = get_object_or_404(Customer, pk=customer_id)
+    bookings = Booking.objects.filter(customer=customer).order_by('-start_time')
+    
+    context = {
+        'customer': customer,
+        'bookings': bookings,
+    }
+    return render(request, 'court_management/customer_booking_history.html', context)
+
+def make_payment(request, booking_id):
+    booking = get_object_or_404(Booking, pk=booking_id)
+    
+    if request.method == 'POST':
+        form = PaymentForm(request.POST)
+        if form.is_valid():
+            payment = form.save(commit=False)
+            payment.booking = booking
+            payment.save()
+            
+            # Update booking payment status
+            booking.payment_status = 'paid'
+            booking.save()
+            
+            messages.success(request, 'Payment processed successfully!')
+            return redirect('booking-detail', pk=booking.pk)
+    else:
+        form = PaymentForm(initial={'amount': booking.fee})
+    
+    context = {
+        'form': form,
+        'booking': booking,
+    }
+    return render(request, 'court_management/make_payment.html', context)
+
+# Customer Views
+class CustomerListView(ListView):
+    model = Customer
+    template_name = 'court_management/customer_list.html'
+    context_object_name = 'customers'
+    
+    def get_queryset(self):
+        return Customer.objects.filter(active=True)
+
+class CustomerDetailView(DetailView):
+    model = Customer
+    template_name = 'court_management/customer_detail.html'
+    context_object_name = 'customer'
+
+class CustomerCreateView(CreateView):
+    model = Customer
+    form_class = CustomerForm
+    template_name = 'court_management/customer_form.html'
+    success_url = reverse_lazy('customer-list')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Customer created successfully!')
+        return response
+
+class CustomerUpdateView(UpdateView):
+    model = Customer
+    form_class = CustomerForm
+    template_name = 'court_management/customer_form.html'
+    success_url = reverse_lazy('customer-list')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Customer updated successfully!')
+        return response
+
+class CustomerDeleteView(DeleteView):
+    model = Customer
+    template_name = 'court_management/customer_confirm_delete.html'
+    success_url = reverse_lazy('customer-list')
+    
+    def delete(self, request, *args, **kwargs):
+        customer = self.get_object()
+        customer.active = False
+        customer.save()
+        messages.success(request, 'Customer deactivated successfully!')
+        return redirect('customer-list')
+
+# Court Views
+class CourtListView(ListView):
+    model = Court
+    template_name = 'court_management/court_list.html'
+    context_object_name = 'courts'
+    
+    def get_queryset(self):
+        return Court.objects.filter(active=True)
+
+class CourtDetailView(DetailView):
+    model = Court
+    template_name = 'court_management/court_detail.html'
+    context_object_name = 'court'
+
+class CourtCreateView(CreateView):
+    model = Court
+    form_class = CourtForm
+    template_name = 'court_management/court_form.html'
+    success_url = reverse_lazy('court-list')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Court created successfully!')
+        return response
+
+class CourtUpdateView(UpdateView):
+    model = Court
+    form_class = CourtForm
+    template_name = 'court_management/court_form.html'
+    success_url = reverse_lazy('court-list')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Court updated successfully!')
+        return response
+
+class CourtDeleteView(DeleteView):
+    model = Court
+    template_name = 'court_management/court_confirm_delete.html'
+    success_url = reverse_lazy('court-list')
+    
+    def delete(self, request, *args, **kwargs):
+        court = self.get_object()
+        court.active = False
+        court.save()
+        messages.success(request, 'Court deactivated successfully!')
+        return redirect('court-list')
+
+# Employee Views
 class EmployeeListView(ListView):
     model = Employee
     template_name = 'court_management/employee_list.html'
@@ -182,55 +397,7 @@ def clock_out(request, employee_id):
     messages.success(request, 'Clocked out successfully!')
     return redirect('employee-detail', pk=employee.pk)
 
-def payroll_report(request, year=None, month=None):
-    if year is None:
-        year = timezone.now().year
-    
-    if month is None:
-        month = timezone.now().month
-    
-    # Get all active employees
-    employees = Employee.objects.filter(active=True)
-    
-    employee_data = []
-    total_payroll = 0
-    
-    for employee in employees:
-        # Get time entries for the month
-        time_entries = TimeEntry.objects.filter(
-            employee=employee,
-            clock_in__year=year,
-            clock_in__month=month,
-            clock_out__isnull=False
-        )
-        
-        # Calculate total hours and pay
-        total_hours = sum(entry.duration_hours() for entry in time_entries)
-        total_pay = sum(entry.calculate_pay() for entry in time_entries)
-        
-        employee_data.append({
-            'employee': employee,
-            'time_entries': time_entries,
-            'total_hours': total_hours,
-            'total_pay': total_pay,
-        })
-        
-        total_payroll += total_pay
-    
-    context = {
-        'year': year,
-        'month': month,
-        'month_name': calendar.month_name[month],
-        'employee_data': employee_data,
-        'total_payroll': total_payroll,
-        'prev_month': month - 1 if month > 1 else 12,
-        'prev_year': year if month > 1 else year - 1,
-        'next_month': month + 1 if month < 12 else 1,
-        'next_year': year if month < 12 else year + 1,
-    }
-    
-    return render(request, 'court_management/payroll_report.html', context)
-
+# Report Views
 def sales_report(request):
     # Get date range from request or use default (last 30 days)
     end_date = timezone.now().date()
@@ -319,6 +486,95 @@ def sales_report(request):
     
     return render(request, 'court_management/sales_report.html', context)
 
+def payroll_report(request, year=None, month=None):
+    if year is None:
+        year = timezone.now().year
+    
+    if month is None:
+        month = timezone.now().month
+    
+    # Get all active employees
+    employees = Employee.objects.filter(active=True)
+    
+    employee_data = []
+    total_payroll = 0
+    
+    for employee in employees:
+        # Get time entries for the month
+        time_entries = TimeEntry.objects.filter(
+            employee=employee,
+            clock_in__year=year,
+            clock_in__month=month,
+            clock_out__isnull=False
+        )
+        
+        # Calculate total hours and pay
+        total_hours = sum(entry.duration_hours() for entry in time_entries)
+        total_pay = sum(entry.calculate_pay() for entry in time_entries)
+        
+        employee_data.append({
+            'employee': employee,
+            'time_entries': time_entries,
+            'total_hours': total_hours,
+            'total_pay': total_pay,
+        })
+        
+        total_payroll += total_pay
+    
+    context = {
+        'year': year,
+        'month': month,
+        'month_name': calendar.month_name[month],
+        'employee_data': employee_data,
+        'total_payroll': total_payroll,
+        'prev_month': month - 1 if month > 1 else 12,
+        'prev_year': year if month > 1 else year - 1,
+        'next_month': month + 1 if month < 12 else 1,
+        'next_year': year if month < 12 else year + 1,
+    }
+    
+    return render(request, 'court_management/payroll_report.html', context)
+
+def export_sales_report_csv(request):
+    # Get date range from request or use default (last 30 days)
+    end_date = timezone.now().date()
+    start_date = request.GET.get('start_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    else:
+        start_date = end_date - timedelta(days=30)
+    
+    # Get bookings within date range
+    bookings = Booking.objects.filter(
+        start_time__date__gte=start_date,
+        start_time__date__lte=end_date
+    )
+    
+    # Create DataFrame
+    data = {
+        'Booking ID': [booking.id for booking in bookings],
+        'Customer': [booking.customer.name for booking in bookings],
+        'Court': [booking.court.name for booking in bookings],
+        'Start Time': [booking.start_time.strftime('%Y-%m-%d %H:%M') for booking in bookings],
+        'End Time': [booking.end_time.strftime('%Y-%m-%d %H:%M') for booking in bookings],
+        'Duration (hours)': [booking.duration_hours() for booking in bookings],
+        'Fee': [float(booking.fee) for booking in bookings],
+        'Payment Status': [booking.payment_status for booking in bookings],
+        'Status': [booking.status for booking in bookings],
+    }
+    
+    df = pd.DataFrame(data)
+    
+    # Create HTTP response with CSV data
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="sales_report_{start_date}_to_{end_date}.csv"'
+    
+    df.to_csv(path_or_buf=response, index=False)
+    
+    return response
+
+# Chart Generation Functions
 def generate_line_chart(x_data, y_data, title, x_label, y_label):
     plt.figure(figsize=(10, 6))
     plt.plot(x_data, y_data, marker='o')
@@ -389,122 +645,3 @@ def generate_pie_chart(labels, data, title):
     plt.close()
     
     return graphic
-
-def export_sales_report_csv(request):
-    # Get date range from request or use default (last 30 days)
-    end_date = timezone.now().date()
-    start_date = request.GET.get('start_date')
-    
-    if start_date:
-        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-    else:
-        start_date = end_date - timedelta(days=30)
-    
-    # Get bookings within date range
-    bookings = Booking.objects.filter(
-        start_time__date__gte=start_date,
-        start_time__date__lte=end_date
-    )
-    
-    # Create DataFrame
-    data = {
-        'Booking ID': [booking.id for booking in bookings],
-        'Customer': [booking.customer.name for booking in bookings],
-        'Court': [booking.court.name for booking in bookings],
-        'Start Time': [booking.start_time.strftime('%Y-%m-%d %H:%M') for booking in bookings],
-        'End Time': [booking.end_time.strftime('%Y-%m-%d %H:%M') for booking in bookings],
-        'Duration (hours)': [booking.duration_hours() for booking in bookings],
-        'Fee': [float(booking.fee) for booking in bookings],
-        'Payment Status': [booking.payment_status for booking in bookings],
-        'Status': [booking.status for booking in bookings],
-    }
-    
-    df = pd.DataFrame(data)
-    
-    # Create HTTP response with CSV data
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="sales_report_{start_date}_to_{end_date}.csv"'
-    
-    df.to_csv(path_or_buf=response, index=False)
-    
-    return response
-
-class BookingListView(ListView):
-    model = Booking
-    template_name = 'court_management/booking_list.html'
-    context_object_name = 'bookings'
-    
-    def get_queryset(self):
-        return Booking.objects.all().order_by('start_time')
-
-class BookingDetailView(DetailView):
-    model = Booking
-    template_name = 'court_management/booking_detail.html'
-    context_object_name = 'booking'
-
-class BookingCreateView(CreateView):
-    model = Booking
-    form_class = BookingForm
-    template_name = 'court_management/booking_form.html'
-    success_url = reverse_lazy('booking-list')
-    
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, 'Booking created successfully!')
-        return response
-
-class BookingUpdateView(UpdateView):
-    model = Booking
-    form_class = BookingForm
-    template_name = 'court_management/booking_form.html'
-    success_url = reverse_lazy('booking-list')
-    
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, 'Booking updated successfully!')
-        return response
-
-class BookingDeleteView(DeleteView):
-    model = Booking
-    template_name = 'court_management/booking_confirm_delete.html'
-    success_url = reverse_lazy('booking-list')
-    
-    def delete(self, request, *args, **kwargs):
-        response = super().delete(request, *args, **kwargs)
-        messages.success(self.request, 'Booking deleted successfully!')
-        return response
-
-def customer_booking_history(request, customer_id):
-    customer = get_object_or_404(Customer, pk=customer_id)
-    bookings = Booking.objects.filter(customer=customer).order_by('-start_time')
-    
-    context = {
-        'customer': customer,
-        'bookings': bookings,
-    }
-    return render(request, 'court_management/customer_booking_history.html', context)
-
-def make_payment(request, booking_id):
-    booking = get_object_or_404(Booking, pk=booking_id)
-    
-    if request.method == 'POST':
-        form = PaymentForm(request.POST)
-        if form.is_valid():
-            payment = form.save(commit=False)
-            payment.booking = booking
-            payment.save()
-            
-            # Update booking payment status
-            booking.payment_status = 'paid'
-            booking.save()
-            
-            messages.success(request, 'Payment processed successfully!')
-            return redirect('booking-detail', pk=booking.pk)
-    else:
-        form = PaymentForm(initial={'amount': booking.fee})
-    
-    context = {
-        'form': form,
-        'booking': booking,
-    }
-    return render(request, 'court_management/make_payment.html', context)
