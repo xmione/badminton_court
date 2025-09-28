@@ -186,5 +186,3 @@ MaxRetries: $MaxRetries
     return $isInstalled
 }
 
-# Export functions
-Export-ModuleMember -Function Write-Message, Test-Chocolatey, DownloadWithProgress, Install-Tool

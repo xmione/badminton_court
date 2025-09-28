@@ -317,7 +317,7 @@ if (RelaunchAsAdmin) {
         
         # Setup VCVars environment
         Write-Progress-Step "Setting up VCVars environment" ($totalTools + 1) ($totalTools + 1)
-        $results["VCVars Environment"] = SetupVCars
+        $results["VCVars Environment"] = SetupVCVars
         
         # Final verification
         Write-Progress-Step "Final verification" ($totalTools + 2) ($totalTools + 2)
