@@ -382,7 +382,7 @@ function Test-DockerDesktop {
     $dockerExe = Get-Command docker -ErrorAction SilentlyContinue
     if ($dockerExe) {
         try {
-            $result = & docker version 2>&1
+            & docker version 2>&1
             if ($LASTEXITCODE -eq 0) {
                 Write-Log "Docker is installed and accessible" -Level "INFO"
                 return $true
@@ -532,7 +532,7 @@ if (RelaunchAsAdmin) {
         
         # Step 4: VCVars Setup
         Write-Progress-Step "Setting up VCVars environment" 4 5
-        $results["VCVars Environment"] = SetupVCars
+        $results["VCVars Environment"] = SetupVCVars
         
         # Step 5: Final verification
         Write-Progress-Step "Final verification" 5 5
