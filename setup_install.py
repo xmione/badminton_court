@@ -1,11 +1,9 @@
 # setup_install.py
 # Description: Automates setup of your Python environment:
-# - ✅ Verifies Rust
 # - ✅ Upgrades pip
 # - ✅ Purges pip cache (optional)
-# - ✅ Installs requirements + llama-cpp-python with MSVC env
-# - ✅ Ensures HuggingFace CLI and login
-# - ✅ Downloads model from HuggingFace
+# - ✅ Installs requirements.txt
+# - ✅ Sets up Django project
 
 import subprocess
 import sys
@@ -14,7 +12,6 @@ import shutil
 from pathlib import Path
 
 FORCE_PURGE = "--force" in sys.argv
-MODEL = "gpt2"
 
 def get_vcvars_env(vcvars_bat: str) -> dict:
     print(f"🔍 Capturing environment from: {vcvars_bat}")
@@ -71,16 +68,6 @@ def find_vcvars_bat():
     print("❌ Could not find vcvars64.bat. MSVC might not be installed.")
     return None
 
-def check_rust():
-    print("Checking if rustc is installed...")
-    try:
-        result = subprocess.run(["rustc", "--version"], capture_output=True, text=True, check=True)
-        print("✅ Rust is installed:", result.stdout.strip())
-    except Exception:
-        print("❌ Rust is not installed or not available on PATH.")
-        print("👉 Please install Rust from https://rustup.rs and restart.")
-        sys.exit(1)
-
 def update_pip():
     print("Updating pip...")
     try:
@@ -98,27 +85,10 @@ def purge_pip_cache():
     except subprocess.CalledProcessError:
         print("⚠️ Could not purge pip cache.")
 
-def cmake_path(path):
-    # Convert Windows path to CMake-friendly forward slashes
-    return path.replace("\\", "/")
-
 def install_requirements():
     print("📦 Installing requirements...")
     vcvars_bat = find_vcvars_bat()
     msvc_env = get_vcvars_env(vcvars_bat) if vcvars_bat else None
-
-    if msvc_env:
-        cl_path = shutil.which("cl.exe", path=msvc_env.get("PATH", ""))
-        if cl_path:
-            print(f"🛠️  Detected cl.exe at: {cl_path}")
-            escaped_path = cmake_path(cl_path)
-            msvc_env["CMAKE_ARGS"] = f'-DCMAKE_C_COMPILER="{escaped_path}" -DCMAKE_CXX_COMPILER="{escaped_path}"'
- 
-            print(f"✅ Injected CMAKE_ARGS with escaped path.")
-        else:
-            print("⚠️ cl.exe not found even after activating vcvars64.bat.")
-    else:
-        print("⚠️  Could not apply MSVC environment — falling back.")
 
     try:
         subprocess.run(
@@ -130,83 +100,82 @@ def install_requirements():
         print("❌ Requirements install failed:", e)
         sys.exit(1)
 
+def setup_django():
+    print("🚀 Setting up Django project...")
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "llama-cpp-python", "--prefer-binary"],
-            check=True, env=msvc_env or os.environ
-        )
-        print("✅ llama-cpp-python installed.")
+        # Run migrations
+        subprocess.run([sys.executable, "manage.py", "migrate"], check=True)
+        print("✅ Database migrations applied.")
+        
+        # Create a superuser if it doesn't exist
+        # We'll just provide instructions since creating a superuser requires interactive input
+        print("ℹ️ To create a superuser, run:")
+        print("   python manage.py createsuperuser")
+        
+        # Collect static files
+        subprocess.run([sys.executable, "manage.py", "collectstatic", "--noinput"], check=True)
+        print("✅ Static files collected.")
+        
     except subprocess.CalledProcessError as e:
-        print("❌ llama-cpp-python install failed:", e)
+        print("❌ Django setup failed:", e)
         sys.exit(1)
 
-def ensure_huggingface_cli():
-    print("Checking for Hugging Face CLI...")
-    if shutil.which("huggingface-cli"):
-        print("✅ huggingface-cli is already available.")
-        return
-    print("📦 Installing huggingface_hub...")
+def check_docker():
+    print("🐳 Checking if Docker is installed...")
     try:
-        subprocess.run([sys.executable, "-m", "pip", "install", "huggingface_hub"], check=True)
-        print("✅ huggingface_hub installed.")
+        result = subprocess.run(["docker", "--version"], capture_output=True, text=True, check=True)
+        print("✅ Docker is installed:", result.stdout.strip())
+        
+        # Check if Docker Compose is available
+        result = subprocess.run(["docker-compose", "--version"], capture_output=True, text=True)
+        if result.returncode == 0:
+            print("✅ Docker Compose is installed:", result.stdout.strip())
+            return True
+        else:
+            print("❌ Docker Compose is not installed or not in PATH")
+            return False
+    except Exception:
+        print("❌ Docker is not installed or not in PATH")
+        print("💡 Install Docker Desktop from https://www.docker.com/products/docker-desktop")
+        return False
+
+def setup_docker():
+    print("🐳 Setting up Docker environment...")
+    try:
+        # Build Docker images
+        subprocess.run(["docker-compose", "build"], check=True)
+        print("✅ Docker images built successfully.")
+        
+        print("ℹ️ To start the application with Docker, run:")
+        print("   docker-compose up")
+        
+        print("ℹ️ To run database migrations with Docker, run:")
+        print("   docker-compose run web python manage.py migrate")
+        
+        print("ℹ️ To create a superuser with Docker, run:")
+        print("   docker-compose run web python manage.py createsuperuser")
+        
     except subprocess.CalledProcessError as e:
-        print("❌ Failed to install huggingface_hub:", e)
+        print("❌ Docker setup failed:", e)
         sys.exit(1)
-
-def is_huggingface_logged_in():
-    token_file = Path.home() / ".cache" / "huggingface" / "token"
-    return token_file.exists() and token_file.stat().st_size > 0
-
-def authenticate_huggingface():
-    print("🔐 Checking Hugging Face login...")
-    if is_huggingface_logged_in():
-        print("✅ Already logged in.")
-        return
-    print("🔐 Not logged in. Launching login prompt...")
-    try:
-        subprocess.run(["huggingface-cli", "login"], check=True)
-        print("✅ Logged in successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Login failed: {e}")
-        print("💡 Run `huggingface-cli login` manually.")
-
-def install_cmake_with_winget():
-    print("🔍 Checking if CMake is installed...")
-    if shutil.which("cmake"):
-        print("✅ CMake is already installed.")
-        return
-    print("📦 Installing CMake via winget...")
-    try:
-        subprocess.run([
-            "winget", "install", "--id", "Kitware.CMake",
-            "--silent", "--accept-package-agreements", "--accept-source-agreements"
-        ], check=True)
-        print("✅ CMake installed via winget.")
-    except Exception as e:
-        print("❌ Failed to install CMake:", e)
-        print("👉 Manually install from https://cmake.org/download/")
-        sys.exit(1)
-
-def download_model(model_name):
-    print(f"📥 Downloading model: {model_name}")
-    try:
-        subprocess.run(["huggingface-cli", "download", model_name], check=True)
-        print(f"✅ Model '{model_name}' downloaded.")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Failed to download model '{model_name}':", e)
-        print("💡 Try downloading it manually from Hugging Face.")
 
 if __name__ == "__main__":
-    print("🚀 Starting Python environment setup...")
-    check_rust()
-    install_cmake_with_winget()
+    print("🚀 Starting Python environment setup for Badminton Court Management...")
     update_pip()
     if FORCE_PURGE:
         purge_pip_cache()
     else:
         print("🛑 Skipping pip cache purge (use --force to enable)")
     install_requirements()
-    ensure_huggingface_cli()
-    authenticate_huggingface()
-    download_model(MODEL)
+    setup_django()
+    
+    # Check if Docker is available and set it up
+    if check_docker():
+        setup_docker()
+    
     print("\n🎉 Setup complete! You're ready to go.")
+    print("\n📋 Next steps:")
+    print("   1. Activate the virtual environment: .\\venv\\Scripts\\Activate.ps1")
+    print("   2. Create a superuser: python manage.py createsuperuser")
+    print("   3. Start the development server: python manage.py runserver")
+    print("   4. Or use Docker: docker-compose up")

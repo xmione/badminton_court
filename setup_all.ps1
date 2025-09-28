@@ -2,8 +2,7 @@
 # Description: This PowerShell script handles system-wide setup by: 
 #              ✅ Relaunching as Administrator if needed, ensuring proper permissions. 
 #              ✅ Checking and installing Visual Studio Build Tools (including C++ workload), ensuring link.exe is available. 
-#              ✅ Checking and installing Rust via Winget to support system-level package compilation. 
-#              ❌ Updating pip and installing Python dependencies using requirements.txt, enforcing binary package installation for stability. 
+#              ✅ Checking and installing Docker Desktop for containerized deployment.
 #              ✅ Restarting the system if necessary to apply environment changes.
 
 param (
@@ -14,8 +13,8 @@ param (
 )
 
 # Enhanced logging and progress tracking
-$Global:SetupStartTime = Get-Date
-$Global:LogFile = $LogFile
+ $Global:SetupStartTime = Get-Date
+ $Global:LogFile = $LogFile
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
@@ -373,71 +372,55 @@ function Install-WindowsSDK {
     }
 }
 
-function Install-Rust {
-    param([bool]$ForceReinstall = $false)
+function Test-DockerDesktop {
+    $dockerProcess = Get-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue
+    if ($dockerProcess) {
+        Write-Log "Docker Desktop is running" -Level "INFO"
+        return $true
+    }
     
-    $rustId = 'Rustlang.Rustup'
-    
-    if ($ForceReinstall) {
-        Write-Log "Force mode: Uninstalling Rust..." -Level "INFO"
+    $dockerExe = Get-Command docker -ErrorAction SilentlyContinue
+    if ($dockerExe) {
         try {
-            & rustup self uninstall -y 2>$null
-            Write-Log "Rust uninstalled" -Level "INFO"
+            $result = & docker version 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Log "Docker is installed and accessible" -Level "INFO"
+                return $true
+            }
         }
         catch {
-            Write-Log "Rust uninstall failed or not installed" -Level "WARNING"
+            Write-Log "Docker command failed: $($_.Exception.Message)" -Level "WARNING"
         }
     }
     
-    if (-not (Get-Command rustc -ErrorAction SilentlyContinue)) {
-        Write-Log "Installing Rust..." -Level "INFO"
+    return $false
+}
+
+function Install-DockerDesktop {
+    param([bool]$ForceReinstall = $false)
+    
+    $dockerId = "Docker.DockerDesktop"
+    
+    if ($ForceReinstall) {
+        Write-Log "Force mode: Uninstalling Docker Desktop..." -Level "INFO"
+        Uninstall-WingetApp $dockerId | Out-Null
+    }
+    
+    if (-not (Test-DockerDesktop)) {
+        Write-Log "Installing Docker Desktop..." -Level "INFO"
         
-        if (InstallWingetApp -PackageId $rustId) {
-            Write-Log "Rust installation completed" -Level "SUCCESS"
+        if (InstallWingetApp -PackageId $dockerId) {
+            Write-Log "Docker Desktop installation completed" -Level "SUCCESS"
+            Write-Log "Please start Docker Desktop manually after installation" -Level "INFO"
             return $true
         }
         else {
-            Write-Log "Rust installation failed" -Level "ERROR"
+            Write-Log "Docker Desktop installation failed" -Level "ERROR"
             return $false
         }
     }
     else {
-        $rustVersion = & rustc --version 2>$null
-        Write-Log "Rust already installed: $rustVersion" -Level "SUCCESS"
-        return $true
-    }
-}
-
-function Install-HuggingFaceCLI {
-    param([bool]$ForceReinstall = $false)
-    
-    $hf = Get-Command huggingface-cli -ErrorAction SilentlyContinue
-    
-    if ($ForceReinstall -and $hf) {
-        Write-Log "Force mode: Reinstalling Hugging Face CLI..." -Level "INFO"
-        try {
-            & python -m pip uninstall -y huggingface_hub 2>$null
-        }
-        catch {
-            Write-Log "Failed to uninstall Hugging Face CLI" -Level "WARNING"
-        }
-        $hf = $null
-    }
-    
-    if (-not $hf) {
-        Write-Log "Installing Hugging Face CLI..." -Level "INFO"
-        try {
-            & python -m pip install --upgrade huggingface_hub
-            Write-Log "Hugging Face CLI installation completed" -Level "SUCCESS"
-            return $true
-        }
-        catch {
-            Write-Log "Hugging Face CLI installation failed: $($_.Exception.Message)" -Level "ERROR"
-            return $false
-        }
-    }
-    else {
-        Write-Log "Hugging Face CLI already installed" -Level "SUCCESS"
+        Write-Log "Docker Desktop already installed and working" -Level "SUCCESS"
         return $true
     }
 }
@@ -534,41 +517,34 @@ if (RelaunchAsAdmin) {
         }
         
         # Step 1: Visual Studio Build Tools
-        Write-Progress-Step "Installing Visual Studio Build Tools" 1 6
+        Write-Progress-Step "Installing Visual Studio Build Tools" 1 5
         $results["Visual Studio Build Tools"] = Install-VSBuildTools -ForceReinstall $Force
         if ($results["Visual Studio Build Tools"]) { $needRestart = $true }
         
         # Step 2: Windows SDK
-        Write-Progress-Step "Installing Windows SDK" 2 6
+        Write-Progress-Step "Installing Windows SDK" 2 5
         $results["Windows SDK"] = Install-WindowsSDK
         if ($results["Windows SDK"]) { $needRestart = $true }
         
-        # Step 3: Rust
-        Write-Progress-Step "Installing Rust" 3 6
-        $results["Rust"] = Install-Rust -ForceReinstall $Force
-        if ($results["Rust"]) { $needRestart = $true }
+        # Step 3: Docker Desktop
+        Write-Progress-Step "Installing Docker Desktop" 3 5
+        $results["Docker Desktop"] = Install-DockerDesktop -ForceReinstall $Force
         
-        # Step 4: Hugging Face CLI
-        Write-Progress-Step "Installing Hugging Face CLI" 4 6
-        $results["Hugging Face CLI"] = Install-HuggingFaceCLI -ForceReinstall $Force
+        # Step 4: VCVars Setup
+        Write-Progress-Step "Setting up VCVars environment" 4 5
+        $results["VCVars Environment"] = SetupVCars
         
-        # Step 5: VCVars Setup
-        Write-Progress-Step "Setting up VCVars environment" 5 6
-        $results["VCVars Environment"] = SetupVCVars
-        
-        # Step 6: Final verification
-        Write-Progress-Step "Final verification" 6 6
+        # Step 5: Final verification
+        Write-Progress-Step "Final verification" 5 5
         Write-Log "Performing final verification..." -Level "INFO"
         
         # Verify all components
         $linkExists = Get-Command link.exe -ErrorAction SilentlyContinue
-        $rustExists = Get-Command rustc -ErrorAction SilentlyContinue
-        $hfExists = Get-Command huggingface-cli -ErrorAction SilentlyContinue
+        $dockerExists = Get-Command docker -ErrorAction SilentlyContinue
         
         Write-Log "Final verification results:" -Level "INFO"
         Write-Log "  link.exe: $(if ($linkExists) { '✅ Available' } else { '❌ Missing' })" -Level "INFO"
-        Write-Log "  rustc: $(if ($rustExists) { '✅ Available' } else { '❌ Missing' })" -Level "INFO"
-        Write-Log "  huggingface-cli: $(if ($hfExists) { '✅ Available' } else { '❌ Missing' })" -Level "INFO"
+        Write-Log "  docker: $(if ($dockerExists) { '✅ Available' } else { '❌ Missing' })" -Level "INFO"
         
         Write-Progress -Activity "System Setup" -Completed
         Show-Summary -Results $results

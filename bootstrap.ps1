@@ -2,7 +2,6 @@
 # Description:
 #   - Installs Python 3.12.3 system-wide to 'C:\Program Files\Python312' if not found
 #     (via official installer with /quiet /InstallAllUsers=1 /PrependPath=1)
-#   - Installs Rust
 #   - Creates and activates virtual environment (venv)
 #   - Runs setup_install.py inside venv to complete Python-side setup
 # Note: To uninstall system-wide python version, run:
@@ -18,12 +17,11 @@ param(
     [switch]$Force
 )
 
-$pythonVersion = "3.12.3"
-$pythonInstallerUrl = "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVersion-amd64.exe"
-$rustupInstallerUrl = "https://win.rustup.rs/x86_64"
-$venvDir = "venv"
-$venvActivateScript = ".\$venvDir\Scripts\Activate.ps1"
-$pythonExe = ".\$venvDir\Scripts\python.exe"
+ $pythonVersion = "3.12.3"
+ $pythonInstallerUrl = "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVersion-amd64.exe"
+ $venvDir = "venv"
+ $venvActivateScript = ".\$venvDir\Scripts\Activate.ps1"
+ $pythonExe = ".\$venvDir\Scripts\python.exe"
 
 function Get-VcvarsPathFromEnv {
     $vcvarsCandidates = ($env:PATH -split ';') |
@@ -31,63 +29,6 @@ function Get-VcvarsPathFromEnv {
         ForEach-Object { Join-Path $_ 'vcvars64.bat' }
 
     return $vcvarsCandidates | Select-Object -First 1
-}
-
-function Test-RustInstalled {
-    try {
-        $rustcOutput = & rustc --version 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "[OK] Rust is installed: $rustcOutput"
-            return $true
-        }
-        return $false
-    }
-    catch {
-        return $false
-    }
-}
-
-function Install-Rust {
-    Write-Host "[INFO] Rust not found. Installing Rust..."
-
-    try {
-        # Download rustup installer
-        $installerPath = "rustup-init.exe"
-        Write-Host "[INFO] Downloading Rust installer from: $rustupInstallerUrl"
-        Invoke-WebRequest -Uri $rustupInstallerUrl -OutFile $installerPath -UseBasicParsing
-
-        # Install Rust with default settings
-        Write-Host "[INFO] Installing Rust with default settings..."
-        $process = Start-Process -FilePath $installerPath -ArgumentList "-y" -Wait -PassThru
-
-        # Clean up installer
-        Remove-Item $installerPath -Force
-
-        if ($process.ExitCode -eq 0) {
-            Write-Host "[OK] Rust installed successfully."
-            
-            # Add Rust to PATH for current session
-            $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
-            
-            # Verify installation
-            if (Test-RustInstalled) {
-                Write-Host "[OK] Rust is now available in PATH."
-                return $true
-            }
-            else {
-                Write-Host "[WARN] Rust installed but not immediately available. Please restart terminal."
-                return $false
-            }
-        }
-        else {
-            Write-Error "[ERROR] Rust installation failed with exit code: $($process.ExitCode)"
-            return $false
-        }
-    }
-    catch {
-        Write-Error "[ERROR] Failed to install Rust: $($_.Exception.Message)"
-        return $false
-    }
 }
 
 function Test-RealPython {
@@ -258,6 +199,9 @@ function Start-Setup {
             Write-Host ""
             Write-Host "[INFO] To run Python in the virtual environment:"
             Write-Host "       .\$venvDir\Scripts\python.exe"
+            Write-Host ""
+            Write-Host "[INFO] To start the application with Docker Compose:"
+            Write-Host "       docker-compose up"
         }
         else {
             Write-Error "[ERROR] Setup script failed with exit code: $LASTEXITCODE"
@@ -280,7 +224,7 @@ if ($Force) {
 }
 
 # Step 1: Find or install Python
-$pythonCmd = Find-PythonCommand
+ $pythonCmd = Find-PythonCommand
 
 if ($null -eq $pythonCmd) {
     Install-Python
@@ -289,23 +233,13 @@ else {
     Write-Host "[OK] Using Python command: $pythonCmd"
 }
 
-# Step 1.5: Install MSVC and Windows SDK (required for compiling packages like llama-cpp-python)
+# Step 1.5: Install MSVC and Windows SDK (required for compiling some Python packages)
 Install-BuildTools
 
-# Step 2: Check for Rust installation
-if (-Not (Test-RustInstalled)) {
-    $rustInstalled = Install-Rust
-    if (-Not $rustInstalled) {
-        Write-Host "[ERROR] Rust installation failed or requires terminal restart."
-        Write-Host "[INFO] Please restart your terminal and run this script again."
-        exit 1
-    }
-}
-
-# Step 3: Create virtual environment
+# Step 2: Create virtual environment
 New-VirtualEnvironment -PythonCommand $pythonCmd
 
-# Step 4: Run setup
+# Step 3: Run setup
 Start-Setup
 
 Write-Host "[SUCCESS] Bootstrap process completed!"
