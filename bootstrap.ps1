@@ -1,8 +1,56 @@
-# bootstrap.ps1
-# Description:
-#   - Installs Python (version from versions.json)
-#   - Creates and activates virtual environment (venv)
-#   - Runs setup_install.py inside venv to complete Python-side setup
+<#
+.SYNOPSIS
+    Sets up the Python development environment by installing Python, creating a virtual environment, and running the Python setup script.
+
+.DESCRIPTION
+    This PowerShell script handles the Python environment setup by:
+    - Installing Python (version from versions.json)
+    - Creating and activating a virtual environment (venv)
+    - Running setup_install.py inside venv to complete Python-side setup
+
+    The script checks for existing Python installations, installs Python if necessary, creates a virtual environment,
+    and then runs the Python setup script to install dependencies and configure the Django project.
+
+.PARAMETER Force
+    Forces recreation of the virtual environment even if it already exists.
+
+.EXAMPLE
+    .\bootstrap.ps1
+    Installs Python (if needed), creates a virtual environment, and runs the Python setup script.
+
+.EXAMPLE
+    .\bootstrap.ps1 -Force
+    Forces recreation of the virtual environment, even if it already exists.
+
+.NOTES
+    File Name      : bootstrap.ps1
+    Author         : Solomio S. Sisante
+    Prerequisite   : PowerShell 5.1 or later
+    Copyright      : c(2025)
+
+    IMPORTANT:
+    - Run after setup_all.ps1 to ensure system tools are installed.
+    - Requires internet connection for downloading Python.
+    - The script will exit and prompt for a restart if Python needs to be installed.
+    - After installation, you may need to restart your terminal session for PATH changes to take effect.
+
+    Dependencies:
+    - versions.json: Configuration file for Python version and installer URL
+    - setup_install.py: Python script for package installation and project setup
+
+    Process Flow:
+    1. Load Python version configuration from versions.json
+    2. Find or install Python
+    3. Install MSVC and Windows SDK (required for compiling some Python packages)
+    4. Create or recreate virtual environment
+    5. Run setup_install.py inside the virtual environment
+    6. Activate the virtual environment
+
+    Next Steps After Completion:
+    - Create a Django superuser: python manage.py createsuperuser
+    - Start the development server: python manage.py runserver
+    - Or use Docker: docker-compose up
+#>
 
 param(
     [switch]$Force
