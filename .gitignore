@@ -177,3 +177,4 @@ Thumbs.db
 *.exe
 setup_log.txt
 versions.json.backup*
+node_modules/
