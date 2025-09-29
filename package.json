@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "description": "Badminton Court Management System",
   "scripts": {
-    "test:e2e": "./scripts/test-runner.sh",
-    "dev": "./scripts/dev-runner.sh",
-    "cypress:open": "docker-compose --profile test run --rm -e CYPRESS_headless=false cypress",
-    "cypress:run": "docker-compose --profile test run --rm cypress"
+    "test:e2e": "echo '🧪 Performing End-To-End tests...' && ./scripts/test-runner.sh",
+    "dev": "echo '🚀 Starting development environment...' && ./scripts/dev-runner.sh",
+    "cypress:open": "echo '🔍 Opening Cypress in interactive mode...' && docker-compose --profile test run --rm -e CYPRESS_headless=false cypress",
+    "cypress:run": "echo '⚡ Running Cypress tests in headless mode...' && docker-compose --profile test run --rm cypress",
+    "docker:dev": "echo '🐳 Starting development services...' && docker-compose up -d",
+    "docker:test": "echo '🐳 Starting development and test services...' && docker-compose --profile test up -d",
+    "docker:cypress": "echo '🐳 Running Cypress services only...' && docker-compose --profile test up cypress",
+    "docker:down": "echo '🛑 Stopping all services...' && docker-compose down"
   },
   "devDependencies": {
-    "cypress": "^15.3.0",
-    "start-server-and-test": "^2.1.2"
+    "cypress": "^15.3.0"
   }
 }

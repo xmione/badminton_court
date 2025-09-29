@@ -69,7 +69,7 @@ services:
       - web
     profiles:
       - test
-      
+
   test-setup:
     build: .
     command: python manage.py load_test_data

@@ -1,25 +1,58 @@
-# Running Tests
+# Running Tests - Usage.md
 ## Run all tests
+```powershell
 npm run test:e2e
+```
 
 ## Or directly
+```powershell
 ./scripts/test-runner.sh
+```
 
 ## Run Cypress tests in interactive mode
+```powershell
 npm run cypress:open
+```
 
 ## Run Cypress tests in headless mode
+```powershell
 npm run cypress:run
+```
 
 # Development
 ## Start development environment
+```powershell
 npm run dev
+```
 
 ## Or directly
+```powershell
 ./scripts/dev-runner.sh
+```
 
 ## Access the application at http://localhost:8000
 ## Admin login: admin/password
+
+## Docker Services
+## Start only development services
+```powershell
+npm run docker:dev
+```
+
+## Start development and test services
+```powershell
+npm run docker:test
+```
+
+## Run only test services
+```powershell
+npm run docker:cypress
+```
+
+## Stop all services
+```powershell
+npm run docker:down
+```
 
 # Additional Configuration
 ## 1. Create a .env file
