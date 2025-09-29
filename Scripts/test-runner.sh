@@ -39,9 +39,14 @@ docker-compose --profile test run --rm test-setup
 echo "🔄 Starting Celery workers..."
 docker-compose up -d celery celery-beat
 
-# Run Cypress tests
-echo "🧪 Running Cypress tests..."
-docker-compose --profile test run --rm cypress
+# Check if a specific test file was provided
+if [ "$1" = "booking" ]; then
+  echo "🧪 Running booking tests..."
+  docker-compose --profile test run --rm -e CYPRESS_spec=cypress/integration/booking/booking_spec.js cypress
+else
+  echo "🧪 Running all Cypress tests..."
+  docker-compose --profile test run --rm cypress
+fi
 
 # Capture the exit code
 TEST_EXIT_CODE=$?
