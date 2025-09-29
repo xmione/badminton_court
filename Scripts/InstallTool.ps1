@@ -269,41 +269,56 @@ function Get-VisualStudioBuildToolsVersion {
 
 # Function to get Windows SDK version
 function Get-WindowsSDKVersion {
-    # Check registry for installed SDKs
-    $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -ErrorAction SilentlyContinue
-    if (-not $installedSDKs) {
-        # Try 32-bit registry view
-        $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows Kits\Installed Roots" -ErrorAction SilentlyContinue
-    }
-    
-    if (-not $installedSDKs) {
-        # Try alternative registry path
-        $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Kits" -ErrorAction SilentlyContinue
-    }
-    
-    if (-not $installedSDKs) {
-        return $null
-    }
-    
-    foreach ($sdk in $installedSDKs) {
-        $sdkPath = $sdk.GetValue("KitsRoot10")
-        if (-not $sdkPath) {
-            $sdkPath = $sdk.GetValue("InstallationFolder")
+    try {
+        # Check registry for installed SDKs
+        $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -ErrorAction SilentlyContinue
+        if (-not $installedSDKs) {
+            # Try 32-bit registry view
+            $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows Kits\Installed Roots" -ErrorAction SilentlyContinue
         }
         
-        if ($sdkPath) {
-            $sdkVersionPath = Join-Path $sdkPath "Include"
-            if (Test-Path $sdkVersionPath) {
-                $versions = Get-ChildItem -Path $sdkVersionPath -Directory | Select-Object -ExpandProperty Name
-                $latestVersion = $versions | Sort-Object -Descending | Select-Object -First 1
-                return @{
-                    version = $latestVersion
-                    display_name = "Windows 10 SDK ($($latestVersion.Split('.')[2..3] -join '.'))"
+        if (-not $installedSDKs) {
+            # Try alternative registry path
+            $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Kits" -ErrorAction SilentlyContinue
+        }
+        
+        if (-not $installedSDKs) {
+            # Try to find SDK by checking common paths
+            $sdkPaths = @(
+                "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\10.0.22621.1\um\x64\kernel32.lib",
+                "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\10.0.20348.0\um\x64\kernel32.lib",
+                "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\10.0.22000.0\um\x64\kernel32.lib"
+            )
+            
+            foreach ($path in $sdkPaths) {
+                if (Test-Path $path) {
+                    if ($path -match "10\.0\.([\d.]+)") {
+                        return "10.0.$($matches[1])"
+                    }
+                }
+            }
+            return $null
+        }
+        
+        foreach ($sdk in $installedSDKs) {
+            $sdkPath = $sdk.GetValue("KitsRoot10")
+            if (-not $sdkPath) {
+                $sdkPath = $sdk.GetValue("InstallationFolder")
+            }
+            
+            if ($sdkPath) {
+                $sdkVersionPath = Join-Path $sdkPath "Include"
+                if (Test-Path $sdkVersionPath) {
+                    $versions = Get-ChildItem -Path $sdkVersionPath -Directory | Select-Object -ExpandProperty Name
+                    $latestVersion = $versions | Sort-Object -Descending | Select-Object -First 1
+                    return $latestVersion
                 }
             }
         }
+        return $null
+    } catch {
+        return $null
     }
-    return $null
 }
 
 # Function to get Docker Desktop version
@@ -395,5 +410,382 @@ function Update-PythonPackagesFromRequirements {
         Write-Host "Python packages updated successfully from requirements.txt" -ForegroundColor Green
     } catch {
         Write-Warning "Failed to update Python packages from requirements.txt: $_"
+    }
+}
+
+# Function to get Chocolatey version
+function Get-ChocolateyVersion {
+    try {
+        $chocoPath = "$env:ProgramData\chocolatey\bin\choco.exe"
+        if (Test-Path $chocoPath) {
+            $version = & $chocoPath --version
+            return $version.Trim()
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get MinGW version
+function Get-MinGWVersion {
+    try {
+        $mingwPaths = @(
+            "C:\ProgramData\mingw64\mingw64\bin\gcc.exe",
+            "C:\MinGW\bin\gcc.exe",
+            "C:\msys64\mingw64\bin\gcc.exe"
+        )
+        
+        foreach ($path in $mingwPaths) {
+            if (Test-Path $path) {
+                $version = & $path --version
+                if ($version -match "gcc\s+\(.*\)\s+([\d.]+)") {
+                    return $matches[1]
+                }
+            }
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get Node.js version
+function Get-nodejsVersion {
+    try {
+        $nodePaths = @(
+            "C:\Program Files\nodejs\node.exe",
+            "$env:LocalAppData\Programs\nodejs\node.exe"
+        )
+        
+        foreach ($path in $nodePaths) {
+            if (Test-Path $path) {
+                $version = & $path --version
+                return $version.Trim()
+            }
+        }
+        
+        # Try to find node in PATH
+        $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+        if ($nodeCmd) {
+            $version = & $nodeCmd.Source --version
+            return $version.Trim()
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get pnpm version
+function Get-pnpmVersion {
+    try {
+        # Try to find pnpm in PATH first
+        $pnpmCmd = Get-Command pnpm -ErrorAction SilentlyContinue
+        if ($pnpmCmd) {
+            $version = & $pnpmCmd.Source --version
+            return $version.Trim()
+        }
+        
+        $pnpmPaths = @(
+            "C:\ProgramData\chocolatey\bin\pnpm.exe",
+            "$env:APPDATA\npm\pnpm.cmd",
+            "$env:APPDATA\pnpm\bin\pnpm.exe",
+            "$env:LOCALAPPDATA\pnpm\pnpm.exe"
+        )
+        
+        foreach ($path in $pnpmPaths) {
+            if (Test-Path $path) {
+                $version = & $path --version
+                return $version.Trim()
+            }
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get Git version
+function Get-gitVersion {
+    try {
+        $gitPaths = @(
+            "C:\Program Files\Git\cmd\git.exe",
+            "C:\Program Files\Git\bin\git.exe"
+        )
+        
+        foreach ($path in $gitPaths) {
+            if (Test-Path $path) {
+                $version = & $path --version
+                if ($version -match "git\s+version\s+([\d.]+)") {
+                    return $matches[1]
+                }
+            }
+        }
+        
+        # Try to find git in PATH
+        $gitCmd = Get-Command git -ErrorAction SilentlyContinue
+        if ($gitCmd) {
+            $version = & $gitCmd.Source --version
+            if ($version -match "git\s+version\s+([\d.]+)") {
+                return $matches[1]
+            }
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get GitHub CLI version
+function Get-ghVersion {
+    try {
+        # Try to find gh in PATH first
+        $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
+        if ($ghCmd) {
+            $version = & $ghCmd.Source --version
+            if ($version -match "gh\s+version\s+([\d.]+)") {
+                return $matches[1]
+            }
+        }
+        
+        $ghPaths = @(
+            "C:\Program Files\GitHub CLI\gh.exe",
+            "$env:LocalAppData\Programs\GitHub CLI\gh.exe",
+            "$env:ProgramFiles(x86)\GitHub CLI\gh.exe"
+        )
+        
+        foreach ($path in $ghPaths) {
+            if (Test-Path $path) {
+                $version = & $path --version
+                if ($version -match "gh\s+version\s+([\d.]+)") {
+                    return $matches[1]
+                }
+            }
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get NVM version
+function Get-nvmVersion {
+    try {
+        $nvmPath = "$env:LOCALAPPDATA\nvm\nvm.exe"
+        if (Test-Path $nvmPath) {
+            $version = & $nvmPath version
+            return $version.Trim()
+        }
+        
+        # Try alternative path
+        $nvmPath = "$env:ProgramData\nvm\nvm.exe"
+        if (Test-Path $nvmPath) {
+            $version = & $nvmPath version
+            return $version.Trim()
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get .NET version
+function Get-DOTNET9Version {
+    try {
+        $dotnetPaths = @(
+            "$HOME\.dotnet\dotnet.exe",
+            "C:\Program Files\dotnet\dotnet.exe"
+        )
+        
+        foreach ($path in $dotnetPaths) {
+            if (Test-Path $path) {
+                $version = & $path --version
+                if ($version -match "([\d.]+)") {
+                    return $matches[1]
+                }
+            }
+        }
+        
+        # Try to find dotnet in PATH
+        $dotnetCmd = Get-Command dotnet -ErrorAction SilentlyContinue
+        if ($dotnetCmd) {
+            $version = & $dotnetCmd.Source --version
+            if ($version -match "([\d.]+)") {
+                return $matches[1]
+            }
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get OpenSSH version
+function Get-OpenSSHVersion {
+    try {
+        $sshPath = "C:\Windows\System32\OpenSSH\ssh.exe"
+        if (Test-Path $sshPath) {
+            $version = & $sshPath -V 2>&1
+            if ($version -match "OpenSSH_([\d.]+)") {
+                return "OpenSSH_$($matches[1]) for Windows"
+            }
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get Vercel CLI version
+function Get-VercelCLIVersion {
+    try {
+        # Try to find vercel in PATH first
+        $vercelCmd = Get-Command vercel -ErrorAction SilentlyContinue
+        if ($vercelCmd) {
+            $version = & $vercelCmd.Source --version
+            if ($version -match "([\d.]+)") {
+                return $matches[1]
+            }
+        }
+        
+        # Check common pnpm/npm global locations
+        $vercelPaths = @(
+            "$env:APPDATA\pnpm\bin\vercel.cmd",
+            "$env:APPDATA\npm\vercel.cmd",
+            "$env:LOCALAPPDATA\pnpm\cache\vercel.cmd"
+        )
+        
+        foreach ($path in $vercelPaths) {
+            if (Test-Path $path) {
+                $version = & $path --version
+                if ($version -match "([\d.]+)") {
+                    return $matches[1]
+                }
+            }
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get Git Credential Manager version
+function Get-GitCredentialManagerVersion {
+    try {
+        $gcmPaths = @(
+            "$env:ProgramFiles\Git\mingw64\bin\git-credential-manager.exe",
+            "$env:ProgramFiles\Git\mingw64\bin\git-credential-manager-core.exe"
+        )
+        
+        foreach ($path in $gcmPaths) {
+            if (Test-Path $path) {
+                $version = & $path --version
+                if ($version -match "([\d.]+)") {
+                    return $matches[1]
+                }
+            }
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get GraphViz version
+function Get-GraphVizVersion {
+    try {
+        # Try to find gvpr in PATH first
+        $gvprCmd = Get-Command gvpr -ErrorAction SilentlyContinue
+        if ($gvprCmd) {
+            $version = & $gvprCmd.Source -V 2>&1
+            if ($version -match "gvpr\s+([\d.]+)") {
+                return $matches[1]
+            }
+        }
+        
+        $gvprPath = "C:\Program Files\Graphviz\bin\gvpr.exe"
+        if (Test-Path $gvprPath) {
+            $version = & $gvprPath -V 2>&1
+            if ($version -match "gvpr\s+([\d.]+)") {
+                return $matches[1]
+            }
+        }
+        
+        # Try alternative path
+        $gvprPath = "C:\Program Files (x86)\Graphviz\bin\gvpr.exe"
+        if (Test-Path $gvprPath) {
+            $version = & $gvprPath -V 2>&1
+            if ($version -match "gvpr\s+([\d.]+)") {
+                return $matches[1]
+            }
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get GPG version
+function Get-GPGVersion {
+    try {
+        # Try to find gpg in PATH first
+        $gpgCmd = Get-Command gpg -ErrorAction SilentlyContinue
+        if ($gpgCmd) {
+            $version = & $gpgCmd.Source --version
+            if ($version -match "gpg\s+\(.*\)\s+([\d.]+)") {
+                return $matches[1]
+            }
+        }
+        
+        $gpgPaths = @(
+            "C:\Program Files (x86)\GnuPG\bin\gpg.exe",
+            "C:\Program Files\GnuPG\bin\gpg.exe",
+            "$env:ProgramFiles\GnuPG\bin\gpg.exe"
+        )
+        
+        foreach ($path in $gpgPaths) {
+            if (Test-Path $path) {
+                $version = & $path --version
+                if ($version -match "gpg\s+\(.*\)\s+([\d.]+)") {
+                    return $matches[1]
+                }
+            }
+        }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+# Function to get ngrok version
+function Get-ngrokVersion {
+    try {
+        # Try to find ngrok in PATH first
+        $ngrokCmd = Get-Command ngrok -ErrorAction SilentlyContinue
+        if ($ngrokCmd) {
+            $version = & $ngrokCmd.Source --version
+            if ($version -match "ngrok\s+version\s+([\d.]+)") {
+                return $matches[1]
+            }
+        }
+        
+        $ngrokPaths = @(
+            "$env:ProgramData\chocolatey\bin\ngrok.exe",
+            "C:\Program Files\ngrok\ngrok.exe",
+            "$env:LOCALAPPDATA\ngrok\ngrok.exe"
+        )
+        
+        foreach ($path in $ngrokPaths) {
+            if (Test-Path $path) {
+                $version = & $path --version
+                if ($version -match "ngrok\s+version\s+([\d.]+)") {
+                    return $matches[1]
+                }
+            }
+        }
+        return $null
+    } catch {
+        return $null
     }
 }
