@@ -1,3 +1,5 @@
+# court_management/views.py
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
@@ -110,9 +112,16 @@ def customer_booking_history(request, customer_id):
     customer = get_object_or_404(Customer, pk=customer_id)
     bookings = Booking.objects.filter(customer=customer).order_by('-start_time')
     
+    # Calculate statistics
+    total_spent = sum(booking.fee for booking in bookings)
+    total_hours = sum(booking.duration_hours() for booking in bookings)
+    avg_duration = total_hours / bookings.count() if bookings.count() > 0 else 0
+    
     context = {
         'customer': customer,
         'bookings': bookings,
+        'total_spent': total_spent,
+        'avg_duration': avg_duration,
     }
     return render(request, 'court_management/customer_booking_history.html', context)
 
@@ -154,7 +163,15 @@ class CustomerDetailView(DetailView):
     model = Customer
     template_name = 'court_management/customer_detail.html'
     context_object_name = 'customer'
-
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Get recent bookings (last 5)
+        context['recent_bookings'] = Booking.objects.filter(
+            customer=self.object
+        ).order_by('-start_time')[:5]
+        return context
+    
 class CustomerCreateView(CreateView):
     model = Customer
     form_class = CustomerForm
@@ -202,7 +219,15 @@ class CourtDetailView(DetailView):
     model = Court
     template_name = 'court_management/court_detail.html'
     context_object_name = 'court'
-
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Get recent bookings (last 5)
+        context['recent_bookings'] = Booking.objects.filter(
+            court=self.object
+        ).order_by('-start_time')[:5]
+        return context
+    
 class CourtCreateView(CreateView):
     model = Court
     form_class = CourtForm
@@ -250,6 +275,14 @@ class EmployeeDetailView(DetailView):
     model = Employee
     template_name = 'court_management/employee_detail.html'
     context_object_name = 'employee'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Get recent time entries (last 5)
+        context['recent_time_entries'] = TimeEntry.objects.filter(
+            employee=self.object
+        ).order_by('-clock_in')[:5]
+        return context
 
 class EmployeeCreateView(CreateView):
     model = Employee

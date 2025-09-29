@@ -1,0 +1,32 @@
+{% extends 'court_management/base.html' %}
+
+{% block title %}Delete Employee - Badminton Court Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h4>Delete Employee</h4>
+            </div>
+            <div class="card-body">
+                <p>Are you sure you want to deactivate "{{ employee.name }}"?</p>
+                
+                {% if employee.timeentry_set.all %}
+                    <div class="alert alert-warning">
+                        This employee has {{ employee.timeentry_set.all|length }} time entry/entries. Deactivating this employee will prevent new time entries.
+                    </div>
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'employee-detail' employee.pk %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-danger">Deactivate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

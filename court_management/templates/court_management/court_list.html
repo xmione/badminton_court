@@ -1,0 +1,67 @@
+{% extends 'court_management/base.html' %}
+
+{% block title %}Courts - Badminton Court Management{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-10">
+        <h1>Courts</h1>
+    </div>
+    <div class="col-md-2 text-end">
+        <a href="{% url 'court-create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Court
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Hourly Rate</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for court in courts %}
+                        <tr>
+                            <td>{{ court.id }}</td>
+                            <td>{{ court.name }}</td>
+                            <td>${{ court.hourly_rate }}</td>
+                            <td>{{ court.description|truncatechars:50|default:"-" }}</td>
+                            <td>
+                                <span class="badge bg-{% if court.active %}success{% else %}secondary{% endif %}">
+                                    {% if court.active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'court-detail' court.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'court-update' court.pk %}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'court-delete' court.pk %}" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No courts found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

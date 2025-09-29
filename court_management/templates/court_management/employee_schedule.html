@@ -1,0 +1,208 @@
+{% extends 'court_management/base.html' %}
+
+{% block title %}Employee Schedule - Badminton Court Management{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-10">
+        <h1>{{ employee.name }}'s Schedule - {{ month_name }} {{ year }}</h1>
+    </div>
+    <div class="col-md-2 text-end">
+        <a href="{% url 'employee-detail' employee.pk %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Employee
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h5>Employee Information</h5>
+                <p>
+                    <strong>Name:</strong> {{ employee.name }}<br>
+                    <strong>Position:</strong> {{ employee.get_position_display }}<br>
+                    <strong>Hourly Rate:</strong> ${{ employee.hourly_rate }}
+                </p>
+            </div>
+            <div class="col-md-4">
+                <h5>Monthly Summary</h5>
+                <p>
+                    <strong>Total Hours:</strong> {{ total_hours|floatformat:1 }}<br>
+                    <strong>Total Pay:</strong> ${{ total_pay|floatformat:2 }}
+                </p>
+            </div>
+            <div class="col-md-4">
+                <h5>Navigation</h5>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'employee-schedule-month' employee.pk prev_year prev_month %}" class="btn btn-outline-primary">
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </a>
+                    <a href="{% url 'employee-schedule-month' employee.pk next_year next_month %}" class="btn btn-outline-primary">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h4>Calendar</h4>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered calendar">
+            <thead>
+                <tr>
+                    <th>Sun</th>
+                    <th>Mon</th>
+                    <th>Tue</th>
+                    <th>Wed</th>
+                    <th>Thu</th>
+                    <th>Fri</th>
+                    <th>Sat</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in cal %}
+                    <tr>
+                        {% for day in week %}
+                            <td class="{% if day == 0 %}bg-light{% else %}calendar-day{% endif %}">
+                                {% if day != 0 %}
+                                    <div class="calendar-day-number">{{ day }}</div>
+                                    
+                                    {% if day in schedule_dict %}
+                                        <div class="calendar-schedule">
+                                            <strong>Schedule:</strong>
+                                            {% for schedule in schedule_dict|lookup:day %}
+                                                <div class="small">
+                                                    {{ schedule.start_time|date:"H:i" }} - {{ schedule.end_time|date:"H:i" }}
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if day in time_entry_dict %}
+                                        <div class="calendar-time-entry">
+                                            <strong>Time Entry:</strong>
+                                            {% for entry in time_entry_dict|lookup:day %}
+                                                <div class="small">
+                                                    {% if entry.clock_out %}
+                                                        {{ entry.clock_in|date:"H:i" }} - {{ entry.clock_out|date:"H:i" }}
+                                                    {% else %}
+                                                        Clocked in: {{ entry.clock_in|date:"H:i" }}
+                                                    {% endif %}
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4>Work Schedule</h4>
+            </div>
+            <div class="card-body">
+                {% if schedules %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for schedule in schedules %}
+                                    <tr>
+                                        <td>{{ schedule.date|date:"Y-m-d" }}</td>
+                                        <td>{{ schedule.start_time|date:"H:i" }}</td>
+                                        <td>{{ schedule.end_time|date:"H:i" }}</td>
+                                        <td>{{ schedule.notes|default:"-" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>No work schedule found for this month.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4>Time Entries</h4>
+            </div>
+            <div class="card-body">
+                {% if time_entries %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Clock In</th>
+                                    <th>Clock Out</th>
+                                    <th>Duration</th>
+                                    <th>Pay</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in time_entries %}
+                                    <tr>
+                                        <td>{{ entry.clock_in|date:"Y-m-d H:i" }}</td>
+                                        <td>{{ entry.clock_out|date:"Y-m-d H:i"|default:"-" }}</td>
+                                        <td>{{ entry.duration_hours|floatformat:1 }} hours</td>
+                                        <td>${{ entry.calculate_pay|floatformat:2 }}</td>
+                                        <td>{{ entry.notes|truncatechars:30|default:"-" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>No time entries found for this month.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.calendar {
+    table-layout: fixed;
+}
+.calendar-day {
+    height: 100px;
+    vertical-align: top;
+}
+.calendar-day-number {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.calendar-schedule {
+    font-size: 0.8em;
+    margin-bottom: 5px;
+}
+.calendar-time-entry {
+    font-size: 0.8em;
+}
+</style>
+{% endblock %}

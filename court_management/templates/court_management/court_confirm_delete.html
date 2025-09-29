@@ -1,0 +1,25 @@
+{% extends 'court_management/base.html' %}
+
+{% block title %}Delete Court - Badminton Court Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h4>Delete Court</h4>
+            </div>
+            <div class="card-body">
+                <p>Are you sure you want to deactivate "{{ court.name }}"?</p>
+                
+                {% if court.booking_set.all %}
+                    <div class="alert alert-warning">
+                        This court has {{ court.booking_set.all|length }} booking(s). Deactivating this court will prevent new bookings.
+                    </div>
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'court-detail' court.pk %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn

@@ -1,0 +1,128 @@
+{% extends 'court_management/base.html' %}
+
+{% block title %}Customer Details - Badminton Court Management{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-10">
+        <h1>Customer Details</h1>
+    </div>
+    <div class="col-md-2 text-end">
+        <a href="{% url 'customer-list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h4>Customer Information</h4>
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 150px;">ID:</th>
+                        <td>{{ customer.id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Name:</th>
+                        <td>{{ customer.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone:</th>
+                        <td>{{ customer.phone }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ customer.email|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Address:</th>
+                        <td>{{ customer.address|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Member Since:</th>
+                        <td>{{ customer.membership_date|date:"Y-m-d" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            <span class="badge bg-{% if customer.active %}success{% else %}secondary{% endif %}">
+                                {% if customer.active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="col-md-6">
+                <h4>Actions</h4>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'customer-update' customer.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Edit Customer
+                    </a>
+                    <a href="{% url 'customer-delete' customer.pk %}" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Delete Customer
+                    </a>
+                    <a href="{% url 'customer-booking-history' customer.pk %}" class="btn btn-info">
+                        <i class="bi bi-calendar-history"></i> View Booking History
+                    </a>
+                    <a href="{% url 'booking-create' %}?customer={{ customer.pk }}" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> New Booking
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if recent_bookings %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Recent Bookings</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Court</th>
+                            <th>Duration</th>
+                            <th>Fee</th>
+                            <th>Status</th>
+                            <th>Payment</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in recent_bookings %}
+                            <tr>
+                                <td>{{ booking.start_time|date:"Y-m-d H:i" }}</td>
+                                <td>{{ booking.court.name }}</td>
+                                <td>{{ booking.duration_hours|floatformat:1 }} hours</td>
+                                <td>${{ booking.fee }}</td>
+                                <td>
+                                    <span class="badge bg-{% if booking.status == 'confirmed' %}primary{% elif booking.status == 'in_progress' %}success{% elif booking.status == 'completed' %}secondary{% else %}danger{% endif %}">
+                                        {{ booking.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if booking.payment_status == 'paid' %}success{% elif booking.payment_status == 'pending' %}warning{% else %}danger{% endif %}">
+                                        {{ booking.payment_status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'booking-detail' booking.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
