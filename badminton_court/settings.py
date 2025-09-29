@@ -25,7 +25,12 @@ SECRET_KEY = 'django-insecure-your-secret-key-here'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# settings.py
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'aeropace-portal.loca.lt',  # Add your tunnel URL here
+]
 
 # Application definition
 
