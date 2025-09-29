@@ -176,3 +176,4 @@ ehthumbs.db
 Thumbs.db
 *.exe
 setup_log.txt
+versions.json.backup*

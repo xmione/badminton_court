@@ -9,6 +9,7 @@
     - Docker Desktop
     - Python interpreter
     - Python packages
+    - All other tools in the configuration
 
     The script creates a backup of the original JSON file before making changes.
     Missing Python packages are removed from the JSON file.
@@ -17,24 +18,22 @@
     Specifies the path to the versions.json configuration file.
     Default: "..\versions.json" (root folder relative to script location)
 
-.PARAMETER Backup
-    Creates a timestamped backup of the original JSON file before updating.
-    Default: $true
+.PARAMETER NoBackup
+    Skips creating a backup of the original JSON file before updating.
 
-.PARAMETER RemoveMissingPackages
-    Removes Python packages from the JSON file if they are not installed.
-    Default: $true
+.PARAMETER KeepMissingPackages
+    Keeps Python packages in the JSON file even if they are not installed.
 
 .EXAMPLE
     .\Scripts\Update-JsonFromSetup.ps1
-    Updates the default versions.json file in the root folder with current system versions
+    Updates the default versions.json file in the root folder with current system versions (creates backup, removes missing packages)
 
 .EXAMPLE
-    .\Scripts\Update-JsonFromSetup.ps1 -JsonPath "C:\configs\my_versions.json" -Backup:$false
+    .\Scripts\Update-JsonFromSetup.ps1 -JsonPath "C:\configs\my_versions.json" -NoBackup
     Updates a custom JSON file without creating a backup
 
 .EXAMPLE
-    .\Scripts\Update-JsonFromSetup.ps1 -RemoveMissingPackages:$false
+    .\Scripts\Update-JsonFromSetup.ps1 -KeepMissingPackages
     Updates versions.json but keeps missing packages in the file
 
 .NOTES
@@ -52,180 +51,200 @@
 #>
 param (
     [string]$JsonPath = "..\versions.json",
-    [switch]$Backup = $true,
-    [switch]$RemoveMissingPackages = $true
+    [switch]$NoBackup,
+    [switch]$KeepMissingPackages
 )
 
 # Get the script directory
  $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
+# Import the InstallTool module from the same directory
+. "$PSScriptRoot\InstallTool.ps1"
+
+# Additional version detection functions for all tools
+
+function Get-ChocolateyVersion {
+    $chocoPath = "C:\ProgramData\chocolatey\bin\choco.exe"
+    if (Test-Path $chocoPath) {
+        try {
+            $versionInfo = & $chocoPath --version
+            if ($versionInfo -match "(\d+\.\d+\.\d+)") {
+                return $matches[1]
+            }
+        } catch {
+            # Fallback to file version
+            $fileInfo = Get-Item $chocoPath
+            return $fileInfo.VersionInfo.ProductVersion
+        }
+    }
+    return $null
+}
+
+function Get-MinGWVersion {
+    $gccPath = "C:\ProgramData\mingw64\mingw64\bin\gcc.exe"
+    if (Test-Path $gccPath) {
+        try {
+            $versionInfo = & $gccPath --version
+            if ($versionInfo -match "gcc.*?(\d+\.\d+\.\d+)") {
+                return $matches[1]
+            }
+        } catch {}
+    }
+    return $null
+}
+
+function Get-NodeJSVersion {
+    $nodePath = "C:\Program Files\nodejs\node.exe"
+    if (Test-Path $nodePath) {
+        try {
+            $versionInfo = & $nodePath --version
+            if ($versionInfo -match "v(\d+\.\d+\.\d+)") {
+                return $matches[1]
+            }
+        } catch {}
+    }
+    return $null
+}
+
+function Get-PnpmVersion {
+    $pnpmPath = "C:\ProgramData\chocolatey\bin\pnpm.exe"
+    if (Test-Path $pnpmPath) {
+        try {
+            $versionInfo = & $pnpmPath --version
+            if ($versionInfo -match "(\d+\.\d+\.\d+)") {
+                return $matches[1]
+            }
+        } catch {}
+    }
+    return $null
+}
+
+function Get-GitVersion {
+    $gitPath = "C:\Program Files\Git\cmd\git.exe"
+    if (Test-Path $gitPath) {
+        try {
+            $versionInfo = & $gitPath --version
+            if ($versionInfo -match "git version (\d+\.\d+\.\d+)") {
+                return $matches[1]
+            }
+        } catch {}
+    }
+    return $null
+}
+
+function Get-GitHubCLIVersion {
+    $ghPath = "C:\Program Files\GitHub CLI\gh.exe"
+    if (Test-Path $ghPath) {
+        try {
+            $versionInfo = & $ghPath --version
+            if ($versionInfo -match "gh version (\d+\.\d+\.\d+)") {
+                return $matches[1]
+            }
+        } catch {}
+    }
+    return $null
+}
+
+function Get-NVMVersion {
+    $nvmPath = "$env:LOCALAPPDATA\nvm\nvm.exe"
+    if (Test-Path $nvmPath) {
+        try {
+            $fileInfo = Get-Item $nvmPath
+            return $fileInfo.VersionInfo.ProductVersion
+        } catch {}
+    }
+    return $null
+}
+
+function Get-DotNetVersion {
+    $dotnetPath = "$HOME\.dotnet\dotnet.exe"
+    if (Test-Path $dotnetPath) {
+        try {
+            $versionInfo = & $dotnetPath --version
+            return $versionInfo.Trim()
+        } catch {}
+    }
+    return $null
+}
+
+function Get-OpenSSHVersion {
+    $sshPath = "C:\Windows\System32\OpenSSH\ssh.exe"
+    if (Test-Path $sshPath) {
+        try {
+            $fileInfo = Get-Item $sshPath
+            return $fileInfo.VersionInfo.ProductVersion
+        } catch {}
+    }
+    return $null
+}
+
+function Get-VercelVersion {
+    try {
+        $vercelCmd = Get-Command vercel -ErrorAction SilentlyContinue
+        if ($vercelCmd) {
+            $versionInfo = & $vercelCmd.Source --version
+            if ($versionInfo -match "(\d+\.\d+\.\d+)") {
+                return $matches[1]
+            }
+        }
+    } catch {}
+    return $null
+}
+
+function Get-GitCredentialManagerVersion {
+    $gcmPath = "$env:ProgramFiles\Git\mingw64\bin\git-credential-manager.exe"
+    if (Test-Path $gcmPath) {
+        try {
+            $fileInfo = Get-Item $gcmPath
+            return $fileInfo.VersionInfo.ProductVersion
+        } catch {}
+    }
+    return $null
+}
+
+function Get-GraphVizVersion {
+    $gvprPath = "C:\Program Files\Graphviz\bin\gvpr.exe"
+    if (Test-Path $gvprPath) {
+        try {
+            $fileInfo = Get-Item $gvprPath
+            return $fileInfo.VersionInfo.ProductVersion
+        } catch {}
+    }
+    return $null
+}
+
+function Get-GPGVersion {
+    try {
+        $gpgCmd = Get-Command gpg -ErrorAction SilentlyContinue
+        if ($gpgCmd) {
+            $versionInfo = & $gpgCmd.Source --version
+            if ($versionInfo -match "gpg.*?(\d+\.\d+\.\d+)") {
+                return $matches[1]
+            }
+        }
+    } catch {}
+    return $null
+}
+
+function Get-NgrokVersion {
+    $ngrokPath = "$env:ProgramData\chocolatey\bin\ngrok.exe"
+    if (Test-Path $ngrokPath) {
+        try {
+            $versionInfo = & $ngrokPath --version
+            if ($versionInfo -match "ngrok version (\d+\.\d+\.\d+)") {
+                return $matches[1]
+            }
+        } catch {
+            $fileInfo = Get-Item $ngrokPath
+            return $fileInfo.VersionInfo.ProductVersion
+        }
+    }
+    return $null
+}
+
 # If JsonPath is relative, make it relative to the script directory
 if (-not ([System.IO.Path]::IsPathRooted($JsonPath))) {
     $JsonPath = Join-Path -Path $ScriptDir -ChildPath $JsonPath
-}
-
-# Function to get Visual Studio Build Tools version
-function Get-VisualStudioBuildToolsVersion {
-    # Try to find vswhere.exe
-    $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-    if (-not (Test-Path $vswherePath)) {
-        # Try in the current directory
-        $vswherePath = Get-Command vswhere -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
-        if (-not $vswherePath) {
-            Write-Warning "vswhere.exe not found. Cannot determine Visual Studio Build Tools version."
-            return $null
-        }
-    }
-    
-    # Find Visual Studio Build Tools installations
-    $vsArgs = @(
-        "-latest",
-        "-products", "Microsoft.VisualStudio.Product.BuildTools",
-        "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-        "-property", "installationVersion",
-        "-format", "json"
-    )
-    
-    $vsInfo = & $vswherePath $vsArgs | ConvertFrom-Json
-    
-    if ($vsInfo) {
-        $version = $vsInfo.installationVersion
-        
-        # Get the installation path
-        $pathArgs = @(
-            "-latest",
-            "-products", "Microsoft.VisualStudio.Product.BuildTools",
-            "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-            "-property", "installationPath",
-            "-format", "json"
-        )
-        $pathInfo = & $vswherePath $pathArgs | ConvertFrom-Json
-        $installationPath = $pathInfo.installationPath
-        
-        # Get the list of components using the registry
-        $components = @()
-        $instanceId = $vsInfo.instanceId
-        $registryPath = "HKLM:\SOFTWARE\Microsoft\VisualStudio\SxS\VS7"
-        if (Test-Path $registryPath) {
-            $instances = Get-Item $registryPath | Get-ChildItem
-            foreach ($instance in $instances) {
-                if ($instance.Name -match $instanceId) {
-                    $componentsPath = Join-Path $instance.PSPath "Components"
-                    if (Test-Path $componentsPath) {
-                        $components = Get-Item $componentsPath | Get-ChildItem | Select-Object -ExpandProperty Name
-                    }
-                    break
-                }
-            }
-        }
-        
-        return @{
-            version = $version
-            components = $components
-        }
-    }
-    
-    return $null
-}
-
-# Function to get Windows SDK version
-function Get-WindowsSDKVersion {
-    # Check registry for installed SDKs
-    $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -ErrorAction SilentlyContinue
-    if (-not $installedSDKs) {
-        # Try 32-bit registry view
-        $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows Kits\Installed Roots" -ErrorAction SilentlyContinue
-    }
-    
-    if (-not $installedSDKs) {
-        # Try alternative registry path
-        $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Kits" -ErrorAction SilentlyContinue
-    }
-    
-    if (-not $installedSDKs) {
-        return $null
-    }
-    
-    foreach ($sdk in $installedSDKs) {
-        $sdkPath = $sdk.GetValue("KitsRoot10")
-        if (-not $sdkPath) {
-            $sdkPath = $sdk.GetValue("InstallationFolder")
-        }
-        
-        if ($sdkPath) {
-            $sdkVersionPath = Join-Path $sdkPath "Include"
-            if (Test-Path $sdkVersionPath) {
-                $versions = Get-ChildItem -Path $sdkVersionPath -Directory | Select-Object -ExpandProperty Name
-                $latestVersion = $versions | Sort-Object -Descending | Select-Object -First 1
-                return @{
-                    version = $latestVersion
-                    display_name = "Windows 10 SDK ($($latestVersion.Split('.')[2..3] -join '.'))"
-                }
-            }
-        }
-    }
-    return $null
-}
-
-# Function to get Docker Desktop version
-function Get-DockerDesktopVersion {
-    $dockerPath = "${env:ProgramFiles}\Docker\Docker\Docker Desktop.exe"
-    if (-not (Test-Path $dockerPath)) {
-        # Try AppData location
-        $dockerPath = "$env:LOCALAPPDATA\Docker\Docker Desktop.exe"
-    }
-    
-    if (-not (Test-Path $dockerPath)) {
-        return $null
-    }
-    
-    $version = (Get-Item $dockerPath).VersionInfo.ProductVersion
-    return @{
-        version = $version
-        expected_version = $version
-    }
-}
-
-# Function to get Python version
-function Get-PythonVersion {
-    $pythonExe = Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
-    if (-not $pythonExe) {
-        return $null
-    }
-    
-    $version = & $pythonExe --version 2>&1
-    if ($version -match "Python (\d+\.\d+\.\d+)") {
-        $versionNumber = $matches[1]
-        $installerUrl = "https://www.python.org/ftp/python/$versionNumber/python-$versionNumber-amd64.exe"
-        return @{
-            version = $versionNumber
-            installer_url = $installerUrl
-        }
-    }
-    return $null
-}
-
-# Function to get Python packages versions
-function Get-PythonPackagesVersions {
-    $pythonExe = Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
-    if (-not $pythonExe) {
-        return @{}
-    }
-    
-    $installedPackages = & $pythonExe -m pip list --format=json | ConvertFrom-Json
-    $packages = @{}
-    
-    foreach ($package in $installedPackages) {
-        # Store both original name and lowercase for case-insensitive matching
-        $packages[$package.name] = $package.version
-        $packages[$package.name.ToLower()] = $package.version
-        
-        # Handle common name variations (e.g., package-name vs package_name)
-        $normalized = $package.name.ToLower().Replace('_', '-')
-        $packages[$normalized] = $package.version
-    }
-    
-    return $packages
 }
 
 # Main script
@@ -233,8 +252,8 @@ try {
     # Resolve the JSON path to ensure it's absolute
     $JsonPath = Resolve-Path $JsonPath -ErrorAction Stop
     
-    # Create backup if requested
-    if ($Backup) {
+    # Create backup if not skipped
+    if (-not $NoBackup) {
         $backupPath = "$JsonPath.backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
         Copy-Item -Path $JsonPath -Destination $backupPath
         Write-Host "Created backup at $backupPath" -ForegroundColor Yellow
@@ -243,113 +262,267 @@ try {
     # Read existing JSON file
     $jsonContent = Get-Content -Path $JsonPath -Raw | ConvertFrom-Json
     
-    # Update Visual Studio Build Tools
-    $vsInfo = Get-VisualStudioBuildToolsVersion
-    if ($vsInfo) {
-        $jsonContent.system_tools.visual_studio_build_tools.version = $vsInfo.version
-        if ($vsInfo.components.Count -gt 0) {
-            $jsonContent.system_tools.visual_studio_build_tools.components = $vsInfo.components
-        }
-        Write-Host "Updated Visual Studio Build Tools version to $($vsInfo.version)" -ForegroundColor Green
-    } else {
-        Write-Warning "Visual Studio Build Tools not found. Version not updated."
-    }
-    
-    # Update Windows SDK
-    $sdkInfo = Get-WindowsSDKVersion
-    if ($sdkInfo) {
-        $jsonContent.system_tools.windows_sdk.version = $sdkInfo.version
-        $jsonContent.system_tools.windows_sdk.display_name = $sdkInfo.display_name
-        Write-Host "Updated Windows SDK version to $($sdkInfo.version)" -ForegroundColor Green
-    } else {
-        Write-Warning "Windows SDK not found. Version not updated."
-    }
-    
-    # Update Docker Desktop
-    $dockerInfo = Get-DockerDesktopVersion
-    if ($dockerInfo) {
-        $jsonContent.system_tools.docker_desktop.version = $dockerInfo.version
-        $jsonContent.system_tools.docker_desktop.expected_version = $dockerInfo.expected_version
-        Write-Host "Updated Docker Desktop version to $($dockerInfo.version)" -ForegroundColor Green
-    } else {
-        Write-Warning "Docker Desktop not found. Version not updated."
-    }
-    
-    # Update Python
-    $pythonInfo = Get-PythonVersion
-    if ($pythonInfo) {
-        $jsonContent.python.version = $pythonInfo.version
-        $jsonContent.python.installer_url = $pythonInfo.installer_url
-        Write-Host "Updated Python version to $($pythonInfo.version)" -ForegroundColor Green
-    } else {
-        Write-Warning "Python not found. Version not updated."
-    }
-    
-    # Update Python packages
-    $packagesInfo = Get-PythonPackagesVersions
-    if ($packagesInfo.Count -gt 0) {
-        $missingPackages = @()
-        $packagesToRemove = @()
+    # Update each tool in the system_tools array
+    foreach ($tool in $jsonContent.system_tools) {
+        $appName = $tool.appName
+        $version = $null
         
-        # Create a new ordered dictionary for packages
-        $newPackages = [ordered]@{}
-        
-        foreach ($package in $jsonContent.python_packages.PSObject.Properties.Name) {
-            # Try exact match first
-            if ($packagesInfo.ContainsKey($package)) {
-                $newPackages[$package] = $packagesInfo[$package]
-                Write-Host "Updated Python package $package to $($packagesInfo[$package])" -ForegroundColor Green
-                continue
-            }
-            
-            # Try case-insensitive match
-            $lowercasePackage = $package.ToLower()
-            if ($packagesInfo.ContainsKey($lowercasePackage)) {
-                $newPackages[$package] = $packagesInfo[$lowercasePackage]
-                Write-Host "Updated Python package $package to $($packagesInfo[$lowercasePackage])" -ForegroundColor Green
-                continue
-            }
-            
-            # Try normalized name (underscores to hyphens)
-            $normalizedPackage = $package.ToLower().Replace('_', '-')
-            if ($packagesInfo.ContainsKey($normalizedPackage)) {
-                $newPackages[$package] = $packagesInfo[$normalizedPackage]
-                Write-Host "Updated Python package $package (normalized as $normalizedPackage) to $($packagesInfo[$normalizedPackage])" -ForegroundColor Green
-                continue
-            }
-            
-            # Package not found
-            $missingPackages += $package
-            if ($RemoveMissingPackages) {
-                $packagesToRemove += $package
-                Write-Host "Removing missing Python package $package from JSON file" -ForegroundColor Yellow
-            } else {
-                Write-Warning "Python package $package not found. Version not updated."
-            }
-        }
-        
-        # Update the python_packages object
-        if ($RemoveMissingPackages -and $packagesToRemove.Count -gt 0) {
-            $jsonContent.python_packages = $newPackages
-            Write-Host "Removed $($packagesToRemove.Count) missing packages from JSON file" -ForegroundColor Yellow
-        }
-        
-        if ($missingPackages.Count -gt 0) {
-            Write-Host "`nMissing packages: $($missingPackages -join ', ')" -ForegroundColor Yellow
-            if (-not $RemoveMissingPackages) {
-                Write-Host "You may need to install these packages manually:" -ForegroundColor Yellow
-                foreach ($pkg in $missingPackages) {
-                    Write-Host "  pip install $pkg" -ForegroundColor Yellow
+        switch ($appName) {
+            "Chocolatey" {
+                $version = Get-ChocolateyVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated Chocolatey version to $version" -ForegroundColor Green
                 }
             }
+            
+            "Visual Studio Build Tools" {
+                $vsInfo = Get-VisualStudioBuildToolsVersion
+                if ($vsInfo) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $vsInfo.version
+                    } else {
+                        $tool.version = $vsInfo.version
+                    }
+                    
+                    if (-not $tool.PSObject.Properties.Name.Contains("components")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "components" -Value $vsInfo.components
+                    } else {
+                        $tool.components = $vsInfo.components
+                    }
+                    
+                    Write-Host "Updated Visual Studio Build Tools version to $($vsInfo.version)" -ForegroundColor Green
+                }
+            }
+            
+            "Windows SDK" {
+                $sdkInfo = Get-WindowsSDKVersion
+                if ($sdkInfo) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $sdkInfo.version
+                    } else {
+                        $tool.version = $sdkInfo.version
+                    }
+                    
+                    if (-not $tool.PSObject.Properties.Name.Contains("display_name")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "display_name" -Value $sdkInfo.display_name
+                    } else {
+                        $tool.display_name = $sdkInfo.display_name
+                    }
+                    
+                    Write-Host "Updated Windows SDK version to $($sdkInfo.version)" -ForegroundColor Green
+                }
+            }
+            
+            "Docker Desktop" {
+                $dockerInfo = Get-DockerDesktopVersion
+                if ($dockerInfo) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $dockerInfo.version
+                    } else {
+                        $tool.version = $dockerInfo.version
+                    }
+                    
+                    if (-not $tool.PSObject.Properties.Name.Contains("expected_version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "expected_version" -Value $dockerInfo.expected_version
+                    } else {
+                        $tool.expected_version = $dockerInfo.expected_version
+                    }
+                    
+                    Write-Host "Updated Docker Desktop version to $($dockerInfo.version)" -ForegroundColor Green
+                }
+            }
+            
+            "MinGW" {
+                $version = Get-MinGWVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated MinGW version to $version" -ForegroundColor Green
+                }
+            }
+            
+            "nodejs" {
+                $version = Get-NodeJSVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated Node.js version to $version" -ForegroundColor Green
+                }
+            }
+            
+            "pnpm" {
+                $version = Get-PnpmVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated pnpm version to $version" -ForegroundColor Green
+                }
+            }
+            
+            "git" {
+                $version = Get-GitVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated Git version to $version" -ForegroundColor Green
+                }
+            }
+            
+            "gh" {
+                $version = Get-GitHubCLIVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated GitHub CLI version to $version" -ForegroundColor Green
+                }
+            }
+            
+            "nvm" {
+                $version = Get-NVMVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated NVM version to $version" -ForegroundColor Green
+                }
+            }
+            
+            ".NET 9.0.100" {
+                $version = Get-DotNetVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated .NET version to $version" -ForegroundColor Green
+                }
+            }
+            
+            "OpenSSH" {
+                $version = Get-OpenSSHVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated OpenSSH version to $version" -ForegroundColor Green
+                }
+            }
+            
+            "Vercel CLI" {
+                $version = Get-VercelVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated Vercel CLI version to $version" -ForegroundColor Green
+                }
+            }
+            
+            "Git Credential Manager" {
+                $version = Get-GitCredentialManagerVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated Git Credential Manager version to $version" -ForegroundColor Green
+                }
+            }
+            
+            "GraphViz" {
+                $version = Get-GraphVizVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated GraphViz version to $version" -ForegroundColor Green
+                }
+            }
+            
+            "GPG" {
+                $version = Get-GPGVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated GPG version to $version" -ForegroundColor Green
+                }
+            }
+            
+            "Python" {
+                $pythonInfo = Get-PythonVersion
+                if ($pythonInfo) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $pythonInfo.version
+                    } else {
+                        $tool.version = $pythonInfo.version
+                    }
+                    
+                    if (-not $tool.PSObject.Properties.Name.Contains("installer_url")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "installer_url" -Value $pythonInfo.installer_url
+                    } else {
+                        $tool.installer_url = $pythonInfo.installer_url
+                    }
+                    
+                    Write-Host "Updated Python version to $($pythonInfo.version)" -ForegroundColor Green
+                }
+            }
+            
+            "ngrok" {
+                $version = Get-NgrokVersion
+                if ($version) {
+                    if (-not $tool.PSObject.Properties.Name.Contains("version")) {
+                        $tool | Add-Member -MemberType NoteProperty -Name "version" -Value $version
+                    } else {
+                        $tool.version = $version
+                    }
+                    Write-Host "Updated ngrok version to $version" -ForegroundColor Green
+                }
+            }
+            
+            default {
+                Write-Warning "No version detection function available for: $appName" -ForegroundColor Yellow
+            }
         }
-    } else {
-        Write-Warning "Python packages not found. Versions not updated."
     }
     
     # Save updated JSON
     $jsonContent | ConvertTo-Json -Depth 10 | Set-Content -Path $JsonPath
     Write-Host "`nJSON file updated successfully!" -ForegroundColor Green
+    Write-Host "All tools now have version information recorded." -ForegroundColor Green
+    
 } catch {
     Write-Error "Error updating JSON file: $_"
     exit 1

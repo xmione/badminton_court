@@ -1,4 +1,3 @@
-# InstallTool.ps1
 <#
 .SYNOPSIS
     Common installation functions for development environment setup.
@@ -40,6 +39,17 @@ function Test-Chocolatey {
             throw
         }
     }
+}
+
+# Function to check if winget exists, if not, provide guidance
+function Test-Winget {
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Message "winget (Windows Package Manager) not found." -Level "WARNING"
+        Write-Message "You can install it from: https://learn.microsoft.com/en-us/windows/package-manager/winget/" -Level "INFO"
+        Write-Message "Or run: Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe" -Level "INFO"
+        return $false
+    }
+    return $true
 }
 
 # Function to download a file with progress tracking
@@ -109,6 +119,15 @@ MaxRetries: $MaxRetries
             try {
                 if ($installCommand) {
                     Write-Message "Running custom install command for $appName (attempt $($retryCount + 1))..." -Level "INFO"
+                    
+                    # Check if the install command contains winget and if winget is available
+                    $commandString = $installCommand.ToString()
+                    if ($commandString -match "winget" -and -not (Test-Winget)) {
+                        Write-Message "winget not available, skipping installation for $appName" -Level "WARNING"
+                        $installFailed = $true
+                        break
+                    }
+                    
                     & $installCommand
                 } else {
                     Write-Message "Installing $appName via Chocolatey (attempt $($retryCount + 1))..." -Level "INFO"
@@ -195,3 +214,186 @@ MaxRetries: $MaxRetries
     return $isInstalled
 }
 
+# Function to get Visual Studio Build Tools version
+function Get-VisualStudioBuildToolsVersion {
+    # Try to find vswhere.exe
+    $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (-not (Test-Path $vswherePath)) {
+        # Try in the current directory
+        $vswherePath = Get-Command vswhere -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+        if (-not $vswherePath) {
+            Write-Warning "vswhere.exe not found. Cannot determine Visual Studio Build Tools version."
+            return $null
+        }
+    }
+    
+    # Find Visual Studio Build Tools installations
+    $vsArgs = @(
+        "-latest",
+        "-products", "Microsoft.VisualStudio.Product.BuildTools",
+        "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+        "-property", "installationVersion",
+        "-format", "json"
+    )
+    
+    $vsInfo = & $vswherePath $vsArgs | ConvertFrom-Json
+    
+    if ($vsInfo) {
+        $version = $vsInfo.installationVersion
+        
+        # Get the list of components using the registry
+        $components = @()
+        $instanceId = $vsInfo.instanceId
+        $registryPath = "HKLM:\SOFTWARE\Microsoft\VisualStudio\SxS\VS7"
+        if (Test-Path $registryPath) {
+            $instances = Get-Item $registryPath | Get-ChildItem
+            foreach ($instance in $instances) {
+                if ($instance.Name -match $instanceId) {
+                    $componentsPath = Join-Path $instance.PSPath "Components"
+                    if (Test-Path $componentsPath) {
+                        $components = Get-Item $componentsPath | Get-ChildItem | Select-Object -ExpandProperty Name
+                    }
+                    break
+                }
+            }
+        }
+        
+        return @{
+            version = $version
+            components = $components
+        }
+    }
+    
+    return $null
+}
+
+# Function to get Windows SDK version
+function Get-WindowsSDKVersion {
+    # Check registry for installed SDKs
+    $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots" -ErrorAction SilentlyContinue
+    if (-not $installedSDKs) {
+        # Try 32-bit registry view
+        $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows Kits\Installed Roots" -ErrorAction SilentlyContinue
+    }
+    
+    if (-not $installedSDKs) {
+        # Try alternative registry path
+        $installedSDKs = Get-ChildItem -Path "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Kits" -ErrorAction SilentlyContinue
+    }
+    
+    if (-not $installedSDKs) {
+        return $null
+    }
+    
+    foreach ($sdk in $installedSDKs) {
+        $sdkPath = $sdk.GetValue("KitsRoot10")
+        if (-not $sdkPath) {
+            $sdkPath = $sdk.GetValue("InstallationFolder")
+        }
+        
+        if ($sdkPath) {
+            $sdkVersionPath = Join-Path $sdkPath "Include"
+            if (Test-Path $sdkVersionPath) {
+                $versions = Get-ChildItem -Path $sdkVersionPath -Directory | Select-Object -ExpandProperty Name
+                $latestVersion = $versions | Sort-Object -Descending | Select-Object -First 1
+                return @{
+                    version = $latestVersion
+                    display_name = "Windows 10 SDK ($($latestVersion.Split('.')[2..3] -join '.'))"
+                }
+            }
+        }
+    }
+    return $null
+}
+
+# Function to get Docker Desktop version
+function Get-DockerDesktopVersion {
+    $dockerPath = "${env:ProgramFiles}\Docker\Docker\Docker Desktop.exe"
+    if (-not (Test-Path $dockerPath)) {
+        # Try AppData location
+        $dockerPath = "$env:LOCALAPPDATA\Docker\Docker Desktop.exe"
+    }
+    
+    if (-not (Test-Path $dockerPath)) {
+        return $null
+    }
+    
+    $version = (Get-Item $dockerPath).VersionInfo.ProductVersion
+    return @{
+        version = $version
+        expected_version = $version
+    }
+}
+
+# Function to get Python version
+function Get-PythonVersion {
+    $pythonExe = Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+    if (-not $pythonExe) {
+        return $null
+    }
+    
+    $version = & $pythonExe --version 2>&1
+    if ($version -match "Python (\d+\.\d+\.\d+)") {
+        $versionNumber = $matches[1]
+        $installerUrl = "https://www.python.org/ftp/python/$versionNumber/python-$versionNumber-amd64.exe"
+        return @{
+            version = $versionNumber
+            installer_url = $installerUrl
+        }
+    }
+    return $null
+}
+
+# Function to get Python packages versions
+function Get-PythonPackagesVersions {
+    $pythonExe = Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+    if (-not $pythonExe) {
+        return @{}
+    }
+    
+    $installedPackages = & $pythonExe -m pip list --format=json | ConvertFrom-Json
+    $packages = @{}
+    
+    foreach ($package in $installedPackages) {
+        # Store both original name and lowercase for case-insensitive matching
+        $packages[$package.name] = $package.version
+        $packages[$package.name.ToLower()] = $package.version
+        
+        # Handle common name variations (e.g., package-name vs package_name)
+        $normalized = $package.name.ToLower().Replace('_', '-')
+        $packages[$normalized] = $package.version
+    }
+    
+    return $packages
+}
+
+# Function to check and install Python packages from requirements.txt
+function Update-PythonPackagesFromRequirements {
+    param (
+        [string]$requirementsPath
+    )
+    
+    Write-Host "Checking Python packages from requirements.txt..." -ForegroundColor Cyan
+    
+    # Check if requirements.txt exists
+    if (-not (Test-Path $requirementsPath)) {
+        Write-Warning "requirements.txt not found at $requirementsPath. Skipping package updates."
+        return
+    }
+    
+    # Find Python executable
+    $pythonExe = Get-Command python -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+    if (-not $pythonExe) {
+        Write-Warning "Python not found in PATH. Skipping package updates."
+        return
+    }
+    
+    # Install/upgrade packages from requirements.txt
+    try {
+        Write-Host "Installing/upgrading Python packages from requirements.txt..." -ForegroundColor Yellow
+        & $pythonExe -m pip install -r $requirementsPath --upgrade
+        Write-Host "Python packages updated successfully from requirements.txt" -ForegroundColor Green
+    } catch {
+        Write-Warning "Failed to update Python packages from requirements.txt: $_"
+    }
+}

@@ -1,181 +1,197 @@
 {
-  "system_tools": [
-    {
-      "appName": "Chocolatey",
-      "installCommand": "choco install chocolatey -y",
-      "checkCommand": "Test-Path \"C:\\ProgramData\\chocolatey\\bin\\choco.exe\"",
-      "envPath": "C:\\ProgramData\\chocolatey\\bin",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": true,
-      "maxRetries": 1
-    },
-    {
-      "appName": "Visual Studio Build Tools",
-      "installCommand": "$vsOverride = $versions.system_tools.visual_studio_build_tools.components | ForEach-Object { \"--add $_\" }; $vsOverride += \"--quiet\", \"--wait\", \"--norestart\"; $vsOverrideString = $vsOverride -join \" \"; winget install --id Microsoft.VisualStudio.2022.BuildTools --override $vsOverrideString",
-      "checkCommand": "$linker = Get-Command link.exe -ErrorAction SilentlyContinue; if ($linker) { return $true } else { $commonPaths = @(\"${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\", \"${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\"); foreach ($basePath in $commonPaths) { if (Test-Path $basePath) { $msvcDirs = Get-ChildItem -Path $basePath -Directory | Sort-Object Name -Descending; foreach ($dir in $msvcDirs) { $binPath = Join-Path $dir.FullName \"bin\\Hostx64\\x64\"; $linkPath = Join-Path $binPath \"link.exe\"; if (Test-Path $linkPath) { return $true } } } }; return $false }",
-      "envPath": "${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": true,
-      "maxRetries": 3,
-      "components": [
-        "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-        "Microsoft.VisualStudio.Component.Windows10SDK.19041",
-        "Microsoft.VisualStudio.Component.VC.CMake.Project"
-      ]
-    },
-    {
-      "appName": "Windows SDK",
-      "installCommand": "winget install --id Microsoft.WindowsSDK --exact --version 10.0.22621.1",
-      "checkCommand": "$sdkVersion = \"10.0.22621.1\"; $sdkPaths = @(\"${env:ProgramFiles(x86)}\\Windows Kits\\10\\Lib\\$sdkVersion\\um\\x64\\kernel32.lib\", \"${env:ProgramFiles(x86)}\\Windows Kits\\10\\Lib\\10.0.20348.0\\um\\x64\\kernel32.lib\", \"${env:ProgramFiles(x86)}\\Windows Kits\\10\\Lib\\10.0.22000.0\\um\\x64\\kernel32.lib\"); foreach ($path in $sdkPaths) { if (Test-Path $path) { return $true } }; return $false",
-      "envPath": "${env:ProgramFiles(x86)}\\Windows Kits\\10\\bin\\10.0.22621.0\\x64",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": true,
-      "maxRetries": 2
-    },
-    {
-      "appName": "Docker Desktop",
-      "installCommand": "$installerPath = \"$env:TEMP\\DockerDesktopInstaller.exe\"; Invoke-WebRequest -Uri $versions.system_tools.docker_desktop.download_url -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList \"install --quiet\" -Wait; Remove-Item $installerPath -Force",
-      "checkCommand": "$dockerProcess = Get-Process -Name \"Docker Desktop\" -ErrorAction SilentlyContinue; if ($dockerProcess) { return $true } else { $dockerExe = Get-Command docker -ErrorAction SilentlyContinue; if ($dockerExe) { try { & docker version --format \"{{.Client.Version}}\" 2>$null; if ($LASTEXITCODE -eq 0) { return $true } } catch {} } }; return $false",
-      "envPath": "C:\\Program Files\\Docker\\Docker",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": true,
-      "maxRetries": 2
-    },
-    {
-      "appName": "MinGW",
-      "installCommand": "choco install mingw -y",
-      "checkCommand": "Test-Path \"C:\\ProgramData\\mingw64\\mingw64\\bin\\gcc.exe\"",
-      "envPath": "C:\\ProgramData\\mingw64\\mingw64\\bin",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": false,
-      "maxRetries": 1
-    },
-    {
-      "appName": "nodejs",
-      "installCommand": "choco install nodejs --version=22.9.0 -y",
-      "checkCommand": "Test-Path \"C:\\Program Files\\nodejs\\node.exe\"",
-      "envPath": "C:\\Program Files\\nodejs",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": false,
-      "maxRetries": 1
-    },
-    {
-      "appName": "pnpm",
-      "installCommand": "choco install pnpm --version=9.15.5 --force --allow-downgrade -y",
-      "checkCommand": "Test-Path \"C:\\ProgramData\\chocolatey\\bin\\pnpm.exe\"",
-      "envPath": "C:\\ProgramData\\chocolatey\\bin",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": false,
-      "maxRetries": 1
-    },
-    {
-      "appName": "git",
-      "installCommand": "winget install --id Git.Git",
-      "checkCommand": "Test-Path \"C:\\Program Files\\Git\\cmd\\git.exe\"",
-      "envPath": "C:\\Program Files\\Git\\cmd",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": false,
-      "maxRetries": 2
-    },
-    {
-      "appName": "gh",
-      "installCommand": "winget install --id GitHub.cli",
-      "checkCommand": "Test-Path \"C:\\Program Files\\GitHub CLI\\gh.exe\"",
-      "envPath": "C:\\Program Files\\GitHub CLI",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": false,
-      "maxRetries": 2
-    },
-    {
-      "appName": "nvm",
-      "installCommand": "winget install -e --id CoreyButler.NVMforWindows",
-      "checkCommand": "Test-Path \"$env:LOCALAPPDATA\\nvm\\nvm.exe\"",
-      "envPath": "$env:LOCALAPPDATA\\Local\\nvm",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": false,
-      "maxRetries": 1
-    },
-    {
-      "appName": ".NET 9.0.100",
-      "installCommand": "$dotnetInstallScriptUrl = \"https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.ps1\"; Invoke-WebRequest -Uri $dotnetInstallScriptUrl -OutFile \"dotnet-install.ps1\"; .\\dotnet-install.ps1 -Version \"9.0.100\" -InstallDir \"$HOME\\.dotnet\"",
-      "checkCommand": "$dotnetExe = \"$HOME\\.dotnet\\dotnet.exe\"; if (Test-Path $dotnetExe) { $installedVersion = & $dotnetExe --version; return $installedVersion.Trim() -eq \"9.0.100\" } else { return $false }",
-      "envPath": "$HOME\\.dotnet",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": false,
-      "maxRetries": 2
-    },
-    {
-      "appName": "OpenSSH",
-      "installCommand": "winget install --id Microsoft.OpenSSH.Beta -e --source winget",
-      "checkCommand": "$sshPath = \"C:\\Windows\\System32\\OpenSSH\\ssh.exe\"; $sshService = Get-Service -Name \"ssh-agent\" -ErrorAction SilentlyContinue; return (Test-Path $sshPath) -and ($sshService -ne $null)",
-      "envPath": "C:\\Windows\\System32\\OpenSSH",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": false,
-      "maxRetries": 1
-    },
-    {
-      "appName": "Vercel CLI",
-      "installCommand": "& \"$ScriptDir\\ivercel-win.ps1\"",
-      "checkCommand": "Get-Command vercel -ErrorAction SilentlyContinue",
-      "envPath": "$env:APPDATA\\pnpm\\bin",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": false,
-      "maxRetries": 1
-    },
-    {
-      "appName": "Git Credential Manager",
-      "installCommand": "winget install --id Git.GCM --exact --version 2.6.1 -e",
-      "checkCommand": "Test-Path \"$env:ProgramFiles\\Git\\mingw64\\bin\\git-credential-manager.exe\"",
-      "envPath": "$env:ProgramFiles\\Git\\mingw64\\bin",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": false,
-      "maxRetries": 2
-    },
-    {
-      "appName": "GraphViz",
-      "installCommand": "winget install Graphviz",
-      "checkCommand": "$gpvrPath = \"C:\\Program Files\\Graphviz\\bin\\gvpr.exe\"; $cmdExists = Get-Command gvpr -ErrorAction SilentlyContinue; return ($gpvrPath -and $cmdExists)",
-      "envPath": "C:\\Program Files\\Graphviz\\bin",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": false,
-      "maxRetries": 1
-    },
-    {
-      "appName": "GPG",
-      "installCommand": "choco install gpg4win -y",
-      "checkCommand": "Get-Command gpg -ErrorAction SilentlyContinue",
-      "envPath": "C:\\Program Files (x86)\\GnuPG\\bin",
-      "manualInstallUrl": "https://files.gpg4win.org/gpg4win-4.3.0.exe",
-      "manualInstallPath": "$env:TEMP\\gpg4win-4.3.0.exe",
-      "isCoreTool": false,
-      "maxRetries": 1
-    },
-    {
-      "appName": "Python",
-      "version": "3.12.3",
-      "installer_url": "https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe",
-      "installCommand": "$installerUrl = \"https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe\"; $installerPath = \"$env:TEMP\\python-installer.exe\"; Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList \"/quiet InstallAllUsers=1 PrependPath=1\" -Wait; Remove-Item $installerPath -Force",
-      "checkCommand": "$requiredVersion = \"3.12.3\"; $pythonPaths = @(\"$env:LocalAppData\\Programs\\Python\\Python312\\python.exe\", \"$env:ProgramFiles\\Python312\\python.exe\", \"$env:ProgramFiles\\Python39\\python.exe\"); foreach ($path in $pythonPaths) { if (Test-Path $path) { try { $installedVersion = & $path --version 2>&1; if ($installedVersion -match $requiredVersion) { return $true } } catch { } } }; $pythonCmd = Get-Command python -ErrorAction SilentlyContinue; if ($pythonCmd) { try { $installedVersion = & $pythonCmd.Source --version 2>&1; if ($installedVersion -match $requiredVersion) { return $true } } catch { } }; return $false",
-      "envPath": "$env:LocalAppData\\Programs\\Python\\Python312",
-      "manualInstallUrl": null,
-      "manualInstallPath": null,
-      "isCoreTool": true,
-      "maxRetries": 2
-    }
-  ]
+    "system_tools":  [
+                         {
+                             "appName":  "Chocolatey",
+                             "installCommand":  "choco install chocolatey -y",
+                             "checkCommand":  "Test-Path \"C:\\ProgramData\\chocolatey\\bin\\choco.exe\"",
+                             "envPath":  "C:\\ProgramData\\chocolatey\\bin",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  true,
+                             "maxRetries":  1,
+                             "version":  "2.5.1"
+                         },
+                         {
+                             "appName":  "Visual Studio Build Tools",
+                             "installCommand":  "$vsOverride = $versions.system_tools.visual_studio_build_tools.components | ForEach-Object { \"--add $_\" }; $vsOverride += \"--quiet\", \"--wait\", \"--norestart\"; $vsOverrideString = $vsOverride -join \" \"; winget install --id Microsoft.VisualStudio.2022.BuildTools --override $vsOverrideString",
+                             "checkCommand":  "$linker = Get-Command link.exe -ErrorAction SilentlyContinue; if ($linker) { return $true } else { $commonPaths = @(\"${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\", \"${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\"); foreach ($basePath in $commonPaths) { if (Test-Path $basePath) { $msvcDirs = Get-ChildItem -Path $basePath -Directory | Sort-Object Name -Descending; foreach ($dir in $msvcDirs) { $binPath = Join-Path $dir.FullName \"bin\\Hostx64\\x64\"; $linkPath = Join-Path $binPath \"link.exe\"; if (Test-Path $linkPath) { return $true } } } }; return $false }",
+                             "envPath":  "${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  true,
+                             "maxRetries":  3,
+                             "components":  [
+
+                                            ],
+                             "version":  "17.14.36121.58"
+                         },
+                         {
+                             "appName":  "Windows SDK",
+                             "installCommand":  "winget install --id Microsoft.WindowsSDK --exact --version 10.0.22621.1",
+                             "checkCommand":  "$sdkVersion = \"10.0.22621.1\"; $sdkPaths = @(\"${env:ProgramFiles(x86)}\\Windows Kits\\10\\Lib\\$sdkVersion\\um\\x64\\kernel32.lib\", \"${env:ProgramFiles(x86)}\\Windows Kits\\10\\Lib\\10.0.20348.0\\um\\x64\\kernel32.lib\", \"${env:ProgramFiles(x86)}\\Windows Kits\\10\\Lib\\10.0.22000.0\\um\\x64\\kernel32.lib\"); foreach ($path in $sdkPaths) { if (Test-Path $path) { return $true } }; return $false",
+                             "envPath":  "${env:ProgramFiles(x86)}\\Windows Kits\\10\\bin\\10.0.22621.0\\x64",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  true,
+                             "maxRetries":  2
+                         },
+                         {
+                             "appName":  "Docker Desktop",
+                             "installCommand":  "$installerPath = \"$env:TEMP\\DockerDesktopInstaller.exe\"; Invoke-WebRequest -Uri $versions.system_tools.docker_desktop.download_url -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList \"install --quiet\" -Wait; Remove-Item $installerPath -Force",
+                             "checkCommand":  "$dockerProcess = Get-Process -Name \"Docker Desktop\" -ErrorAction SilentlyContinue; if ($dockerProcess) { return $true } else { $dockerExe = Get-Command docker -ErrorAction SilentlyContinue; if ($dockerExe) { try { \u0026 docker version --format \"{{.Client.Version}}\" 2\u003e$null; if ($LASTEXITCODE -eq 0) { return $true } } catch {} } }; return $false",
+                             "envPath":  "C:\\Program Files\\Docker\\Docker",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  true,
+                             "maxRetries":  2,
+                             "version":  "4.47.0.206054",
+                             "expected_version":  "4.47.0.206054"
+                         },
+                         {
+                             "appName":  "MinGW",
+                             "installCommand":  "choco install mingw -y",
+                             "checkCommand":  "Test-Path \"C:\\ProgramData\\mingw64\\mingw64\\bin\\gcc.exe\"",
+                             "envPath":  "C:\\ProgramData\\mingw64\\mingw64\\bin",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  false,
+                             "maxRetries":  1
+                         },
+                         {
+                             "appName":  "nodejs",
+                             "installCommand":  "choco install nodejs --version=22.9.0 -y",
+                             "checkCommand":  "Test-Path \"C:\\Program Files\\nodejs\\node.exe\"",
+                             "envPath":  "C:\\Program Files\\nodejs",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  false,
+                             "maxRetries":  1,
+                             "version":  "22.16.0"
+                         },
+                         {
+                             "appName":  "pnpm",
+                             "installCommand":  "choco install pnpm --version=9.15.5 --force --allow-downgrade -y",
+                             "checkCommand":  "Test-Path \"C:\\ProgramData\\chocolatey\\bin\\pnpm.exe\"",
+                             "envPath":  "C:\\ProgramData\\chocolatey\\bin",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  false,
+                             "maxRetries":  1
+                         },
+                         {
+                             "appName":  "git",
+                             "installCommand":  "winget install --id Git.Git",
+                             "checkCommand":  "Test-Path \"C:\\Program Files\\Git\\cmd\\git.exe\"",
+                             "envPath":  "C:\\Program Files\\Git\\cmd",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  false,
+                             "maxRetries":  2,
+                             "version":  "2.49.0"
+                         },
+                         {
+                             "appName":  "gh",
+                             "installCommand":  "winget install --id GitHub.cli",
+                             "checkCommand":  "Test-Path \"C:\\Program Files\\GitHub CLI\\gh.exe\"",
+                             "envPath":  "C:\\Program Files\\GitHub CLI",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  false,
+                             "maxRetries":  2
+                         },
+                         {
+                             "appName":  "nvm",
+                             "installCommand":  "winget install -e --id CoreyButler.NVMforWindows",
+                             "checkCommand":  "Test-Path \"$env:LOCALAPPDATA\\nvm\\nvm.exe\"",
+                             "envPath":  "$env:LOCALAPPDATA\\Local\\nvm",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  false,
+                             "maxRetries":  1
+                         },
+                         {
+                             "appName":  ".NET 9.0.100",
+                             "installCommand":  "$dotnetInstallScriptUrl = \"https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.ps1\"; Invoke-WebRequest -Uri $dotnetInstallScriptUrl -OutFile \"dotnet-install.ps1\"; .\\dotnet-install.ps1 -Version \"9.0.100\" -InstallDir \"$HOME\\.dotnet\"",
+                             "checkCommand":  "$dotnetExe = \"$HOME\\.dotnet\\dotnet.exe\"; if (Test-Path $dotnetExe) { $installedVersion = \u0026 $dotnetExe --version; return $installedVersion.Trim() -eq \"9.0.100\" } else { return $false }",
+                             "envPath":  "$HOME\\.dotnet",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  false,
+                             "maxRetries":  2
+                         },
+                         {
+                             "appName":  "OpenSSH",
+                             "installCommand":  "winget install --id Microsoft.OpenSSH.Beta -e --source winget",
+                             "checkCommand":  "$sshPath = \"C:\\Windows\\System32\\OpenSSH\\ssh.exe\"; $sshService = Get-Service -Name \"ssh-agent\" -ErrorAction SilentlyContinue; return (Test-Path $sshPath) -and ($sshService -ne $null)",
+                             "envPath":  "C:\\Windows\\System32\\OpenSSH",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  false,
+                             "maxRetries":  1,
+                             "version":  "OpenSSH_9.5p2 for Windows"
+                         },
+                         {
+                             "appName":  "Vercel CLI",
+                             "installCommand":  "\u0026 \"$ScriptDir\\ivercel-win.ps1\"",
+                             "checkCommand":  "Get-Command vercel -ErrorAction SilentlyContinue",
+                             "envPath":  "$env:APPDATA\\pnpm\\bin",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  false,
+                             "maxRetries":  1
+                         },
+                         {
+                             "appName":  "Git Credential Manager",
+                             "installCommand":  "winget install --id Git.GCM --exact --version 2.6.1 -e",
+                             "checkCommand":  "Test-Path \"$env:ProgramFiles\\Git\\mingw64\\bin\\git-credential-manager.exe\"",
+                             "envPath":  "$env:ProgramFiles\\Git\\mingw64\\bin",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  false,
+                             "maxRetries":  2,
+                             "version":  "2.6.1+786ab03440ddc82e807a97c0e540f5247e44cec6"
+                         },
+                         {
+                             "appName":  "GraphViz",
+                             "installCommand":  "winget install Graphviz",
+                             "checkCommand":  "$gpvrPath = \"C:\\Program Files\\Graphviz\\bin\\gvpr.exe\"; $cmdExists = Get-Command gvpr -ErrorAction SilentlyContinue; return ($gpvrPath -and $cmdExists)",
+                             "envPath":  "C:\\Program Files\\Graphviz\\bin",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  false,
+                             "maxRetries":  1
+                         },
+                         {
+                             "appName":  "GPG",
+                             "installCommand":  "choco install gpg4win -y",
+                             "checkCommand":  "Get-Command gpg -ErrorAction SilentlyContinue",
+                             "envPath":  "C:\\Program Files (x86)\\GnuPG\\bin",
+                             "manualInstallUrl":  "https://files.gpg4win.org/gpg4win-4.3.0.exe",
+                             "manualInstallPath":  "$env:TEMP\\gpg4win-4.3.0.exe",
+                             "isCoreTool":  false,
+                             "maxRetries":  1
+                         },
+                         {
+                             "appName":  "Python",
+                             "version":  "3.12.10",
+                             "installer_url":  "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe",
+                             "installCommand":  "$installerUrl = \"https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe\"; $installerPath = \"$env:TEMP\\python-installer.exe\"; Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList \"/quiet InstallAllUsers=1 PrependPath=1\" -Wait; Remove-Item $installerPath -Force",
+                             "checkCommand":  "$requiredVersion = \"3.12.3\"; $pythonPaths = @(\"$env:LocalAppData\\Programs\\Python\\Python312\\python.exe\", \"$env:ProgramFiles\\Python312\\python.exe\", \"$env:ProgramFiles\\Python39\\python.exe\"); foreach ($path in $pythonPaths) { if (Test-Path $path) { try { $installedVersion = \u0026 $path --version 2\u003e\u00261; if ($installedVersion -match $requiredVersion) { return $true } } catch { } } }; $pythonCmd = Get-Command python -ErrorAction SilentlyContinue; if ($pythonCmd) { try { $installedVersion = \u0026 $pythonCmd.Source --version 2\u003e\u00261; if ($installedVersion -match $requiredVersion) { return $true } } catch { } }; return $false",
+                             "envPath":  "$env:LocalAppData\\Programs\\Python\\Python312",
+                             "manualInstallUrl":  null,
+                             "manualInstallPath":  null,
+                             "isCoreTool":  true,
+                             "maxRetries":  2
+                         },
+                         {
+                             "appName":  "ngrok",
+                             "installCommand":  "choco install ngrok -y",
+                             "checkCommand":  "Test-Path \"$env:ProgramData\\chocolatey\\bin\\ngrok.exe\"",
+                             "envPath":  "$env:ProgramData\\chocolatey\\bin",
+                             "manualInstallUrl":  "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip",
+                             "manualInstallPath":  "$env:TEMP\\ngrok.zip",
+                             "isCoreTool":  false,
+                             "maxRetries":  1
+                         }
+                     ]
 }
