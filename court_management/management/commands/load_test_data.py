@@ -6,8 +6,30 @@ class Command(BaseCommand):
     help = 'Load test data for Cypress tests'
     
     def handle(self, *args, **options):
-        # Create admin user
-        User.objects.create_superuser('admin', 'admin@example.com', 'password')
+        # Create admin user if it doesn't exist
+        admin_user, created = User.objects.get_or_create(
+            username='admin',
+            defaults={
+                'email': 'admin@example.com',
+                'is_superuser': True,
+                'is_staff': True
+            }
+        )
+        
+        if created:
+            admin_user.set_password('password')
+            admin_user.save()
+            self.stdout.write(self.style.SUCCESS('Admin user created'))
+        else:
+            # Update password if user already exists
+            admin_user.set_password('password')
+            admin_user.save()
+            self.stdout.write(self.style.WARNING('Admin user already exists, password updated'))
+        
+        # Clear existing test data (except admin user)
+        Customer.objects.all().delete()
+        Court.objects.all().delete()
+        Employee.objects.all().delete()
         
         # Create test customers
         Customer.objects.create(name="John Doe", phone="1234567890", email="john@example.com")

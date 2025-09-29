@@ -9,6 +9,7 @@
     "cypress:run": "echo '⚡ Running Cypress tests in headless mode...' && docker-compose --profile test run --rm cypress",
     "docker:dev": "echo '🐳 Starting development services...' && docker-compose up -d",
     "docker:test": "echo '🐳 Starting development and test services...' && docker-compose --profile test up -d",
+    "docker:test-booking": "echo '🐳 Run booking test...' && npx cypress run --spec \"cypress/integration/booking/booking_spec.js\"",
     "docker:cypress": "echo '🐳 Running Cypress services only...' && docker-compose --profile test up cypress",
     "docker:down": "echo '🛑 Stopping all services...' && docker-compose down"
   },
