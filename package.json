@@ -1,0 +1,15 @@
+{
+  "name": "badminton-court-management",
+  "version": "1.0.0",
+  "description": "Badminton Court Management System",
+  "scripts": {
+    "test:e2e": "./scripts/test-runner.sh",
+    "dev": "./scripts/dev-runner.sh",
+    "cypress:open": "docker-compose --profile test run --rm -e CYPRESS_headless=false cypress",
+    "cypress:run": "docker-compose --profile test run --rm cypress"
+  },
+  "devDependencies": {
+    "cypress": "^15.3.0",
+    "start-server-and-test": "^2.1.2"
+  }
+}
