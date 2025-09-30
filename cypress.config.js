@@ -2,6 +2,7 @@
 const { defineConfig } = require("cypress");
 
 module.exports = defineConfig({
+  projectId: 'zr2raz',
   e2e: {
     baseUrl: "http://localhost:8000",
     supportFile: "cypress/support/e2e.js",
