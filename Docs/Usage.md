@@ -27,6 +27,13 @@ npm run dev:logs
 ### Start test environment
 ```powershell
 npm run test
+
+# Run any test file
+npm run test:spec cypress/e2e/booking/booking.cy.js
+npm run test:spec cypress/e2e/admin/admin-login.cy.js
+
+# Run any test file in headed mode
+npm run test:spec-headed cypress/e2e/booking/booking.cy.js
 ```
 
 ### Start test environment in detached mode
@@ -47,6 +54,15 @@ npm run test:logs
 ### Set up test data
 ```powershell
 npm run test:setup
+```
+### General Commands
+```powershell
+# Logs for any service
+npm run logs web
+npm run logs-service web
+
+# Shell for any service
+npm run shell web bash
 ```
 
 ## Tunnel Environment
@@ -153,11 +169,32 @@ npm run test:tunnel
 ### Build Cypress image
 ```powershell
 npm run docker:build
+
+# Build any service
+npm run docker:build web
+npm run docker:build db
+npm run docker:build cypress
 ```
 
 ### Build Cypress image without cache
 ```powershell
 npm run docker:build-nocache
+
+# Build any service with no cache
+npm run docker:build-nocache web
+npm run docker:build-nocache db
+
+# Build Cypress specifically (with profile)
+npm run docker:build-cypress
+npm run docker:build-cypress-nocache
+
+# Logs for any service
+npm run docker:logs web
+npm run docker:logs-service web
+
+# Shell for any service
+npm run docker:shell web bash
+npm run docker:shell-service web bash
 ```
 
 ### Stop all services

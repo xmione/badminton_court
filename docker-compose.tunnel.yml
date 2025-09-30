@@ -1,0 +1,11 @@
+services:
+  tunnel:
+    build: .
+    command: python tunnel.py
+    depends_on:
+      - web
+    environment:
+      TUNNEL_SUBDOMAIN: ${TUNNEL_SUBDOMAIN}
+      TUNNEL_ENABLED: ${TUNNEL_ENABLED}
+    env_file:
+      - .env.tunnel
