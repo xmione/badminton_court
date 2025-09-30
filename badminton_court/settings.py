@@ -12,27 +12,33 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 import os
+from urllib.parse import urlparse
+
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-your-secret-key-here'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-# settings.py
-ALLOWED_HOSTS = [
+# Dynamic ALLOWED_HOSTS configuration
+allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,web')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts.split(',')]
 
-    'web',
-    'localhost',
-    '127.0.0.1',
-    'aeropace-portal.loca.lt',  # Add your tunnel URL here
-]
+# Add tunnel host if tunnel is enabled
+if os.getenv('TUNNEL_ENABLED', 'false').lower() == 'true':
+    tunnel_url = os.getenv('TUNNEL_URL')
+    if tunnel_url:
+        parsed = urlparse(tunnel_url)
+        tunnel_host = parsed.netloc
+        if tunnel_host and tunnel_host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(tunnel_host)
 
 # Application definition
 
@@ -77,26 +83,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'badminton_court.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
+# Database configuration
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3')
 
-# Check if we're running in Docker
-DOCKER = os.environ.get('DOCKER', 'false').lower() == 'true'
-
-if DOCKER:
-    # Use PostgreSQL when running in Docker
+if DATABASE_URL.startswith('postgres'):
+    # PostgreSQL configuration
+    import dj_database_url
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'badminton_court',
-            'USER': 'postgres',
-            'PASSWORD': 'postgres',
-            'HOST': 'db',  # This is the service name in docker-compose.yml
-            'PORT': '5432',
-        }
+        'default': dj_database_url.parse(DATABASE_URL)
     }
 else:
-    # Use SQLite for local development
+    # SQLite configuration
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -105,8 +102,6 @@ else:
     }
 
 # Password validation
-# https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -123,30 +118,32 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-# https://docs.djangoproject.com/en/4.1/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.1/howto/static-files/
-
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+# Celery Beat Schedule Configuration
+CELERY_BEAT_SCHEDULE = {
+    'task-name': {
+        'task': 'yourapp.tasks.your_task',
+        'schedule': 30.0,  # Run every 30 seconds
+    },
+}

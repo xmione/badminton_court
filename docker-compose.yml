@@ -10,11 +10,19 @@ services:
       - postgres_data:/var/lib/postgresql/data/
     ports:
       - "5432:5432"
+    profiles:
+      - dev
+      - test
+      - tunnel
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    profiles:
+      - dev
+      - test
+      - tunnel
 
   web:
     build: .
@@ -27,9 +35,17 @@ services:
       - db
       - redis
     environment:
-      - DEBUG=1
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/badminton_court
-      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=${DEBUG}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - TUNNEL_ENABLED=${TUNNEL_ENABLED}
+    env_file:
+      - .env
+    profiles:
+      - dev
+      - test
+      - tunnel
 
   celery:
     build: .
@@ -40,8 +56,16 @@ services:
       - db
       - redis
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/badminton_court
-      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=${DEBUG}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+    env_file:
+      - .env
+    profiles:
+      - dev
+      - test
+      - tunnel
 
   celery-beat:
     build: .
@@ -52,28 +76,36 @@ services:
       - db
       - redis
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/badminton_court
-      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=${DEBUG}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+    env_file:
+      - .env
+    profiles:
+      - dev
+      - test
+      - tunnel
+
   cypress:
     build:
       context: .
       dockerfile: Dockerfile.cypress
     volumes:
-      - ./cypress:/e2e/cypress   
-      - ./cypress.config.js:/e2e/cypress.config.js   
-      - ./cypress/videos:/e2e/cypress/videos   
-      - ./cypress/screenshots:/e2e/cypress/screenshots    
+      - ./cypress:/e2e/cypress
+      - ./cypress.config.js:/e2e/cypress.config.js
+      - ./cypress/videos:/e2e/cypress/videos
+      - ./cypress/screenshots:/e2e/cypress/screenshots
     environment:
-      - CYPRESS_baseUrl=http://web:8000
-      - CYPRESS_headed=true
+      - CYPRESS_baseUrl=${CYPRESS_baseUrl}
+      - CYPRESS_headed=${CYPRESS_headed}
+    env_file:
+      - .env
+      - .env.tunnel
     depends_on:
       - web
     profiles:
       - test
-    networks:
-      - default
-    ports:
-      - "8080:8080"  
 
   test-setup:
     build: .
@@ -85,10 +117,27 @@ services:
       - redis
       - web
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/badminton_court
-      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=${DEBUG}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+    env_file:
+      - .env
     profiles:
       - test
+
+  tunnel:
+    build: .
+    command: python tunnel.py
+    environment:
+      - TUNNEL_SUBDOMAIN=${TUNNEL_SUBDOMAIN}
+      - TUNNEL_ENABLED=true
+    env_file:
+      - .env.tunnel
+    depends_on:
+      - web
+    profiles:
+      - tunnel
 
 volumes:
   postgres_data:
