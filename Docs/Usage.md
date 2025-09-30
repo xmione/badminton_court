@@ -1,5 +1,51 @@
 # Usage.md - How to run the npm run script commands
 
+## Environment Configuration
+
+### Create .env file
+Create a `.env` file in the project root:
+```env
+DEBUG=true
+DATABASE_URL=postgres://postgres:postgres@db:5432/badminton_court
+REDIS_URL=redis://redis:6379/0
+ALLOWED_HOSTS=localhost,127.0.0.1,web
+TUNNEL_ENABLED=false
+SECRET_KEY=django-insecure-your-secret-key-here
+CYPRESS_baseUrl=http://web:8000
+CYPRESS_headed=true
+```
+
+### Create .env.tunnel file
+Create a `.env.tunnel` file for tunnel configuration:
+```env
+TUNNEL_SUBDOMAIN=aeropace-portal
+TUNNEL_ENABLED=true
+TUNNEL_URL=https://aeropace-portal.loca.lt
+ALLOWED_HOSTS=localhost,127.0.0.1,web,aeropace-portal.loca.lt
+CYPRESS_baseUrl=https://aeropace-portal.loca.lt
+CYPRESS_headed=true
+```
+
+## Dependencies
+
+### Python Dependencies
+Add to your requirements.txt:
+```
+python-dotenv==16.0.3
+dj-database-url==2.0.0
+```
+
+### Node.js Dependencies
+Already included in package.json:
+```json
+{
+  "devDependencies": {
+    "cypress": "^15.3.0",
+    "dotenv": "^17.2.3"
+  }
+}
+```
+
 ## Development Environment
 
 ### Start development environment
@@ -54,42 +100,6 @@ npm run test:logs
 ### Set up test data
 ```powershell
 npm run test:setup
-```
-### General Commands
-```powershell
-# Logs for any service
-npm run logs web
-npm run logs-service web
-
-# Shell for any service
-npm run shell web bash
-```
-
-## Tunnel Environment
-
-### Start tunnel environment
-```powershell
-npm run tunnel
-```
-
-### Start tunnel environment in detached mode
-```powershell
-npm run tunnel:detached
-```
-
-### Stop tunnel services
-```powershell
-npm run tunnel:stop
-```
-
-### Show tunnel logs
-```powershell
-npm run tunnel:logs
-```
-
-### Run tunnel service only
-```powershell
-npm run tunnel:run
 ```
 
 ## Cypress Testing
@@ -164,6 +174,33 @@ npm run test:headers
 npm run test:tunnel
 ```
 
+## Tunnel Environment
+
+### Start tunnel environment
+```powershell
+npm run tunnel
+```
+
+### Start tunnel environment in detached mode
+```powershell
+npm run tunnel:detached
+```
+
+### Stop tunnel services
+```powershell
+npm run tunnel:stop
+```
+
+### Show tunnel logs
+```powershell
+npm run tunnel:logs
+```
+
+### Run tunnel service only
+```powershell
+npm run tunnel:run
+```
+
 ## Docker Management
 
 ### Build Cypress image
@@ -213,6 +250,16 @@ npm run docker:prune
 ```
 
 ## Utility Commands
+
+### General Commands
+```powershell
+# Logs for any service
+npm run logs web
+npm run logs-service web
+
+# Shell for any service
+npm run shell web bash
+```
 
 ### Show all logs
 ```powershell
@@ -278,52 +325,6 @@ npm run reset
 ### Admin Login
 - Username: admin
 - Password: password
-
-## Environment Configuration
-
-### Create .env file
-Create a `.env` file in the project root:
-```env
-DEBUG=true
-DATABASE_URL=postgres://postgres:postgres@db:5432/badminton_court
-REDIS_URL=redis://redis:6379/0
-ALLOWED_HOSTS=localhost,127.0.0.1,web
-TUNNEL_ENABLED=false
-SECRET_KEY=django-insecure-your-secret-key-here
-CYPRESS_baseUrl=http://web:8000
-CYPRESS_headed=true
-```
-
-### Create .env.tunnel file
-Create a `.env.tunnel` file for tunnel configuration:
-```env
-TUNNEL_SUBDOMAIN=aeropace-portal
-TUNNEL_ENABLED=true
-TUNNEL_URL=https://aeropace-portal.loca.lt
-ALLOWED_HOSTS=localhost,127.0.0.1,web,aeropace-portal.loca.lt
-CYPRESS_baseUrl=https://aeropace-portal.loca.lt
-CYPRESS_headed=true
-```
-
-## Dependencies
-
-### Python Dependencies
-Add to your requirements.txt:
-```
-python-dotenv==16.0.3
-dj-database-url==2.0.0
-```
-
-### Node.js Dependencies
-Already included in package.json:
-```json
-{
-  "devDependencies": {
-    "cypress": "^15.3.0",
-    "dotenv": "^17.2.3"
-  }
-}
-```
 
 ## CI/CD Integration
 
@@ -398,3 +399,4 @@ jobs:
 - Check service status: `npm run status`
 - Reset environment: `npm run reset`
 - Open shell in container: `npm run shell:web`
+------------------------------------- NOTHING FOLLOWS ---------------------------------
