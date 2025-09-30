@@ -22,6 +22,10 @@
     
     "docker:build": "echo '🐳 Building service image...' && docker-compose build",
     "docker:build-nocache": "echo '🐳 Building service image (no cache)...' && docker-compose build --no-cache",
+    "docker:build-tunnel": "echo '🐳 Building tunnel service image...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml build",
+    "docker:build-tunnel-nocache": "echo '🐳 Building tunnel service image (no cache)...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml build --no-cache",
+    "docker:build-all": "echo '🐳 Building all service images...' && docker-compose build && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml build",
+    "docker:build-all-nocache": "echo '🐳 Building all service images (no cache)...' && docker-compose build --no-cache && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml build --no-cache",
     "docker:build-cypress": "echo '🐳 Building Cypress image...' && docker-compose --profile test build cypress",
     "docker:build-cypress-nocache": "echo '🐳 Building Cypress image (no cache)...' && docker-compose --profile test build --no-cache cypress",
     "docker:logs": "echo '📋 Showing service logs...' && docker-compose logs -f",
