@@ -178,27 +178,27 @@ npm run test:tunnel
 
 ### Start tunnel environment
 ```powershell
-npm run tunnel
+npm run docker-tunnel
 ```
 
 ### Start tunnel environment in detached mode
 ```powershell
-npm run tunnel:detached
+npm run docker-tunnel:detached
 ```
 
 ### Stop tunnel services
 ```powershell
-npm run tunnel:stop
+npm run docker-tunnel:stop
 ```
 
 ### Show tunnel logs
 ```powershell
-npm run tunnel:logs
+npm run docker-tunnel:logs
 ```
 
 ### Run tunnel service only
 ```powershell
-npm run tunnel:run
+npm run docker-tunnel:run
 ```
 
 ## Docker Management
@@ -382,9 +382,9 @@ jobs:
 
 3. **Tunnel not accessible**
    ```powershell
-   npm run tunnel:run
+   npm run docker-tunnel:run
    # Check tunnel logs for URL
-   npm run tunnel:logs
+   npm run docker-tunnel:logs
    ```
 
 4. **Database connection issues**

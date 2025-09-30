@@ -147,7 +147,7 @@
 
 2. **Start LocalTunnel**
    ```bash
-   npm run tunnel:run
+   npm run docker-tunnel:run
    ```
    - Tunnel service starts
    - Outputs tunnel URL (e.g., https://aeropace-portal.loca.lt)
@@ -156,7 +156,7 @@
 3. **Verify tunnel accessibility**
    ```bash
    # Check tunnel logs
-   npm run tunnel:logs
+   npm run docker-tunnel:logs
    
    # Access the application via tunnel URL in browser
    # Verify admin login works
@@ -485,11 +485,11 @@ npm run test:booking-headed
 **Solution:**
 ```bash
 # Check tunnel logs
-npm run tunnel:logs
+npm run docker-tunnel:logs
 
 # Restart tunnel
-npm run tunnel:stop
-npm run tunnel:run
+npm run docker-tunnel:stop
+npm run docker-tunnel:run
 
 # Verify ALLOWED_HOSTS configuration
 ```

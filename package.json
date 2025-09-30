@@ -14,11 +14,11 @@
     "test:logs": "echo '📋 Showing test logs...' && docker-compose --profile test logs -f",
     "test:setup": "echo '🔧 Setting up test data...' && docker-compose --profile test run --rm test-setup",
     
-    "tunnel": "echo '🌐 Starting tunnel environment...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up",
-    "tunnel:detached": "echo '🌐 Starting tunnel environment (detached)...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d",
-    "tunnel:stop": "echo '🛑 Stopping tunnel services...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml down",
-    "tunnel:logs": "echo '📋 Showing tunnel logs...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml logs -f",
-    "tunnel:run": "echo '🌐 Running tunnel service only...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up --scale tunnel=1",
+    "docker-tunnel": "echo '🌐 Starting docker tunnel environment...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up",
+    "docker-tunnel:detached": "echo '🌐 Starting docker tunnel environment (detached)...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d",
+    "docker-tunnel:stop": "echo '🛑 Stopping docker tunnel services...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml down",
+    "docker-tunnel:logs": "echo '📋 Showing docker tunnel logs...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml logs -f",
+    "docker-tunnel:run": "echo '🌐 Running docker tunnel service only...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up --scale tunnel=1",
     
     "docker:build": "echo '🐳 Building service image...' && docker-compose build",
     "docker:build-nocache": "echo '🐳 Building service image (no cache)...' && docker-compose build --no-cache",
