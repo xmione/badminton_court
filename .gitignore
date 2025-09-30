@@ -178,3 +178,5 @@ Thumbs.db
 setup_log.txt
 versions.json.backup*
 node_modules/
+cypress/screenshots/
+cypress/videos/

@@ -7,12 +7,21 @@
     "dev": "echo '🚀 Starting development environment...' && ./scripts/dev-runner.sh",
     "cypress:open": "echo '🔍 Opening Cypress in interactive mode...' && docker-compose --profile test run --rm -e CYPRESS_headless=false cypress",
     "cypress:run": "echo '⚡ Running Cypress tests in headless mode...' && docker-compose --profile test run --rm cypress",
+    "cypress:run-headed": "echo '🚀 Running Cypress tests in headed mode...' && docker-compose --profile test run --rm cypress run --headed",
+    "cypress:run-headless": "echo '⚡ Running Cypress tests in headless mode...' && docker-compose --profile test run --rm cypress run --headless",
     "docker:build": "echo '🐳 Building Cypress image...' && docker-compose --profile test build cypress",
+    "docker:build-nocache": "echo '🐳 Building Cypress image nocache...' && docker-compose --profile test build --no-cache cypress",
     "docker:dev": "echo '🐳 Starting development services...' && docker-compose up -d",
     "docker:test": "echo '🐳 Starting development and test services...' && docker-compose --profile test up -d",
     "docker:cypress": "echo '🐳 Running Cypress services only...' && docker-compose --profile test up cypress",
     "docker:down": "echo '🛑 Stopping all services...' && docker-compose down",
-    "test:booking": "echo '🐳 Run booking test...' && docker-compose --profile test run --rm -e CYPRESS_spec=cypress/e2e/booking/booking.cy.js cypress"
+    "test:booking": "echo '🐳 Run booking test...' && docker-compose --profile test run --rm -e CYPRESS_spec=cypress/e2e/booking/booking.cy.js cypress",
+    "test:booking-headed": "echo '🐳 Run booking test in headed mode...' && docker-compose --profile test run --rm cypress run --headed --spec 'cypress/e2e/booking/booking.cy.js'",
+    "test:admin-login": "echo '🐳 Run admin-login test in headed mode...' && docker-compose --profile test run --rm cypress run --headed --spec 'cypress/e2e/admin/admin-login.cy.js'",
+    "test:admin-login-headless": "echo '🐳 Run admin-login test in headless mode...' && docker-compose --profile test run --rm cypress run --headless --spec 'cypress/e2e/admin/admin-login.cy.js'",
+    "test:admin-login-interactive": "echo '🐳 Run admin-login test in interactive mode...' && docker-compose --profile test run --rm cypress open --spec 'cypress/e2e/admin/admin-login.cy.js'",
+    "test:payment-debug": "echo '🐳 Run payment debug test in headed mode...' && docker-compose --profile test run cypress run --headed --spec 'cypress/e2e/debug/payment-debug.cy.js'"
+
   },
   "devDependencies": {
     "cypress": "^15.3.0"

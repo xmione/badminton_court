@@ -27,6 +27,8 @@ DEBUG = True
 
 # settings.py
 ALLOWED_HOSTS = [
+
+    'web',
     'localhost',
     '127.0.0.1',
     'aeropace-portal.loca.lt',  # Add your tunnel URL here

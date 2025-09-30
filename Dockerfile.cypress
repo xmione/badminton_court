@@ -1,15 +1,16 @@
 # Dockerfile.cypress
-FROM cypress/included:12.17.4
+FROM cypress/included:15.3.0
 
-# Set working directory
+# Set working directory to /e2e (where Cypress expects to be)
 WORKDIR /e2e
 
-# Remove any existing cypress.json file that might be in the base image
+# Remove any existing cypress.json to avoid conflicts
 RUN rm -f cypress.json
 
-# Copy Cypress configuration and tests
+# Copy Cypress configuration and tests to the correct location
 COPY cypress/ ./cypress/
 COPY cypress.config.js ./
 
 # Default command
-CMD ["cypress", "run"]
+ENTRYPOINT ["cypress"]
+CMD ["run", "--headless"]

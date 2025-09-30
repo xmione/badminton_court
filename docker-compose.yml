@@ -54,21 +54,26 @@ services:
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/badminton_court
       - REDIS_URL=redis://redis:6379/0
-
   cypress:
     build:
       context: .
       dockerfile: Dockerfile.cypress
     volumes:
-      - ./cypress:/e2e/cypress
-      - ./cypress.json:/e2e/cypress.json
+      - ./cypress:/e2e/cypress   
+      - ./cypress.config.js:/e2e/cypress.config.js   
+      - ./cypress/videos:/e2e/cypress/videos   
+      - ./cypress/screenshots:/e2e/cypress/screenshots    
     environment:
       - CYPRESS_baseUrl=http://web:8000
-      - CYPRESS_headless=true
+      - CYPRESS_headed=true
     depends_on:
       - web
     profiles:
       - test
+    networks:
+      - default
+    ports:
+      - "8080:8080"  
 
   test-setup:
     build: .
