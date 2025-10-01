@@ -2,8 +2,8 @@
 
 ## Environment Configuration
 
-### Create .env file
-Create a `.env` file in the project root:
+### Create .env.dev file
+Create a `.env.dev` file in the project root:
 ```env
 DEBUG=true
 DATABASE_URL=postgres://postgres:postgres@db:5432/badminton_court
@@ -15,8 +15,8 @@ CYPRESS_baseUrl=http://web:8000
 CYPRESS_headed=true
 ```
 
-### Create .env.tunnel file
-Create a `.env.tunnel` file for tunnel configuration:
+### Create .env.dev.tunnel file
+Create a `.env.dev.tunnel` file for tunnel configuration:
 ```env
 TUNNEL_SUBDOMAIN=aeropace-portal
 TUNNEL_ENABLED=true

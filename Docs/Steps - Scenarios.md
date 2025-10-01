@@ -19,8 +19,8 @@
 
 2. **Create environment files**
    ```bash
-   # Create .env file
-   cat > .env << EOF
+   # Create .env.dev file
+   cat > .env.dev << EOF
    DEBUG=true
    DATABASE_URL=postgres://postgres:postgres@db:5432/badminton_court
    REDIS_URL=redis://redis:6379/0
@@ -31,8 +31,8 @@
    CYPRESS_headed=true
    EOF
 
-   # Create .env.tunnel file
-   cat > .env.tunnel << EOF
+   # Create .env.dev.tunnel file
+   cat > .env.dev.tunnel << EOF
    TUNNEL_SUBDOMAIN=aeropace-portal
    TUNNEL_ENABLED=true
    TUNNEL_URL=https://aeropace-portal.loca.lt
@@ -193,8 +193,8 @@
 
 1. **Prepare production configuration**
    ```bash
-   # Create production .env file
-   cat > .env.prod << EOF
+   # Create production .env.dev file
+   cat > .env.dev.prod << EOF
    DEBUG=false
    DATABASE_URL=postgres://user:password@prod-db:5432/badminton_court_prod
    REDIS_URL=redis://prod-redis:6379/0
@@ -503,7 +503,7 @@ npm run logs:db
 # Reset database
 npm run test:setup
 
-# Verify database URL in .env
+# Verify database URL in .env.dev
 ```
 
 ### Issue: Cypress tests not finding elements

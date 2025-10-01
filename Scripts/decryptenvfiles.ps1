@@ -38,7 +38,7 @@ function DecryptEnvFile {
     $passphrase = $null
 }
 
-DecryptEnvFile -encryptedFile ".e.env.dev.gpg" ".env.dev"
-DecryptEnvFile -encryptedFile ".e.env.docker.gpg" ".env.docker"
-DecryptEnvFile -encryptedFile ".e.env.tunnel.gpg" ".env.tunnel"
-# DecryptEnvFile -encryptedFile ".ecypress.env.json.gpg" "cypress.env.json"
+DecryptEnvFile -encryptedFile ".e.env.dev.dev.gpg" ".env.dev.dev"
+DecryptEnvFile -encryptedFile ".e.env.dev.docker.gpg" ".env.dev.docker"
+DecryptEnvFile -encryptedFile ".e.env.dev.tunnel.gpg" ".env.dev.tunnel"
+# DecryptEnvFile -encryptedFile ".ecypress.env.dev.json.gpg" "cypress.env.dev.json"

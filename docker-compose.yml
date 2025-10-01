@@ -38,7 +38,7 @@ services:
       - ALLOWED_HOSTS=${ALLOWED_HOSTS}
       - TUNNEL_ENABLED=${TUNNEL_ENABLED}
     env_file:
-      - .env
+      - .env.dev
 
   celery:
     build: .
@@ -53,7 +53,7 @@ services:
       - REDIS_URL=${REDIS_URL}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS}
     env_file:
-      - .env
+      - .env.dev
 
   celery-beat:
     build: .
@@ -68,7 +68,7 @@ services:
       - REDIS_URL=${REDIS_URL}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS}
     env_file:
-      - .env
+      - .env.dev
 
   cypress:
     build:
@@ -83,8 +83,8 @@ services:
       - CYPRESS_baseUrl=${CYPRESS_baseUrl}
       - CYPRESS_headed=${CYPRESS_headed}
     env_file:
-      - .env
-      - .env.tunnel
+      - .env.dev
+      - .env.dev.tunnel
     depends_on:
       - web
     profiles:
@@ -104,7 +104,7 @@ services:
       - REDIS_URL=${REDIS_URL}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS}
     env_file:
-      - .env
+      - .env.dev
     profiles:
       - test
 
