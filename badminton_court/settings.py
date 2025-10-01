@@ -19,9 +19,25 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from .env.dev file
+# Determine which .env file to load based on environment
+# First, check if we're in a Docker container
+DOCKER = os.environ.get('DOCKER', 'false').lower() == 'true'
+
+# Then, check if tunnel is enabled
+TUNNEL_ENABLED = os.environ.get('TUNNEL_ENABLED', 'false').lower() == 'true'
+
+# Load the appropriate .env file
+if DOCKER:
+    if TUNNEL_ENABLED:
+        env_file = '.env.tunnel'
+    else:
+        env_file = '.env.docker'
+else:
+    env_file = '.env.dev'
+
+# Load environment variables from the selected .env file
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(env_file)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
@@ -34,7 +50,7 @@ allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,web')
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts.split(',')]
 
 # Add tunnel host if tunnel is enabled
-if os.getenv('TUNNEL_ENABLED', 'false').lower() == 'true':
+if TUNNEL_ENABLED:
     tunnel_url = os.getenv('TUNNEL_URL')
     if tunnel_url:
         parsed = urlparse(tunnel_url)
@@ -69,7 +85,7 @@ ROOT_URLCONF = 'badminton_court.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],  # Add global templates directory
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -127,6 +143,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
+# Media files (uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -142,9 +165,74 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
 # Celery Beat Schedule Configuration
-CELERY_BEAT_SCHEDULE = {
-    'task-name': {
-        'task': 'yourapp.tasks.your_task',
-        'schedule': 30.0,  # Run every 30 seconds
+# Remove or comment out the empty schedule for now
+# CELERY_BEAT_SCHEDULE = {
+#     'task-name': {
+#         'task': 'yourapp.tasks.your_task',
+#         'schedule': 30.0,  # Run every 30 seconds
+#     },
+# }
+
+# Security settings
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+# If in production and DEBUG is False, add these security settings:
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs/django.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+        'court_management': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
+
+# Email configuration (if needed)
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = os.getenv('EMAIL_HOST')
+# EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+# EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+# DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@example.com')
+
+# Create logs directory if it doesn't exist
+os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
