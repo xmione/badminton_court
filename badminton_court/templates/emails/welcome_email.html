@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome to Badminton Court Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #343a40;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 0 0 5px 5px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Welcome to Badminton Court Management System</h1>
+    </div>
+    <div class="content">
+        <h2>Hello, {{ user.get_full_name|default:user.username }}!</h2>
+        <p>Thank you for registering with the Badminton Court Management System.</p>
+        <p>Your account has been successfully created and you can now:</p>
+        <ul>
+            <li>Book badminton courts</li>
+            <li>View your booking history</li>
+            <li>Manage your profile</li>
+        </ul>
+        <a href="http://localhost:8000" class="button">Go to Dashboard</a>
+        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+        <p>Best regards,<br>The Badminton Court Management Team</p>
+    </div>
+</body>
+</html>

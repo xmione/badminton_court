@@ -355,3 +355,16 @@ SOCIALACCOUNT_PROVIDERS = {
         'SCOPE': ['tweet.read', 'users.read'],
     }
 }
+
+# Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('SMTP_HOST', 'localhost')  # Postal server
+EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))  # Postal SMTP port
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('SMTP_USER', 'postal')  # Or your SMTP username
+EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASS', 'postal')  # Or your SMTP password
+DEFAULT_FROM_EMAIL = os.getenv('SMTP_FROM_EMAIL', 'noreply@badmintoncourt.com')
+
+# Django Allauth email settings
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_EMAIL_REQUIRED = True
