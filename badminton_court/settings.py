@@ -1,3 +1,5 @@
+# settings.py
+
 """
 Django settings for badminton_court project.
 
@@ -11,15 +13,15 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
-import os
 from urllib.parse import urlparse
-
-# Load environment variables
-from dotenv import load_dotenv
-load_dotenv()
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
@@ -41,7 +43,6 @@ if os.getenv('TUNNEL_ENABLED', 'false').lower() == 'true':
             ALLOWED_HOSTS.append(tunnel_host)
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

@@ -1,5 +1,10 @@
 # docker-compose.yml
 
+x-app-volumes: &app-volumes
+  - .:/app
+  - /app/node_modules
+  - /app/venv
+
 services:
   db:
     image: postgres:14
@@ -20,8 +25,7 @@ services:
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - .:/app
+    volumes: *app-volumes
     ports:
       - "8000:8000"
     depends_on:
@@ -39,8 +43,7 @@ services:
   celery:
     build: .
     command: celery -A badminton_court worker --loglevel=info
-    volumes:
-      - .:/app
+    volumes: *app-volumes
     depends_on:
       - db
       - redis
@@ -55,8 +58,7 @@ services:
   celery-beat:
     build: .
     command: celery -A badminton_court beat --loglevel=info
-    volumes:
-      - .:/app
+    volumes: *app-volumes
     depends_on:
       - db
       - redis
@@ -91,8 +93,7 @@ services:
   test-setup:
     build: .
     command: python manage.py load_test_data
-    volumes:
-      - .:/app
+    volumes: *app-volumes
     depends_on:
       - db
       - redis

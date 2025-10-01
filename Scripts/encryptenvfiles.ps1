@@ -14,7 +14,7 @@ function EncryptEnvFiles {
     Write-Host "Using passphrase: $passphrase"
     $envFiles = @(
         ".env.dev", 
-        ".env.prod", 
+        ".env.docker", 
         ".env.tunnel", 
         "cypress.env.json"
     )

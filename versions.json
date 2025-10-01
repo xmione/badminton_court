@@ -96,7 +96,7 @@
                              "envPath":  "C:\\Program Files\\GitHub CLI",
                              "manualInstallUrl":  null,
                              "manualInstallPath":  null,
-                             "isCoreTool":  false,
+                             "isCoreTool":  true,
                              "maxRetries":  2
                          },
                          {
@@ -169,7 +169,7 @@
                              "envPath":  "C:\\Program Files (x86)\\GnuPG\\bin",
                              "manualInstallUrl":  "https://files.gpg4win.org/gpg4win-4.3.0.exe",
                              "manualInstallPath":  "$env:TEMP\\gpg4win-4.3.0.exe",
-                             "isCoreTool":  false,
+                             "isCoreTool":  true,
                              "maxRetries":  1
                          },
                          {

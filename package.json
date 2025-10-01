@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "Badminton Court Management System",
   "scripts": {
-    "dev": "echo '🚀 Starting development environment...' && docker-compose --profile dev up",
-    "dev:detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --profile dev up -d",
-    "dev:stop": "echo '🛑 Stopping development services...' && docker-compose --profile dev down",
-    "dev:logs": "echo '📋 Showing development logs...' && docker-compose --profile dev logs -f",
+    "dev": "python manage.py runserver 0.0.0.0:8000",
+    "docker-dev": "echo '🚀 Starting development environment...' && docker-compose --profile dev up",
+    "docker-dev:detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --profile dev up -d",
+    "docker-dev:stop": "echo '🛑 Stopping development services...' && docker-compose --profile dev down",
+    "docker-dev:logs": "echo '📋 Showing development logs...' && docker-compose --profile dev logs -f",
     
     "test": "echo '🧪 Starting test environment...' && docker-compose --profile test up",
     "test:detached": "echo '🧪 Starting test environment (detached)...' && docker-compose --profile test up -d",
