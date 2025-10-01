@@ -28,16 +28,15 @@
     
     "docker:build": "echo '🐳 Building service image...' && docker-compose --env-file .env.dev build",
     "docker:build-nocache": "echo '🐳 Building service image (no cache)...' && docker-compose --env-file .env.dev build --no-cache",
-    "docker:build-tunnel": "echo '🐳 Building tunnel service image...' && docker-compose --env-file .env.dev -f docker-compose.yml --env-file .env.dev -f docker-compose.tunnel.yml --env-file .env.dev build",
-    "docker:build-tunnel-nocache": "echo '🐳 Building tunnel service image (no cache)...' && docker-compose --env-file .env.dev -f docker-compose.yml --env-file .env.dev -f docker-compose.tunnel.yml --env-file .env.dev build --no-cache",
-    "docker:build-all": "echo '🐳 Building all service images...' && docker-compose --env-file .env.dev -f postal-compose.yml build && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml build",
-    "docker:build-all-nocache": "echo '🐳 Building all service images (no cache)...' && docker-compose --env-file .env.dev -f postal-compose.yml build --no-cache && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml build --no-cache",
+    "docker:build-tunnel": "echo '🐳 Building tunnel service image...' && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml build",
+    "docker:build-tunnel-nocache": "echo '🐳 Building tunnel service image (no cache)...' && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml build --no-cache",
+    "docker:build-all": "echo '🐳 Building all service images...' && docker-compose --env-file .env.dev -f postal-compose.yml build && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml build && docker-compose --env-file .env.dev --profile test build cypress",
+    "docker:build-all-nocache": "echo '🐳 Building all service images (no cache)...' && docker-compose --env-file .env.dev -f postal-compose.yml build --no-cache && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml build --no-cache && docker-compose --env-file .env.dev --profile test build --no-cache cypress",
     "docker:build-cypress": "echo '🐳 Building Cypress image...' && docker-compose --profile test build cypress",
     "docker:build-cypress-nocache": "echo '🐳 Building Cypress image (no cache)...' && docker-compose --profile test build --no-cache cypress",
+    "docker:rebuild-all": "echo '🐳 Completely rebuilding all services...' && docker-compose --env-file .env.dev down -v --rmi all && docker-compose --env-file .env.dev -f postal-compose.yml down -v --rmi all && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml down -v --rmi all && npm run docker:build-all-nocache && docker-compose --env-file .env.dev up -d && docker-compose --env-file .env.dev -f postal-compose.yml up -d",
     "docker:logs": "echo '📋 Showing service logs...' && docker-compose logs -f",
-    "docker:logs-service": "echo '📋 Showing service logs...' && docker-compose logs -f",
     "docker:shell": "echo '🖥️  Opening shell in service container...' && docker-compose exec",
-    "docker:shell-service": "echo '🖥️  Opening shell in service container...' && docker-compose exec",
     "docker:down": "echo '🛑 Stopping all services...' && docker-compose down",
     "docker:down-volumes": "echo '🗑️  Stopping all services and removing volumes...' && docker-compose down -v",
     "docker:prune": "echo '🧹 Cleaning up unused Docker resources...' && docker system prune -f",
@@ -50,18 +49,16 @@
     "cypress:run": "echo '⚡ Running Cypress tests...' && docker-compose --profile test run --rm cypress run",
     "cypress:run-headed": "echo '🚀 Running Cypress tests (headed)...' && docker-compose --profile test run --rm cypress run --headed",
     "cypress:run-headless": "echo '⚡ Running Cypress tests (headless)...' && docker-compose --profile test run --rm cypress run --headless",
-    
-    "test:e2e": "echo '🧪 Running all E2E tests...' && docker-compose --profile test run --rm cypress run --headless",
     "test:spec": "echo '🧪 Running specific test file...' && docker-compose --profile test run --rm cypress run --spec",
     "test:spec-headed": "echo '🧪 Running specific test file (headed)...' && docker-compose --profile test run --rm cypress run --headed --spec",
     
-    "logs": "echo '📋 Showing all logs...' && docker-compose logs -f",
-    "logs:service": "echo '📋 Showing service logs...' && docker-compose logs -f",
     "status": "echo '📊 Showing service status...' && docker-compose ps",
     "shell": "echo '🖥️  Opening shell in service container...' && docker-compose --profile dev exec",
-    "reset": "echo '🔄 Resetting environment...' && docker-compose down -v && docker system prune -f",
+    "reset": "echo '🔄 Resetting environment...' && docker-compose --env-file .env.dev down -v --rmi all && docker-compose --env-file .env.dev -f postal-compose.yml down -v --rmi all && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml --env-file .env.tunnel down -v --rmi all && docker system prune -f",
+    "reset:keep-images": "echo '🔄 Resetting environment (keeping base images)...' && docker-compose --env-file .env.dev down -v && docker-compose --env-file .env.dev -f postal-compose.yml down -v && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml --env-file .env.tunnel down -v && docker system prune -f --filter 'until=24h'",
+    "reset-and-restart": "echo '🔄 Resetting and restarting all services...' && npm run reset && npm run docker:build-all-nocache && npm run docker-dev:detached && npm run postalup",
 
-    "pfs":  "echo \u0027Print the Project Folder Structure..\u0027 \u0026\u0026 powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\""
+    "pfs": "echo 'Print the Project Folder Structure..' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\""
   },
   "devDependencies": {
     "cypress": "^15.3.0",
