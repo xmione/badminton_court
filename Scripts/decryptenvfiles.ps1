@@ -39,6 +39,6 @@ function DecryptEnvFile {
 }
 
 DecryptEnvFile -encryptedFile ".e.env.dev.gpg" ".env.dev"
-DecryptEnvFile -encryptedFile ".e.env.prod.gpg" ".env.prod"
+DecryptEnvFile -encryptedFile ".e.env.docker.gpg" ".env.docker"
 DecryptEnvFile -encryptedFile ".e.env.tunnel.gpg" ".env.tunnel"
-DecryptEnvFile -encryptedFile ".ecypress.env.json.gpg" "cypress.env.json"
+# DecryptEnvFile -encryptedFile ".ecypress.env.json.gpg" "cypress.env.json"

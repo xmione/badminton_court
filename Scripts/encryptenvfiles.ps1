@@ -13,10 +13,10 @@ function EncryptEnvFiles {
     $passphrase = .\Scripts\get-gh-variable.ps1 
     Write-Host "Using passphrase: $passphrase"
     $envFiles = @(
-        ".env.dev", 
-        ".env.docker", 
-        ".env.tunnel", 
-        "cypress.env.json"
+        ".env.dev" 
+        ,".env.docker" 
+        ,".env.tunnel" 
+        # ,"cypress.env.json"
     )
 
     foreach ($file in $envFiles) {
