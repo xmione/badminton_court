@@ -110,6 +110,57 @@ TEMPLATES = [
     },
 ]
 
+# Social Media Provider Configuration (add your actual keys and secrets)
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'APP': {
+            'client_id': 'YOUR_GOOGLE_CLIENT_ID',
+            'secret': 'YOUR_GOOGLE_CLIENT_SECRET',
+            'key': ''
+        }
+    },
+    'facebook': {
+        'METHOD': 'oauth2',
+        'SCOPE': ['email', 'public_profile'],
+        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'INITIAL_PARAMS': {'cookie': True},
+        'FIELDS': [
+            'id',
+            'email',
+            'name',
+            'first_name',
+            'last_name',
+            'verified',
+            'locale',
+            'timezone',
+            'link',
+            'gender',
+            'updated_time',
+        ],
+        'VERIFIED_EMAIL': False,
+        'APP': {
+            'client_id': 'YOUR_FACEBOOK_APP_ID',
+            'secret': 'YOUR_FACEBOOK_APP_SECRET',
+            'key': ''
+        }
+    },
+    'twitter': {
+        'SCOPE': ['tweet.read', 'users.read'],
+        'APP': {
+            'client_id': 'YOUR_TWITTER_API_KEY',
+            'secret': 'YOUR_TWITTER_API_SECRET',
+            'key': ''
+        }
+    }
+}
+
 WSGI_APPLICATION = 'badminton_court.wsgi.application'
 
 # Database configuration
