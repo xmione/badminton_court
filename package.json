@@ -6,6 +6,7 @@
     "dev": "echo '🚀 Starting local development environment...' && python manage.py runserver 0.0.0.0:8000",
     "dev:detached": "echo '🚀 Starting local development environment in detached mode...' && node scripts/run-detached.js",
     "dev:stop": "echo '🛑 Stopping local dev server development...' && node scripts/stop-server.js",
+    "dev:load-data": "echo '📊 Loading local dev data...' && python manage.py load_test_data",
 
     "docker-dev": "echo '🚀 Starting development environment...' && docker-compose --profile dev up",
     "docker-dev:detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --profile dev up -d",
