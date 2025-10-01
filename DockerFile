@@ -1,36 +1,36 @@
 # Dockerfile
 FROM python:3.12
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV DOCKER=true
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DOCKER=true
 
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        postgresql-client \
-        build-essential \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user first
-RUN adduser --disabled-password --gecos '' appuser
-RUN chown -R appuser:appuser /app
+# Create non-root user
+RUN adduser --disabled-password --gecos '' appuser \
+    && chown -R appuser:appuser /app
 USER appuser
 
-# Copy and install Python dependencies as the non-root user
+# Install Python dependencies with timeout/retries
 COPY requirements.txt /app/
-RUN pip install --user --no-cache-dir -r requirements.txt
+RUN pip install --user --no-cache-dir \
+    --index-url https://mirrors.aliyun.com/pypi/simple/ \
+    --trusted-host mirrors.aliyun.com \
+    --timeout=1000 --retries=5 \
+    -r requirements.txt
 
-# Explicitly install python-dotenv as the non-root user
+# Install python-dotenv explicitly
 RUN pip install --user --no-cache-dir python-dotenv==1.1.1
 
-# Copy project
+# Copy project files
 COPY --chown=appuser:appuser . /app/
 
-# Expose port
 EXPOSE 8000
-
-# Default command
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
