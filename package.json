@@ -4,6 +4,9 @@
   "description": "Badminton Court Management System",
   "scripts": {
     "dev": "python manage.py runserver 0.0.0.0:8000",
+    "dev:detached": "node scripts/run-detached.js",
+    "dev:stop": "node scripts/stop-server.js",
+    
     "docker-dev": "echo '🚀 Starting development environment...' && docker-compose --profile dev up",
     "docker-dev:detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --profile dev up -d",
     "docker-dev:stop": "echo '🛑 Stopping development services...' && docker-compose --profile dev down",
