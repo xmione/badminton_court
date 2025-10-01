@@ -1,5 +1,3 @@
-# settings.py
-
 """
 Django settings for badminton_court project.
 
@@ -60,14 +58,27 @@ if TUNNEL_ENABLED:
 
 # Application definition
 INSTALLED_APPS = [
+    # Django core apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'court_management',
+    'django.contrib.sites',
+    
+    # Third-party apps
+    'django_bootstrap5',  # Use the correct module name (with underscore)
     'django_celery_beat',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.facebook',
+    'allauth.socialaccount.providers.twitter',
+    
+    # Local apps
+    'court_management',
 ]
 
 MIDDLEWARE = [
@@ -78,6 +89,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  
 ]
 
 ROOT_URLCONF = 'badminton_court.urls'
@@ -236,3 +248,59 @@ LOGGING = {
 
 # Create logs directory if it doesn't exist
 os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
+
+# Authentication Configuration
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# Django Allauth Configuration (Updated to remove deprecation warnings)
+ACCOUNT_LOGIN_METHODS = {'email'}  # Allow login with email only
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Required fields for signup
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # or 'optional' or 'none'
+ACCOUNT_USERNAME_BLACKLIST = ['admin', 'staff', 'root']
+LOGIN_REDIRECT_URL = '/'  # Redirect to dashboard after login
+LOGOUT_REDIRECT_URL = '/accounts/login/'  # Redirect to login after logout
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = True
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+
+# Site Configuration
+SITE_ID = 1
+
+# Social Media Provider Configuration (add your actual keys and secrets)
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        }
+    },
+    'facebook': {
+        'METHOD': 'oauth2',
+        'SCOPE': ['email', 'public_profile'],
+        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'INITIAL_PARAMS': {'cookie': True},
+        'FIELDS': [
+            'id',
+            'email',
+            'name',
+            'first_name',
+            'last_name',
+            'verified',
+            'locale',
+            'timezone',
+            'link',
+            'gender',
+            'updated_time',
+        ],
+        'VERIFIED_EMAIL': False,
+    },
+    'twitter': {
+        'SCOPE': ['tweet.read', 'users.read'],
+    }
+}

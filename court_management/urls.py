@@ -1,9 +1,15 @@
+# court_management/urls.py
+
 from django.urls import path
 from . import views
 
 urlpatterns = [
     # Home/Dashboard
     path('', views.index, name='index'),
+    
+    # Authentication URLs
+    path('signup/', views.SignUpView.as_view(), name='signup'),
+    path('profile/', views.profile, name='profile'),
     
     # Booking URLs
     path('bookings/', views.BookingListView.as_view(), name='booking-list'),

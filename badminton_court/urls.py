@@ -21,9 +21,10 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('court_management.urls')),
+    path('accounts/', include('allauth.urls')),  # Django Allauth URLs
+    path('', include('court_management.urls')),  # Include app URLs
 ]
 
+# For serving media files during development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

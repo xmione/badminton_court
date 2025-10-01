@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card mt-5">
+                <div class="card-header">
+                    <h4 class="text-center">Login</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-primary btn-block">Login</button>
+                    </form>
+                    
+                    <hr>
+                    
+                    <h5 class="text-center">Or login with</h5>
+                    <div class="text-center">
+                        <a href="{% url 'account_login' %}" class="btn btn-danger">Google</a>
+                        <a href="{% url 'account_login' %}" class="btn btn-primary">Facebook</a>
+                        <a href="{% url 'account_login' %}" class="btn btn-info">Twitter</a>
+                    </div>
+                    
+                    <div class="mt-3 text-center">
+                        <p>Don't have an account? <a href="{% url 'signup' %}">Sign up</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

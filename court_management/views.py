@@ -25,6 +25,13 @@ from .forms import (
     CustomerForm, CourtForm
 )
 
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.forms import UserCreationForm
+from django.views.generic import CreateView
+from django.urls import reverse_lazy
+
+@login_required
 def index(request):
     # Get today's bookings
     today = timezone.now().date()
@@ -62,8 +69,17 @@ def index(request):
     
     return render(request, 'court_management/index.html', context)
 
+class SignUpView(CreateView):
+    form_class = UserCreationForm
+    success_url = reverse_lazy('login')
+    template_name = 'registration/signup.html'
+
+@login_required
+def profile(request):
+    return render(request, 'registration/profile.html')
+
 # Booking Views
-class BookingListView(ListView):
+class BookingListView(LoginRequiredMixin, ListView):
     model = Booking
     template_name = 'court_management/booking_list.html'
     context_object_name = 'bookings'
@@ -71,12 +87,12 @@ class BookingListView(ListView):
     def get_queryset(self):
         return Booking.objects.all().order_by('start_time')
 
-class BookingDetailView(DetailView):
+class BookingDetailView(LoginRequiredMixin, DetailView):
     model = Booking
     template_name = 'court_management/booking_detail.html'
     context_object_name = 'booking'
 
-class BookingCreateView(CreateView):
+class BookingCreateView(LoginRequiredMixin, CreateView):
     model = Booking
     form_class = BookingForm
     template_name = 'court_management/booking_form.html'
@@ -87,7 +103,7 @@ class BookingCreateView(CreateView):
         messages.success(self.request, 'Booking created successfully!')
         return response
 
-class BookingUpdateView(UpdateView):
+class BookingUpdateView(LoginRequiredMixin, UpdateView):
     model = Booking
     form_class = BookingForm
     template_name = 'court_management/booking_form.html'
@@ -98,7 +114,7 @@ class BookingUpdateView(UpdateView):
         messages.success(self.request, 'Booking updated successfully!')
         return response
 
-class BookingDeleteView(DeleteView):
+class BookingDeleteView(LoginRequiredMixin, DeleteView):
     model = Booking
     template_name = 'court_management/booking_confirm_delete.html'
     success_url = reverse_lazy('booking-list')
@@ -151,7 +167,7 @@ def make_payment(request, booking_id):
     return render(request, 'court_management/make_payment.html', context)
 
 # Customer Views
-class CustomerListView(ListView):
+class CustomerListView(LoginRequiredMixin, ListView):
     model = Customer
     template_name = 'court_management/customer_list.html'
     context_object_name = 'customers'
@@ -159,7 +175,7 @@ class CustomerListView(ListView):
     def get_queryset(self):
         return Customer.objects.filter(active=True)
 
-class CustomerDetailView(DetailView):
+class CustomerDetailView(LoginRequiredMixin, DetailView):
     model = Customer
     template_name = 'court_management/customer_detail.html'
     context_object_name = 'customer'
@@ -172,7 +188,7 @@ class CustomerDetailView(DetailView):
         ).order_by('-start_time')[:5]
         return context
     
-class CustomerCreateView(CreateView):
+class CustomerCreateView(LoginRequiredMixin, CreateView):
     model = Customer
     form_class = CustomerForm
     template_name = 'court_management/customer_form.html'
@@ -183,7 +199,7 @@ class CustomerCreateView(CreateView):
         messages.success(self.request, 'Customer created successfully!')
         return response
 
-class CustomerUpdateView(UpdateView):
+class CustomerUpdateView(LoginRequiredMixin, UpdateView):
     model = Customer
     form_class = CustomerForm
     template_name = 'court_management/customer_form.html'
@@ -194,7 +210,7 @@ class CustomerUpdateView(UpdateView):
         messages.success(self.request, 'Customer updated successfully!')
         return response
 
-class CustomerDeleteView(DeleteView):
+class CustomerDeleteView(LoginRequiredMixin, DeleteView):
     model = Customer
     template_name = 'court_management/customer_confirm_delete.html'
     success_url = reverse_lazy('customer-list')
@@ -207,7 +223,7 @@ class CustomerDeleteView(DeleteView):
         return redirect('customer-list')
 
 # Court Views
-class CourtListView(ListView):
+class CourtListView(LoginRequiredMixin, ListView):
     model = Court
     template_name = 'court_management/court_list.html'
     context_object_name = 'courts'
@@ -215,7 +231,7 @@ class CourtListView(ListView):
     def get_queryset(self):
         return Court.objects.filter(active=True)
 
-class CourtDetailView(DetailView):
+class CourtDetailView(LoginRequiredMixin, DetailView):
     model = Court
     template_name = 'court_management/court_detail.html'
     context_object_name = 'court'
@@ -228,7 +244,7 @@ class CourtDetailView(DetailView):
         ).order_by('-start_time')[:5]
         return context
     
-class CourtCreateView(CreateView):
+class CourtCreateView(LoginRequiredMixin, CreateView):
     model = Court
     form_class = CourtForm
     template_name = 'court_management/court_form.html'
@@ -239,7 +255,7 @@ class CourtCreateView(CreateView):
         messages.success(self.request, 'Court created successfully!')
         return response
 
-class CourtUpdateView(UpdateView):
+class CourtUpdateView(LoginRequiredMixin, UpdateView):
     model = Court
     form_class = CourtForm
     template_name = 'court_management/court_form.html'
@@ -250,7 +266,7 @@ class CourtUpdateView(UpdateView):
         messages.success(self.request, 'Court updated successfully!')
         return response
 
-class CourtDeleteView(DeleteView):
+class CourtDeleteView(LoginRequiredMixin, DeleteView):
     model = Court
     template_name = 'court_management/court_confirm_delete.html'
     success_url = reverse_lazy('court-list')
@@ -263,7 +279,7 @@ class CourtDeleteView(DeleteView):
         return redirect('court-list')
 
 # Employee Views
-class EmployeeListView(ListView):
+class EmployeeListView(LoginRequiredMixin, ListView):
     model = Employee
     template_name = 'court_management/employee_list.html'
     context_object_name = 'employees'
@@ -271,7 +287,7 @@ class EmployeeListView(ListView):
     def get_queryset(self):
         return Employee.objects.filter(active=True)
 
-class EmployeeDetailView(DetailView):
+class EmployeeDetailView(LoginRequiredMixin, DetailView):
     model = Employee
     template_name = 'court_management/employee_detail.html'
     context_object_name = 'employee'
@@ -284,7 +300,7 @@ class EmployeeDetailView(DetailView):
         ).order_by('-clock_in')[:5]
         return context
 
-class EmployeeCreateView(CreateView):
+class EmployeeCreateView(LoginRequiredMixin, CreateView):
     model = Employee
     form_class = EmployeeForm
     template_name = 'court_management/employee_form.html'
@@ -295,7 +311,7 @@ class EmployeeCreateView(CreateView):
         messages.success(self.request, 'Employee created successfully!')
         return response
 
-class EmployeeUpdateView(UpdateView):
+class EmployeeUpdateView(LoginRequiredMixin, UpdateView):
     model = Employee
     form_class = EmployeeForm
     template_name = 'court_management/employee_form.html'
@@ -306,7 +322,7 @@ class EmployeeUpdateView(UpdateView):
         messages.success(self.request, 'Employee updated successfully!')
         return response
 
-class EmployeeDeleteView(DeleteView):
+class EmployeeDeleteView(LoginRequiredMixin, DeleteView):
     model = Employee
     template_name = 'court_management/employee_confirm_delete.html'
     success_url = reverse_lazy('employee-list')
