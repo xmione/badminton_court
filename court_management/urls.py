@@ -50,4 +50,7 @@ urlpatterns = [
     path('reports/sales/export/', views.export_sales_report_csv, name='export-sales-report'),
     path('reports/payroll/', views.payroll_report, name='payroll-report'),
     path('reports/payroll/<int:year>/<int:month>/', views.payroll_report, name='payroll-report-month'),
+    
+    # Test Template
+    path('test-template/', views.test_template, name='test-template'),
 ]

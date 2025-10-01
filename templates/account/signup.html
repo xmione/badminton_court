@@ -1,0 +1,55 @@
+<!-- badminton_court\templates\account\signup.html -->
+{% extends '..\base.html' %}
+{% load django_bootstrap5 %}  <!-- Fixed: use django_bootstrap5 -->
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card mt-5">
+                <div class="card-header">
+                    <h4 class="text-center">Sign Up</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" id="id_email" required autofocus>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_password1" class="form-label">Password</label>
+                            <input type="password" class="form-control" name="password1" id="id_password1" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_password2" class="form-label">Password (again)</label>
+                            <input type="password" class="form-control" name="password2" id="id_password2" required>
+                        </div>
+                        
+                        {% if redirect_field_value %}
+                            <input type="hidden" name="next" value="{{ redirect_field_value }}">
+                        {% endif %}
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">Sign Up</button>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-3 text-center">
+                        <p>Already have an account? <a href="{% url 'account_login' %}">Login</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

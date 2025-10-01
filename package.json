@@ -54,7 +54,9 @@
     "logs:service": "echo '📋 Showing service logs...' && docker-compose logs -f",
     "status": "echo '📊 Showing service status...' && docker-compose ps",
     "shell": "echo '🖥️  Opening shell in service container...' && docker-compose --profile dev exec",
-    "reset": "echo '🔄 Resetting environment...' && docker-compose down -v && docker system prune -f"
+    "reset": "echo '🔄 Resetting environment...' && docker-compose down -v && docker system prune -f",
+
+    "pfs":  "echo \u0027Print the Project Folder Structure..\u0027 \u0026\u0026 powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\""
   },
   "devDependencies": {
     "cypress": "^15.3.0",

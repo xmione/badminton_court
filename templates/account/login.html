@@ -1,0 +1,56 @@
+<!-- badminton_court/templates/account/login.html -->
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<!-- DEBUG: Add this line to verify your template is being used -->
+<h1>DEBUG: Custom login template loaded</h1>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card mt-5">
+                <div class="card-header">
+                    <h4 class="text-center">Log In</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                {{ form.errors }}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="id_login" class="form-label">Email</label>
+                            <input type="email" class="form-control" name="login" id="id_login" required autofocus>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_password" class="form-label">Password</label>
+                            <input type="password" class="form-control" name="password" id="id_password" required>
+                        </div>
+                        
+                        {% if redirect_field_value %}
+                            <input type="hidden" name="next" value="{{ redirect_field_value }}">
+                        {% endif %}
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Log In</button>
+                        </div>
+                    </form>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <p>Don't have an account? <a href="{% url 'account_signup' %}">Sign Up</a></p>
+                        <p><a href="{% url 'account_reset_password' %}">Forgot your password?</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

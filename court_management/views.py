@@ -30,6 +30,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.forms import UserCreationForm
 from django.views.generic import CreateView
 from django.urls import reverse_lazy
+from django.template.loader import get_template
 
 @login_required
 def index(request):
@@ -71,12 +72,20 @@ def index(request):
 
 class SignUpView(CreateView):
     form_class = UserCreationForm
-    success_url = reverse_lazy('login')
-    template_name = 'registration/signup.html'
+    success_url = reverse_lazy('account_login')  # Fixed: use 'account_login' instead of 'login'
+    template_name = 'court_management/signup.html'  # Updated template path
 
 @login_required
 def profile(request):
-    return render(request, 'registration/profile.html')
+    return render(request, 'court_management/profile.html')  # Updated template path
+
+# Test template view for debugging
+def test_template(request):
+    try:
+        template = get_template('account/login.html')
+        return HttpResponse(f"Template found: {template.origin}")
+    except Exception as e:
+        return HttpResponse(f"Template not found: {str(e)}")
 
 # Booking Views
 class BookingListView(LoginRequiredMixin, ListView):
