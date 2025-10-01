@@ -120,7 +120,7 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env.dev*
+.env*
 .venv
 env/
 venv/
@@ -181,3 +181,4 @@ node_modules/
 cypress/screenshots/
 cypress/videos/
 
+.env..docker
