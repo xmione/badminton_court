@@ -10,15 +10,15 @@
     "dev:cypress-open": "npx cypress open",
 
     "docker:dev": "echo '🚀 Starting development environment...' && docker-compose --env-file .env.docker --profile dev up",
-    "docker:dev-detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --env-file .env.dev --profile dev up -d",
-    "docker:dev-stop": "echo '🛑 Stopping development services...' && docker-compose --env-file .env.dev --profile dev down",
-    "docker:dev-logs": "echo '📋 Showing development logs...' && docker-compose --env-file .env.dev --profile dev logs -f",
+    "docker:dev-detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --env-file .env.docker --profile dev up -d",
+    "docker:dev-stop": "echo '🛑 Stopping development services...' && docker-compose --env-file .env.docker --profile dev down",
+    "docker:dev-logs": "echo '📋 Showing development logs...' && docker-compose --env-file .env.docker --profile dev logs -f",
     
     "docker:test": "echo '🧪 Starting test environment...' && docker-compose --env-file .env.docker --profile test up",
     "docker:test-detached": "echo '🧪 Starting test environment (detached)...' && docker-compose --env-file .env.docker --profile test up -d",
     "docker:test-stop": "echo '🛑 Stopping test services...' && docker-compose --profile test down",
-    "docker:test-logs": "echo '📋 Showing test logs...' && docker-compose --profile test logs -f",
-    "docker:test-setup": "echo '🔧 Setting up test data...' && docker-compose --profile test run --rm test-setup",
+    "docker:test-logs": "echo '📋 Showing test logs...' && docker-compose --env-file .env.docker --profile test logs -f",
+    "docker:test-setup": "echo '🔧 Setting up test data...' && docker-compose --env-file .env.docker --profile test run --rm test-setup",
     
     "docker:tunnel": "echo '🌐 Starting docker tunnel environment...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel up",
     "docker:tunnel-detached": "echo '🌐 Starting docker tunnel environment (detached)...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel up -d",
@@ -26,11 +26,11 @@
     "docker:tunnel-logs": "echo '📋 Showing docker tunnel logs...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel logs -f",
     "docker:tunnel-run": "echo '🌐 Running docker tunnel service only...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel up --scale tunnel=1",
     
-    "docker:all": "echo '🌐 Starting docker tunnel environment...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up",
-    "docker:all-detached": "echo '🌐 Starting docker tunnel environment (detached)...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d",
-    "docker:all-stop": "echo '🛑 Stopping docker tunnel services...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml down",
-    "docker:all-logs": "echo '📋 Showing docker tunnel logs...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml logs -f",
-    "docker:all-run": "echo '🌐 Running docker tunnel service only...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up --scale tunnel=1",
+    "docker:all": "echo '🌐 Starting docker all environment...' && docker-compose -f docker-compose.yml --env-file .env.docker up && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel up",
+    "docker:all-detached": "echo '🌐 Starting docker all environment (detached)...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d",
+    "docker:all-stop": "echo '🛑 Stopping docker all services...' && docker-compose -f docker-compose.yml --env-file .env.docker down && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel down",
+    "docker:all-logs": "echo '📋 Showing docker all logs...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml logs -f",
+    "docker:all-run": "echo '🌐 Running docker all service only...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up --scale tunnel=1",
 
     "docker:build": "echo '🐳 Building service image...' && docker-compose --env-file .env.docker build",
     "docker:build-nocache": "echo '🐳 Building service image (no cache)...' && docker-compose --env-file .env.docker build --no-cache",
@@ -41,7 +41,6 @@
     "docker:rebuild-all": "echo '🐳 Completely rebuilding all services...' && docker-compose --env-file .env.docker down -v --rmi all && docker-compose -f docker-compose.tunnel.yml down -v --rmi all && npm run docker:build",
     "docker:logs": "echo '📋 Showing service logs...' && docker-compose logs -f",
     "docker:shell": "echo '🖥️  Opening shell in service container...' && docker-compose exec",
-    "docker:down": "echo '🛑 Stopping all services...' && docker-compose down",
     "docker:down-volumes": "echo '🗑️  Stopping all services and removing volumes...' && docker-compose down -v",
     "docker:prune": "echo '🧹 Cleaning up unused Docker resources...' && docker system prune -f",
 
