@@ -17,6 +17,7 @@ networks:
 services:
   # PostgreSQL Database
   db:
+    container_name: db
     image: postgres:14
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -31,6 +32,7 @@ services:
 
   # Redis (shared service)
   redis:
+    container_name: redis
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -39,6 +41,7 @@ services:
 
   # Django Web Application
   web:
+    container_name: web
     build: .
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
@@ -57,6 +60,7 @@ services:
       
   # Celery Worker
   celery:
+    container_name: celery
     build: .
     command: celery -A badminton_court worker --loglevel=info
     volumes:
@@ -73,6 +77,7 @@ services:
 
   # Celery Beat Scheduler
   celery-beat:
+    container_name: celery-beat
     build: .
     command: celery -A badminton_court beat --loglevel=info
     volumes:
@@ -152,6 +157,7 @@ services:
 
   # Cypress Testing
   cypress:
+    container_name: cypress
     build:
       context: .
       dockerfile: Dockerfile.cypress
@@ -175,6 +181,7 @@ services:
 
   # Test Data Setup
   test-setup:
+    container_name: test-setup
     build: .
     command: python manage.py load_test_data
     volumes:

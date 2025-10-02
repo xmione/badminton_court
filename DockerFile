@@ -37,6 +37,11 @@ COPY --chown=appuser:appuser . /app/
 
 # Copy the web entrypoint script
 COPY --chown=appuser:appuser web-entrypoint.sh /app/
+
+# Convert line endings from CRLF to LF
+RUN sed -i 's/\r$//' /app/web-entrypoint.sh
+
+# Make the script executable
 RUN chmod +x /app/web-entrypoint.sh
 
 # Expose port

@@ -1,4 +1,3 @@
-# web-entrypoint.sh
 #!/bin/bash
 set -e
 

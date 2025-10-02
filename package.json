@@ -54,7 +54,8 @@
     "reset:keep-images": "echo '🔄 Resetting environment (keeping base images)...' && docker-compose --env-file .env.dev down -v && docker-compose --env-file .env.dev -f postal-compose.yml down -v && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml --env-file .env.tunnel down -v && docker system prune -f --filter 'until=24h'",
     "reset-and-restart": "echo '🔄 Resetting and restarting all services...' && npm run reset && npm run docker:build-all-nocache && npm run docker-dev:detached && npm run postalup",
 
-    "pfs": "echo 'Print the Project Folder Structure..' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\""
+    "pfs": "echo 'Print the Project Folder Structure..' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\"",
+    "psql":  "echo \u0027Running PSQL..\u0027 \u0026\u0026 docker exec -it db psql -U dbuser -d badminton_court"
   },
   "devDependencies": {
     "cypress": "^15.3.0",
