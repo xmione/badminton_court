@@ -9,10 +9,10 @@
     "dev:load-data": "echo '📊 Loading local dev data...' && python manage.py load_test_data",
     "dev:cypress-open": "npx cypress open",
 
-    "docker-dev": "echo '🚀 Starting development environment...' && docker-compose --env-file .env.dev --profile dev up",
-    "docker-dev:detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --env-file .env.dev --profile dev up -d",
-    "docker-dev:stop": "echo '🛑 Stopping development services...' && docker-compose --env-file .env.dev --profile dev down",
-    "docker-dev:logs": "echo '📋 Showing development logs...' && docker-compose --env-file .env.dev --profile dev logs -f",
+    "docker:dev": "echo '🚀 Starting development environment...' && docker-compose --env-file .env.docker --profile dev up",
+    "docker:dev-detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --env-file .env.dev --profile dev up -d",
+    "docker:dev-stop": "echo '🛑 Stopping development services...' && docker-compose --env-file .env.dev --profile dev down",
+    "docker:dev-logs": "echo '📋 Showing development logs...' && docker-compose --env-file .env.dev --profile dev logs -f",
     
     "test": "echo '🧪 Starting test environment...' && docker-compose --profile test up",
     "test:detached": "echo '🧪 Starting test environment (detached)...' && docker-compose --profile test up -d",
@@ -40,10 +40,6 @@
     "docker:down": "echo '🛑 Stopping all services...' && docker-compose down",
     "docker:down-volumes": "echo '🗑️  Stopping all services and removing volumes...' && docker-compose down -v",
     "docker:prune": "echo '🧹 Cleaning up unused Docker resources...' && docker system prune -f",
-    
-    "postalbuild": "echo 'Building Postal SMTP Server container Up..' && docker-compose --env-file .env.dev -f postal-compose.yml build --no-cache",
-    "postalup": "echo 'Starting Postal SMTP Server container Up..' && docker-compose --env-file .env.dev -f postal-compose.yml up -d",
-    "postaldown": "echo 'Shutting Postal SMTP Server container Down..' && docker-compose -f postal-compose.yml down",
 
     "cypress:open": "echo '🔍 Opening Cypress in interactive mode...' && docker-compose --profile test run --rm cypress open",
     "cypress:run": "echo '⚡ Running Cypress tests...' && docker-compose --profile test run --rm cypress run",

@@ -35,8 +35,15 @@ RUN rm -rf ~/.cache/pip
 # Copy project
 COPY --chown=appuser:appuser . /app/
 
+# Copy the web entrypoint script
+COPY --chown=appuser:appuser web-entrypoint.sh /app/
+RUN chmod +x /app/web-entrypoint.sh
+
 # Expose port
 EXPOSE 8000
+
+# Set the entrypoint for the web service
+ENTRYPOINT ["/app/web-entrypoint.sh"]
 
 # Default command
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

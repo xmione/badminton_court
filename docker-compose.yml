@@ -5,7 +5,17 @@ x-app-volumes: &app-volumes
   - /app/node_modules
   - /app/venv
 
+volumes:
+  postgres_data:
+  postal_data:
+  mariadb_data:
+
+networks:
+  app-network:
+    driver: bridge
+
 services:
+  # PostgreSQL Database
   db:
     image: postgres:14
     environment:
@@ -16,60 +26,131 @@ services:
       - postgres_data:/var/lib/postgresql/data/
     ports:
       - "5432:5432"
+    networks:
+      - app-network
 
+  # Redis (shared service)
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    networks:
+      - app-network
 
+  # Django Web Application
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
-    volumes: *app-volumes
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/venv
     ports:
       - "8000:8000"
     depends_on:
       - db
       - redis
-    environment:
-      - DEBUG=${DEBUG}
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
-      - TUNNEL_ENABLED=${TUNNEL_ENABLED}
     env_file:
-      - .env.dev
-
+      - .env.docker
+    networks:
+      - app-network
+      
+  # Celery Worker
   celery:
     build: .
     command: celery -A badminton_court worker --loglevel=info
-    volumes: *app-volumes
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/venv
     depends_on:
       - db
       - redis
-    environment:
-      - DEBUG=${DEBUG}
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
     env_file:
-      - .env.dev
+      - .env.docker
+    networks:
+      - app-network
 
+  # Celery Beat Scheduler
   celery-beat:
     build: .
     command: celery -A badminton_court beat --loglevel=info
-    volumes: *app-volumes
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/venv
     depends_on:
       - db
       - redis
-    environment:
-      - DEBUG=${DEBUG}
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
     env_file:
-      - .env.dev
+      - .env.docker
+    networks:
+      - app-network
 
+  # MariaDB for Postal
+  mariadb:
+    container_name: mariadb
+    image: mariadb:10.5
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./init-mariadb.sql:/docker-entrypoint-initdb.d/init-mariadb.sql
+    networks:
+      - app-network
+    command: --default-authentication-plugin=mysql_native_password
+  
+  # Postal SMTP Service
+  postal:
+    container_name: postal
+    build:
+      context: .
+      dockerfile: Dockerfile.postal
+    ports:
+      - "5000:5000"  # Postal Web UI
+      - "465:465"    
+      - "25:25"
+      - "587:587"
+    environment:
+      - RAILS_ENV=production
+      - POSTAL_HOST=${POSTAL_HOST}
+      - POSTAL_PASSWORD=${POSTAL_PASSWORD}
+      - POSTAL_PORT=${POSTAL_PORT}
+      - DB_HOST=${POSTAL_DB_HOST}
+      - DB_PORT=${POSTAL_DB_PORT}
+      - DB_USER=${POSTAL_DB_USER}
+      - DB_PASS=${POSTAL_DB_PASS}
+      - DB_NAME=${POSTAL_DB_NAME}
+      - MSG_DB_HOST=${MSG_DB_HOST}
+      - MSG_DB_PORT=${MSG_DB_PORT}
+      - MSG_DB_USER=${MSG_DB_USER}
+      - MSG_DB_PASS=${MSG_DB_PASS}
+      - MSG_DB_NAME=${MSG_DB_NAME}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME}
+      - SMTP_CERT_PATH=${SMTP_CERT_PATH}
+      - SMTP_KEY_PATH=${SMTP_KEY_PATH}
+      - SIGNING_KEY_PATH=${SIGNING_KEY_PATH}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - mariadb
+      - redis
+    volumes:
+      - postal_data:/postal/data
+      - ./config/postal.yml:/opt/postal/config/postal.yml
+      - ./certs:/postal/config/tls 
+    networks:
+      - app-network
+
+  # Cypress Testing
   cypress:
     build:
       context: .
@@ -83,17 +164,23 @@ services:
       - CYPRESS_baseUrl=${CYPRESS_baseUrl}
       - CYPRESS_headed=${CYPRESS_headed}
     env_file:
-      - .env.dev
+      - .env.docker
       - .env.dev.tunnel
     depends_on:
       - web
     profiles:
       - test
+    networks:
+      - app-network
 
+  # Test Data Setup
   test-setup:
     build: .
     command: python manage.py load_test_data
-    volumes: *app-volumes
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/venv
     depends_on:
       - db
       - redis
@@ -104,9 +191,8 @@ services:
       - REDIS_URL=${REDIS_URL}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS}
     env_file:
-      - .env.dev
+      - .env.docker
     profiles:
       - test
-
-volumes:
-  postgres_data:
+    networks:
+      - app-network

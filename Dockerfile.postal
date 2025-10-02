@@ -1,4 +1,4 @@
-# pay-sol/Scripts/Dockerfile.postal
+# badminton_court/Scripts/Dockerfile.postal
 FROM ruby:2.7
 
 ENV PATH="$PATH:/postal/bin"
@@ -67,13 +67,13 @@ USER postal
 # Install MariaDB Client
 # RUN apt-get update && apt-get install -y mariadb-client
 # Test db connection
-# mysql -h mariadb -P 3306 -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_NAME"
+# mysql -h mariadb -P 3306 -u "$MYSQL_USER" -p"$DB_PASSWORD" "$DB_NAME"
 # Shortcut
 # docker run --rm -it --network your_network_name mariadb:10.5 mysql -h mariadb -P 3306 -u "$POSTAL_DB_USER" -p"$POSTAL_DB_PASS" "$POSTAL_DB_NAME"
 # Long way
 # docker-compose -f Scripts/postal-compose.yml run --rm --entrypoint bash postal
 # Then inside the container:
-# mysql -h mariadb -P 3306 -u $DB_USERNAME -p$DB_PASSWORD $DB_NAME
+# mysql -h mariadb -P 3306 -u $MYSQL_USER -p$DB_PASSWORD $DB_NAME
 
 # Install netcat for testing connections (SMTP port, etc..)
 # RUN apt-get update && apt-get install -y netcat
@@ -90,16 +90,23 @@ ENTRYPOINT ["/postal/entrypoint.sh"]
 #CMD ["bash", "-c", "until mysql -h mariadb -P 3306 -u $POSTAL_DB_USER -p$POSTAL_DB_PASS -e 'SELECT 1'; do echo 'Waiting for database...'; sleep 3; done && bundle exec rake postal:upgrade && bundle exec bin/postal initialize && bundle exec bin/postal start"]
 #CMD ["bash", "-c", "until mysql -h mariadb -P 3306 -u \"$POSTAL_DB_USER\" -p\"$POSTAL_DB_PASS\" \"$POSTAL_DB_NAME\" -e 'SELECT 1'; do echo 'Waiting for database...'; sleep 3; done && bundle exec rake postal:upgrade && bundle exec bin/postal initialize && bundle exec bin/postal start"]
 
-#CMD ["bash", "-c", "echo \"DB_USERNAME is $DB_USERNAME\"; echo \"DB_PASSWORD is $DB_PASSWORD\"; until mysql -h mariadb -P 3306 -u \"$DB_USERNAME\" -p\"$DB_PASSWORD\" \"$DB_NAME\" -e 'SELECT 1'; do echo 'Waiting for database...'; sleep 3; done && bundle exec rake postal:update && bundle exec bin/postal initialize && bundle exec bin/postal start"]
+#CMD ["bash", "-c", "echo \"MYSQL_USER is $MYSQL_USER\"; echo \"DB_PASSWORD is $DB_PASSWORD\"; until mysql -h mariadb -P 3306 -u \"$MYSQL_USER\" -p\"$DB_PASSWORD\" \"$DB_NAME\" -e 'SELECT 1'; do echo 'Waiting for database...'; sleep 3; done && bundle exec rake postal:update && bundle exec bin/postal initialize && bundle exec bin/postal start"]
 
 # BIG NOTE: Single & runs web server and smtp server concurrently.
-CMD ["bash", "-c", "echo \"DB_USERNAME is $DB_USERNAME\" && \
-echo \"DB_PASSWORD is $DB_PASSWORD\" && \
+CMD ["bash", "-c", "echo \"DB_USER is $DB_USER\" && \
+echo \"DB_PASS is $DB_PASS\" && \
 echo \"DB_HOST is $DB_HOST\" && \
-until mysql -h mariadb -P3306 -u paysol_user -pP@ssw0rd123 paysol -e 'SHOW DATABASES;'; do \
-  echo \"Waiting for database...\"; \
+# Wait for MariaDB to be ready
+until mysqladmin ping -h $DB_HOST -P $DB_PORT --silent; do \
+  echo \"Waiting for MariaDB to be ready...\"; \
   sleep 3; \
 done && \
+# Test connection to the database
+until mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS $DB_NAME -e 'SELECT 1;' > /dev/null 2>&1; do \
+  echo \"Waiting for database connection...\"; \
+  sleep 3; \
+done && \
+echo \"Database connection successful!\" && \
 bundle exec rake postal:update && \
 bundle exec bin/postal initialize && \
 bundle exec bin/postal web-server --config=/postal/config/postal/postal.yml & \

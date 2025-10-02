@@ -36,6 +36,8 @@ services:
       - SMTP_CERT_PATH=${SMTP_CERT_PATH}
       - SMTP_KEY_PATH=${SMTP_KEY_PATH}
       - SIGNING_KEY_PATH=${SIGNING_KEY_PATH}
+      # Redis configuration - use the shared Redis
+      - REDIS_URL=redis://redis:6379/0
     depends_on:
       - mariadb
       - redis
@@ -43,6 +45,8 @@ services:
       - postal_data:/postal/data
       - ./config/postal.yml:/opt/postal/config/postal.yml
       - ./certs:/postal/config/tls 
+    networks:
+      - app-network
 
   mariadb:
     container_name: mariadb
@@ -55,12 +59,13 @@ services:
       MYSQL_PASSWORD: ${POSTAL_DB_PASS}
     volumes:
       - mariadb_data:/var/lib/mysql
-
-  redis:
-    container_name: redis
-    image: redis:alpine
-    restart: always
-
+    networks:
+      - app-network
+ 
 volumes:
   postal_data:
   mariadb_data:
+
+networks:
+  app-network:
+    external: true

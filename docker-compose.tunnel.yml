@@ -9,5 +9,5 @@ services:
     environment:
       TUNNEL_SUBDOMAIN: ${TUNNEL_SUBDOMAIN}
       TUNNEL_ENABLED: ${TUNNEL_ENABLED}
-    env_file:
+  env_file:
       - .env.dev.tunnel

@@ -25,7 +25,7 @@ web_server:
   max_threads: 5
 
 smtp_server:
-  # Configure Postal’s own SMTP server for incoming mail
+  # Configure Postal's own SMTP server for incoming mail
   default_port: <%= ENV['SMTP_PORT'] %>
   default_bind_address: "::"
   default_health_server_port: 9091
@@ -41,11 +41,11 @@ smtp_server:
   log_ip_address_exclusion_matcher: 
 
 main_db:
-  host: <%= ENV['DB_HOST'] %>
-  port: <%= ENV['DB_PORT'] %>
-  username: <%= ENV['DB_USER'] %>
-  password: <%= ENV['DB_PASS'] %>
-  database: <%= ENV['DB_NAME'] %>
+  host: <%= ENV['POSTAL_DB_HOST'] %>
+  port: <%= ENV['POSTAL_DB_PORT'] %>
+  username: <%= ENV['POSTAL_DB_USER'] %>
+  password: <%= ENV['POSTAL_DB_PASS'] %>
+  database: <%= ENV['POSTAL_DB_NAME'] %>
   pool_size: 5
   encoding: utf8mb4
 
