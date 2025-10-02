@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncDate, TruncMonth
 from django.http import HttpResponse
-from django.conf import settings  # Add this import
+from django.conf import settings
 import matplotlib.pyplot as plt
 import io
 import base64
@@ -45,7 +45,6 @@ User = get_user_model()
 
 @login_required
 def index(request):
-    # Truth be told, God is good all the time!
     # Get today's bookings
     today = timezone.now().date()
     today_bookings = Booking.objects.filter(start_time__date=today).order_by('start_time')
@@ -728,8 +727,22 @@ def test_reset_database(request):
         return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
     
     try:
-        # Clear all data from the database
-        call_command('flush', interactive=False)
+        # Delete all user-related data directly
+        User.objects.all().delete()
+        
+        # Delete allauth email addresses
+        from allauth.account.models import EmailAddress
+        EmailAddress.objects.all().delete()
+        
+        # Delete allauth social accounts
+        from allauth.socialaccount.models import SocialAccount, SocialToken
+        SocialAccount.objects.all().delete()
+        SocialToken.objects.all().delete()
+        
+        # Delete any sessions
+        from django.contrib.sessions.models import Session
+        Session.objects.all().delete()
+        
         return JsonResponse({'status': 'success', 'message': 'Database reset successfully'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

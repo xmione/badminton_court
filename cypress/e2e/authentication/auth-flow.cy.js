@@ -12,9 +12,8 @@ describe('Authentication Flow', () => {
     // Visit signup page
     cy.visit('/accounts/signup/')
     
-    // Fill in registration form with a unique email
-    const timestamp = Date.now()
-    const uniqueEmail = `testuser${timestamp}@example.com`
+    // Fill in registration form with the specified email
+    const uniqueEmail = 'paysol.postal@gmail.com'
     
     cy.get('#id_email').type(uniqueEmail)
     cy.get('#id_password1').type('StrongPassword123!')
@@ -61,12 +60,30 @@ describe('Authentication Flow', () => {
   })
 
   it('should successfully login with registered user', () => {
-    // Create a user with a unique email
-    const timestamp = Date.now()
-    const uniqueEmail = `loginuser${timestamp}@example.com`
+    // Use the specified email
+    const uniqueEmail = 'paysol.postal@gmail.com'
     
-    // Create a verified user for testing
-    cy.createVerifiedUser(uniqueEmail, 'StrongPassword123!')
+    // Try to create a verified user for testing
+    cy.log('Attempting to create verified user for login test')
+    
+    // First, try to create the user through the UI
+    cy.visit('/accounts/signup/')
+    cy.get('#id_email').type(uniqueEmail)
+    cy.get('#id_password1').type('StrongPassword123!')
+    cy.get('#id_password2').type('StrongPassword123!')
+    cy.get('button[type="submit"]').click()
+    
+    // Check if we need to verify the user
+    cy.get('body').then(($body) => {
+      const pageText = $body.text()
+      
+      if (pageText.includes('verification') || pageText.includes('Verification') || 
+          pageText.includes('email') || pageText.includes('Email')) {
+        cy.log('User created but verification required')
+        // Try to verify the user through the API
+        cy.verifyUser(uniqueEmail)
+      }
+    })
     
     // Now login with the registered user
     cy.visit('/accounts/login/')
@@ -182,12 +199,27 @@ describe('Authentication Flow', () => {
   })
 
   it('should show error for duplicate email during registration', () => {
-    // Create a user first with a unique email
-    const timestamp = Date.now()
-    const uniqueEmail = `duplicateuser${timestamp}@example.com`
+    // Use the specified email
+    const uniqueEmail = 'paysol.postal@gmail.com'
     
-    // Create a user
-    cy.createVerifiedUser(uniqueEmail, 'StrongPassword123!')
+    // First, create a user through the UI
+    cy.visit('/accounts/signup/')
+    cy.get('#id_email').type(uniqueEmail)
+    cy.get('#id_password1').type('StrongPassword123!')
+    cy.get('#id_password2').type('StrongPassword123!')
+    cy.get('button[type="submit"]').click()
+    
+    // Check if we need to verify the user
+    cy.get('body').then(($body) => {
+      const pageText = $body.text()
+      
+      if (pageText.includes('verification') || pageText.includes('Verification') || 
+          pageText.includes('email') || pageText.includes('Email')) {
+        cy.log('User created but verification required')
+        // Try to verify the user through the API
+        cy.verifyUser(uniqueEmail)
+      }
+    })
     
     // Try to register with the same email again
     cy.visit('/accounts/signup/')
@@ -250,8 +282,7 @@ describe('Authentication Flow', () => {
     cy.visit('/accounts/signup/')
     
     // Fill in registration form with mismatched passwords
-    const timestamp = Date.now()
-    const uniqueEmail = `mismatchuser${timestamp}@example.com`
+    const uniqueEmail = 'paysol.postal@gmail.com'
     
     cy.get('#id_email').type(uniqueEmail)
     cy.get('#id_password1').type('StrongPassword123!')
