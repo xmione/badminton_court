@@ -15,8 +15,8 @@ CYPRESS_baseUrl=http://web:8000
 CYPRESS_headed=true
 ```
 
-### Create .env.dev.tunnel file
-Create a `.env.dev.tunnel` file for tunnel configuration:
+### Create .env.tunnel file
+Create a `.env.tunnel` file for tunnel configuration:
 ```env
 TUNNEL_SUBDOMAIN=aeropace-portal
 TUNNEL_ENABLED=true

@@ -31,8 +31,8 @@
    CYPRESS_headed=true
    EOF
 
-   # Create .env.dev.tunnel file
-   cat > .env.dev.tunnel << EOF
+   # Create .env.tunnel file
+   cat > .env.tunnel << EOF
    TUNNEL_SUBDOMAIN=aeropace-portal
    TUNNEL_ENABLED=true
    TUNNEL_URL=https://aeropace-portal.loca.lt
