@@ -21,7 +21,7 @@ USER appuser
 
 # Copy and install Python dependencies as the non-root user
 COPY requirements.txt /app/
-RUN pip install --user -r requirements.txt
+RUN pip install --user -r requirements.txt --timeout 1000 --retries 5
 
 # Add user's local bin to PATH so installed packages are available
 ENV PATH=/home/appuser/.local/bin:$PATH
