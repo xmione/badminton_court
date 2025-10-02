@@ -1,3 +1,5 @@
+# settings.py
+
 """
 Django settings for badminton_court project.
 
@@ -13,6 +15,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 from urllib.parse import urlparse
 import os
+import re
+from django.core.exceptions import ValidationError  # Import ValidationError
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -110,57 +114,6 @@ TEMPLATES = [
     },
 ]
 
-# Social Media Provider Configuration (add your actual keys and secrets)
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
-        },
-        'APP': {
-            'client_id': 'YOUR_GOOGLE_CLIENT_ID',
-            'secret': 'YOUR_GOOGLE_CLIENT_SECRET',
-            'key': ''
-        }
-    },
-    'facebook': {
-        'METHOD': 'oauth2',
-        'SCOPE': ['email', 'public_profile'],
-        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
-        'INITIAL_PARAMS': {'cookie': True},
-        'FIELDS': [
-            'id',
-            'email',
-            'name',
-            'first_name',
-            'last_name',
-            'verified',
-            'locale',
-            'timezone',
-            'link',
-            'gender',
-            'updated_time',
-        ],
-        'VERIFIED_EMAIL': False,
-        'APP': {
-            'client_id': 'YOUR_FACEBOOK_APP_ID',
-            'secret': 'YOUR_FACEBOOK_APP_SECRET',
-            'key': ''
-        }
-    },
-    'twitter': {
-        'SCOPE': ['tweet.read', 'users.read'],
-        'APP': {
-            'client_id': 'YOUR_TWITTER_API_KEY',
-            'secret': 'YOUR_TWITTER_API_SECRET',
-            'key': ''
-        }
-    }
-}
-
 WSGI_APPLICATION = 'badminton_court.wsgi.application'
 
 # Database configuration
@@ -181,6 +134,23 @@ else:
         }
     }
 
+# Custom password validators to match test expectations
+class CustomPasswordValidator:
+    def validate(self, password, user=None):
+        if len(password) < 8:
+            raise ValidationError("Password must be at least 8 characters long.")
+        if not re.search(r'[A-Z]', password):
+            raise ValidationError("Password must contain at least one uppercase letter.")
+        if not re.search(r'[a-z]', password):
+            raise ValidationError("Password must contain at least one lowercase letter.")
+        if not re.search(r'[0-9]', password):
+            raise ValidationError("Password must contain at least one digit.")
+        if not re.search(r'[^A-Za-z0-9]', password):
+            raise ValidationError("Password must contain at least one special character.")
+    
+    def get_help_text(self):
+        return "Your password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters."
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -188,6 +158,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -195,6 +168,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+    {
+        'NAME': 'badminton_court.settings.CustomPasswordValidator',
+    }
 ]
 
 # Internationalization
@@ -226,15 +202,6 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
-
-# Celery Beat Schedule Configuration
-# Remove or comment out the empty schedule for now
-# CELERY_BEAT_SCHEDULE = {
-#     'task-name': {
-#         'task': 'yourapp.tasks.your_task',
-#         'schedule': 30.0,  # Run every 30 seconds
-#     },
-# }
 
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True
@@ -288,17 +255,14 @@ LOGGING = {
     },
 }
 
-# Email configuration (if needed)
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = os.getenv('EMAIL_HOST')
-# EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-# EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-# DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@example.com')
-
-# Create logs directory if it doesn't exist
-os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
+# Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('SMTP_HOST', 'localhost')  # Postal server
+EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))  # Postal SMTP port
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('SMTP_USER', 'postal')  # Or your SMTP username
+EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASS', 'postal')  # Or your SMTP password
+DEFAULT_FROM_EMAIL = os.getenv('SMTP_FROM_EMAIL', 'noreply@badmintoncourt.com')
 
 # Authentication Configuration
 AUTHENTICATION_BACKENDS = [
@@ -306,21 +270,29 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-# Django Allauth Configuration (Updated to remove deprecation warnings)
-ACCOUNT_LOGIN_METHODS = {'email'}  # Allow login with email only
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Required fields for signup
+# Django Allauth Configuration
+ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Allow login with email only
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False  # Don't require username
+ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE = False
+ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = True
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # or 'optional' or 'none'
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_LOGIN_ON_PASSWORD_RESET = True
+ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USERNAME_BLACKLIST = ['admin', 'staff', 'root']
 LOGIN_REDIRECT_URL = '/'  # Redirect to dashboard after login
 LOGOUT_REDIRECT_URL = '/accounts/login/'  # Redirect to login after logout
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = True
 SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_STORE_TOKENS = False
 
 # Site Configuration
 SITE_ID = 1
 
-# Social Media Provider Configuration (add your actual keys and secrets)
+# Social Media Provider Configuration (single definition)
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': [
@@ -329,6 +301,11 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
         'AUTH_PARAMS': {
             'access_type': 'online',
+        },
+        'APP': {
+            'client_id': os.getenv('GOOGLE_CLIENT_ID', 'YOUR_GOOGLE_CLIENT_ID'),
+            'secret': os.getenv('GOOGLE_CLIENT_SECRET', 'YOUR_GOOGLE_CLIENT_SECRET'),
+            'key': ''
         }
     },
     'facebook': {
@@ -350,21 +327,21 @@ SOCIALACCOUNT_PROVIDERS = {
             'updated_time',
         ],
         'VERIFIED_EMAIL': False,
+        'APP': {
+            'client_id': os.getenv('FACEBOOK_CLIENT_ID', 'YOUR_FACEBOOK_CLIENT_ID'),
+            'secret': os.getenv('FACEBOOK_CLIENT_SECRET', 'YOUR_FACEBOOK_CLIENT_SECRET'),
+            'key': ''
+        }
     },
     'twitter': {
         'SCOPE': ['tweet.read', 'users.read'],
+        'APP': {
+            'client_id': os.getenv('TWITTER_CLIENT_ID', 'YOUR_TWITTER_API_KEY'),
+            'secret': os.getenv('TWITTER_CLIENT_SECRET', 'YOUR_TWITTER_API_SECRET'),
+            'key': ''
+        }
     }
 }
 
-# Email configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('SMTP_HOST', 'localhost')  # Postal server
-EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))  # Postal SMTP port
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('SMTP_USER', 'postal')  # Or your SMTP username
-EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASS', 'postal')  # Or your SMTP password
-DEFAULT_FROM_EMAIL = os.getenv('SMTP_FROM_EMAIL', 'noreply@badmintoncourt.com')
-
-# Django Allauth email settings
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
-ACCOUNT_EMAIL_REQUIRED = True
+# Create logs directory if it doesn't exist
+os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)

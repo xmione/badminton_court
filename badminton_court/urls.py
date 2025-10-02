@@ -1,3 +1,5 @@
+# badminton_court/urls.py
+
 """
 URL configuration for badminton_court project.
 
