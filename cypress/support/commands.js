@@ -35,7 +35,6 @@ Cypress.Commands.add('logout', () => {
   cy.get('a[href="/admin/logout/"]').click()
 })
 
-
 // Command to reset the database
 Cypress.Commands.add('resetDatabase', () => {
   cy.log('Resetting database for clean test state')
@@ -50,11 +49,8 @@ Cypress.Commands.add('resetDatabase', () => {
     if (response.status === 200) {
       cy.log('Database reset successfully')
     } else {
-      cy.log(`Database reset failed with status ${response.status}: ${response.body}`)
+      cy.log(`Database reset failed with status ${response.status}: ${JSON.stringify(response.body)}`)
     }
-  }).catch((error) => {
-    cy.log(`Database reset request failed: ${error.message}`)
-    // Continue with tests even if reset fails
   })
 })
 
@@ -95,25 +91,6 @@ Cypress.Commands.add('createVerifiedUser', (email, password) => {
         }
       })
     }
-  }).catch((error) => {
-    cy.log(`User creation request failed: ${error.message}`)
-    // Try to create the user through the UI if the API fails
-    cy.visit('/accounts/signup/')
-    cy.get('#id_email').type(email)
-    cy.get('#id_password1').type(password)
-    cy.get('#id_password2').type(password)
-    cy.get('button[type="submit"]').click()
-    
-    // If we get a verification message, that's fine
-    cy.get('body').then(($body) => {
-      const pageText = $body.text()
-      if (pageText.includes('verification') || pageText.includes('Verification') || 
-          pageText.includes('email') || pageText.includes('Email')) {
-        cy.log('User created through UI with verification required')
-        // Verify the user through the API
-        cy.verifyUser(email)
-      }
-    })
   })
 })
 
@@ -137,8 +114,5 @@ Cypress.Commands.add('verifyUser', (email) => {
       cy.log(`User verification failed with status ${response.status}: ${JSON.stringify(response.body)}`)
       // Continue with tests even if verification fails
     }
-  }).catch((error) => {
-    cy.log(`User verification request failed: ${error.message}`)
-    // Continue with tests even if verification fails
   })
 })
