@@ -37,7 +37,7 @@
     "docker:build-tunnel": "echo '🐳 Building tunnel service image...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel build",
     "docker:build-tunnel-nocache": "echo '🐳 Building tunnel service image (no cache)...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel build --no-cache",
     "docker:build-all": "echo '🐳 Building all services image...' && docker-compose -f docker-compose.yml --env-file .env.docker build && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel build",
-    "docker:build-all-nocache": "echo '🐳 Building all services image (no cache)...' && docker-compose -f docker-compose.yml --env-file .env.docker build --nocache && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel build --nocache",
+    "docker:build-all-nocache": "echo '🐳 Building all services image (no cache)...' && docker-compose -f docker-compose.yml --env-file .env.docker build --no-cache && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel build --no-cache",
     "docker:rebuild-all": "echo '🐳 Completely rebuilding all services...' && docker-compose --env-file .env.docker down -v --rmi all && docker-compose -f docker-compose.tunnel.yml down -v --rmi all && npm run docker:build",
     "docker:logs": "echo '📋 Showing service logs...' && docker-compose logs -f",
     "docker:shell": "echo '🖥️  Opening shell in service container...' && docker-compose exec",
