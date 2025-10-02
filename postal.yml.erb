@@ -74,3 +74,6 @@ smtp:
 rails:
   environment: production
   secret_key: <%= ENV['AUTH_SECRET'] %>
+  allowed_hosts: 
+    - localhost
+    - 127.0.0.1
