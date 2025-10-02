@@ -8,12 +8,21 @@ from django.utils import timezone
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncDate, TruncMonth
 from django.http import HttpResponse
+from django.conf import settings  # Add this import
 import matplotlib.pyplot as plt
 import io
 import base64
 import pandas as pd
 import calendar
 from datetime import datetime, timedelta
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
+from django.db import connection
+from django.core.management import call_command
+import json
 
 from .models import (
     Customer, Court, Booking, Payment, 
@@ -32,8 +41,11 @@ from django.views.generic import CreateView
 from django.urls import reverse_lazy
 from django.template.loader import get_template
 
+User = get_user_model()
+
 @login_required
 def index(request):
+    # Truth be told, God is good all the time!
     # Get today's bookings
     today = timezone.now().date()
     today_bookings = Booking.objects.filter(start_time__date=today).order_by('start_time')
@@ -703,3 +715,78 @@ def generate_pie_chart(labels, data, title):
     plt.close()
     
     return graphic
+
+# Test API endpoints for Cypress testing
+@csrf_exempt
+@require_POST
+def test_reset_database(request):
+    """
+    Reset the database for testing purposes.
+    This should only be used in development/testing environments.
+    """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
+    try:
+        # Clear all data from the database
+        call_command('flush', interactive=False)
+        return JsonResponse({'status': 'success', 'message': 'Database reset successfully'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def test_create_user(request):
+    """
+    Create a verified user for testing purposes.
+    This should only be used in development/testing environments.
+    """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return JsonResponse({'status': 'error', 'message': 'Email and password are required'}, status=400)
+        
+        # Create user
+        user = User.objects.create_user(username=email, email=email, password=password)
+        
+        # Mark user as active (verified)
+        user.is_active = True
+        user.save()
+        
+        return JsonResponse({'status': 'success', 'message': 'User created successfully'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def test_verify_user(request):
+    """
+    Verify a user for testing purposes.
+    This should only be used in development/testing environments.
+    """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        if not email:
+            return JsonResponse({'status': 'error', 'message': 'Email is required'}, status=400)
+        
+        # Find and verify the user
+        user = User.objects.get(email=email)
+        user.is_active = True
+        user.save()
+        
+        return JsonResponse({'status': 'success', 'message': 'User verified successfully'})
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'User not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

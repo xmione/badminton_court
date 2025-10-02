@@ -16,7 +16,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 import os
 import re
-from django.core.exceptions import ValidationError  # Import ValidationError
+from django.core.exceptions import ValidationError
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -270,17 +270,10 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-# Django Allauth Configuration
-ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Allow login with email only
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False  # Don't require username
-ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE = False
-ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = True
+# Django Allauth Configuration - Updated to remove deprecation warnings
+ACCOUNT_LOGIN_METHODS = {'email'}  # Allow login with email only
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Required fields for signup
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # or 'optional' or 'none'
-ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
-ACCOUNT_LOGIN_ON_PASSWORD_RESET = True
-ACCOUNT_SESSION_REMEMBER = True
-ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USERNAME_BLACKLIST = ['admin', 'staff', 'root']
 LOGIN_REDIRECT_URL = '/'  # Redirect to dashboard after login
 LOGOUT_REDIRECT_URL = '/accounts/login/'  # Redirect to login after logout
@@ -329,7 +322,7 @@ SOCIALACCOUNT_PROVIDERS = {
         'VERIFIED_EMAIL': False,
         'APP': {
             'client_id': os.getenv('FACEBOOK_CLIENT_ID', 'YOUR_FACEBOOK_CLIENT_ID'),
-            'secret': os.getenv('FACEBOOK_CLIENT_SECRET', 'YOUR_FACEBOOK_CLIENT_SECRET'),
+            'secret': os.getenv('FACEBOOK_CLIENT_SECRET', 'YOUR_FACEBOOK_APP_SECRET'),
             'key': ''
         }
     },

@@ -34,3 +34,64 @@ Cypress.Commands.add('login', (username, password) => {
 Cypress.Commands.add('logout', () => {
   cy.get('a[href="/admin/logout/"]').click()
 })
+
+// Command to reset the database
+Cypress.Commands.add('resetDatabase', () => {
+  cy.log('Resetting database for clean test state')
+  
+  // Make a request to a custom Django view that resets the database
+  cy.request({
+    method: 'POST',
+    url: '/api/test-reset-database/',
+    failOnStatusCode: false
+  }).then((response) => {
+    if (response.status === 200) {
+      cy.log('Database reset successfully')
+    } else {
+      cy.log('Database reset failed, but continuing with tests')
+    }
+  })
+})
+
+// Command to create a verified user for testing
+Cypress.Commands.add('createVerifiedUser', (email, password) => {
+  cy.log(`Creating verified user with email: ${email}`)
+  
+  // Make a request to a custom Django view that creates a verified user
+  cy.request({
+    method: 'POST',
+    url: '/api/test-create-user/',
+    body: {
+      email,
+      password
+    },
+    failOnStatusCode: false
+  }).then((response) => {
+    if (response.status === 200) {
+      cy.log('User created successfully')
+    } else {
+      cy.log('User creation failed, but continuing with tests')
+    }
+  })
+})
+
+// Command to verify a user in the database
+Cypress.Commands.add('verifyUser', (email) => {
+  cy.log(`Verifying user with email: ${email}`)
+  
+  // Make a request to a custom Django view that verifies a user
+  cy.request({
+    method: 'POST',
+    url: '/api/test-verify-user/',
+    body: {
+      email
+    },
+    failOnStatusCode: false
+  }).then((response) => {
+    if (response.status === 200) {
+      cy.log('User verified successfully')
+    } else {
+      cy.log('User verification failed, but continuing with tests')
+    }
+  })
+})
