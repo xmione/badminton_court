@@ -19,9 +19,9 @@ RUN apt-get update && apt-get install -y \
     rabbitmq-server \
     netcat \
     sudo \
-    dos2unix  # added for converting entrypoint line endings
+    dos2unix
 
-# Clone the Postal repository (use the maintained one)
+# Clone the Postal repository
 RUN git clone -b main https://github.com/postalserver/postal.git /postal
 WORKDIR /postal
 
@@ -46,69 +46,23 @@ WORKDIR /postal
 # Copy the Postal configuration template
 COPY postal.yml.erb config/postal/postal.yml.erb
 
-# Copy the entrypoint script
+# Copy the scripts
 COPY entrypoint.sh /postal/entrypoint.sh
+COPY start-postal.sh /postal/start-postal.sh
 
-# Convert entrypoint.sh to Unix format and verify it
+# Convert scripts to Unix format and make them executable
 USER root
-RUN dos2unix /postal/entrypoint.sh && \
-    ls -l /postal/entrypoint.sh && \
-    file /postal/entrypoint.sh && \
-    head -n3 /postal/entrypoint.sh
+RUN dos2unix /postal/entrypoint.sh /postal/start-postal.sh && \
+    chmod +x /postal/entrypoint.sh /postal/start-postal.sh
 
-# Ensure the entrypoint script is executable
-RUN chmod +x /postal/entrypoint.sh
-# Ensure correct ownership for the configuration directory
+# Ensure correct ownership
 RUN chown -R postal:postal /postal/config
-RUN chown postal:postal /postal/entrypoint.sh
+RUN chown postal:postal /postal/entrypoint.sh /postal/start-postal.sh
 
 USER postal
-
-# Install MariaDB Client
-# RUN apt-get update && apt-get install -y mariadb-client
-# Test db connection
-# mysql -h mariadb -P 3306 -u "$MYSQL_USER" -p"$DB_PASSWORD" "$DB_NAME"
-# Shortcut
-# docker run --rm -it --network your_network_name mariadb:10.5 mysql -h mariadb -P 3306 -u "$POSTAL_DB_USER" -p"$POSTAL_DB_PASS" "$POSTAL_DB_NAME"
-# Long way
-# docker-compose -f Scripts/postal-compose.yml run --rm --entrypoint bash postal
-# Then inside the container:
-# mysql -h mariadb -P 3306 -u $MYSQL_USER -p$DB_PASSWORD $DB_NAME
-
-# Install netcat for testing connections (SMTP port, etc..)
-# RUN apt-get update && apt-get install -y netcat
-# nc -zv localhost 587
 
 EXPOSE 5000 25 587 465 
 
 # Set the entrypoint and command
 ENTRYPOINT ["/postal/entrypoint.sh"]
-
-#CMD ["bash", "-c", "bundle exec bin/postal bootstrap-config && bundle exec bin/postal initialize && bundle exec bin/postal start"]
-
-# Set up and start Postal
-#CMD ["bash", "-c", "until mysql -h mariadb -P 3306 -u $POSTAL_DB_USER -p$POSTAL_DB_PASS -e 'SELECT 1'; do echo 'Waiting for database...'; sleep 3; done && bundle exec rake postal:upgrade && bundle exec bin/postal initialize && bundle exec bin/postal start"]
-#CMD ["bash", "-c", "until mysql -h mariadb -P 3306 -u \"$POSTAL_DB_USER\" -p\"$POSTAL_DB_PASS\" \"$POSTAL_DB_NAME\" -e 'SELECT 1'; do echo 'Waiting for database...'; sleep 3; done && bundle exec rake postal:upgrade && bundle exec bin/postal initialize && bundle exec bin/postal start"]
-
-#CMD ["bash", "-c", "echo \"MYSQL_USER is $MYSQL_USER\"; echo \"DB_PASSWORD is $DB_PASSWORD\"; until mysql -h mariadb -P 3306 -u \"$MYSQL_USER\" -p\"$DB_PASSWORD\" \"$DB_NAME\" -e 'SELECT 1'; do echo 'Waiting for database...'; sleep 3; done && bundle exec rake postal:update && bundle exec bin/postal initialize && bundle exec bin/postal start"]
-
-# BIG NOTE: Single & runs web server and smtp server concurrently.
-CMD ["bash", "-c", "echo \"DB_USER is $DB_USER\" && \
-echo \"DB_PASS is $DB_PASS\" && \
-echo \"DB_HOST is $DB_HOST\" && \
-# Wait for MariaDB to be ready
-until mysqladmin ping -h $DB_HOST -P $DB_PORT --silent; do \
-  echo \"Waiting for MariaDB to be ready...\"; \
-  sleep 3; \
-done && \
-# Test connection to the database
-until mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS $DB_NAME -e 'SELECT 1;' > /dev/null 2>&1; do \
-  echo \"Waiting for database connection...\"; \
-  sleep 3; \
-done && \
-echo \"Database connection successful!\" && \
-bundle exec rake postal:update && \
-bundle exec bin/postal initialize && \
-bundle exec bin/postal web-server --config=/postal/config/postal/postal.yml & \
-bundle exec bin/postal smtp-server --config=/postal/config/postal/postal.yml & \
-wait"]
+CMD ["/postal/start-postal.sh"]

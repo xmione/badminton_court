@@ -48,6 +48,7 @@ main_db:
   database: <%= ENV['POSTAL_DB_NAME'] %>
   pool_size: 5
   encoding: utf8mb4
+  socket:  # Explicitly set to empty to force TCP connection
 
 message_db:
   host: <%= ENV['MSG_DB_HOST'] %>
@@ -73,7 +74,7 @@ smtp:
 
 rails:
   environment: production
-  secret_key: <%= ENV['AUTH_SECRET'] %>
+  secret_key: <%= ENV['RAILS_SECRET_KEY'] || ENV['AUTH_SECRET'] %>
   allowed_hosts: 
     - localhost
     - 127.0.0.1
