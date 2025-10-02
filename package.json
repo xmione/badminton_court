@@ -54,7 +54,7 @@
     "status": "echo '📊 Showing service status...' && docker-compose ps",
     "shell": "echo '🖥️  Opening shell in service container...' && docker-compose --profile dev exec",
     "docker:reset": "echo '🔄 Resetting environment...' && docker-compose --env-file .env.dev down -v --rmi all && docker-compose --env-file .env.dev -f postal-compose.yml down -v --rmi all && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml --env-file .env.tunnel down -v --rmi all && docker system prune -f",
-    "docker:reset-keep-images": "echo '🔄 Resetting environment (keeping base images)...' && docker-compose --env-file .env.dev down -v && docker-compose --env-file .env.dev -f postal-compose.yml down -v && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml --env-file .env.tunnel down -v && docker system prune -f --filter 'until=24h'",
+    "docker:reset-keep-images": "echo '🔄 Resetting environment (keeping base images)...' && docker-compose --env-file .env.docker down -v && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml --env-file .env.tunnel down -v && docker system prune -f --filter 'until=24h'",
     "docker:reset-and-restart": "echo '🔄 Resetting and restarting all services...' && npm run docker:reset && npm run docker:build-all-nocache && npm run docker-dev:detached",
 
     "pfs": "echo 'Print the Project Folder Structure..' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\"",
