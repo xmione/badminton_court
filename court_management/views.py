@@ -803,3 +803,83 @@ def test_verify_user(request):
         return JsonResponse({'status': 'error', 'message': 'User not found'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+@csrf_exempt
+@require_POST
+def test_setup_admin(request):
+    """
+    Setup test admin users for testing purposes.
+    This should only be used in development/testing environments.
+    """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
+    try:
+        # Parse request body for options
+        data = json.loads(request.body) if request.body else {}
+        
+        # Get parameters
+        username = data.get('username', 'admin')
+        password = data.get('password', 'password')
+        email = data.get('email', 'admin@example.com')
+        reset = data.get('reset', False)
+        
+        # Reset existing admin if requested
+        if reset:
+            User.objects.filter(username__in=['admin', 'superadmin', 'staff_admin', 'inactive_admin']).delete()
+        
+        # Create the main admin user
+        admin_user, created = User.objects.get_or_create(
+            username=username,
+            defaults={
+                'email': email,
+                'is_superuser': True,
+                'is_staff': True,
+                'is_active': True,
+            }
+        )
+        
+        # Always set the password to ensure it's correct
+        admin_user.set_password(password)
+        admin_user.save()
+        
+        # Create additional test admin users if not already present
+        if not User.objects.filter(username='superadmin').exists():
+            superadmin = User.objects.create_user(
+                username='superadmin',
+                email='superadmin@example.com',
+                password='superpassword'
+            )
+            superadmin.is_superuser = True
+            superadmin.is_staff = True
+            superadmin.save()
+        
+        if not User.objects.filter(username='staff_admin').exists():
+            staff_admin = User.objects.create_user(
+                username='staff_admin',
+                email='staff@example.com',
+                password='staffpassword'
+            )
+            staff_admin.is_superuser = False
+            staff_admin.is_staff = True
+            staff_admin.save()
+        
+        if not User.objects.filter(username='inactive_admin').exists():
+            inactive_admin = User.objects.create_user(
+                username='inactive_admin',
+                email='inactive@example.com',
+                password='inactivepassword'
+            )
+            inactive_admin.is_superuser = True
+            inactive_admin.is_staff = True
+            inactive_admin.is_active = False
+            inactive_admin.save()
+        
+        if created:
+            message = f"Admin user '{username}' created successfully"
+        else:
+            message = f"Admin user '{username}' updated successfully"
+            
+        return JsonResponse({'status': 'success', 'message': message})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

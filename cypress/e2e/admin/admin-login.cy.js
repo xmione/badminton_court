@@ -1,5 +1,10 @@
 // cypress/e2e/admin/admin-login.cy.js
 describe('Admin Login', () => {
+  beforeEach(() => {
+    // Setup test admin users before each test
+    cy.setupTestAdmin({ reset: true })
+  })
+
   it('should successfully login to admin panel', () => {
     // Visit admin login page
     cy.visit('/admin/login/')

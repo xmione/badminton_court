@@ -38,7 +38,7 @@ Cypress.Commands.add('logout', () => {
 // Command to reset the database
 Cypress.Commands.add('resetDatabase', () => {
   cy.log('Resetting database for clean test state')
-  
+
   // Make a request to a custom Django view that resets the database
   cy.request({
     method: 'POST',
@@ -57,7 +57,7 @@ Cypress.Commands.add('resetDatabase', () => {
 // Command to create a verified user for testing
 Cypress.Commands.add('createVerifiedUser', (email, password) => {
   cy.log(`Creating verified user with email: ${email}`)
-  
+
   // Make a request to a custom Django view that creates a verified user
   cy.request({
     method: 'POST',
@@ -79,12 +79,12 @@ Cypress.Commands.add('createVerifiedUser', (email, password) => {
       cy.get('#id_password1').type(password)
       cy.get('#id_password2').type(password)
       cy.get('button[type="submit"]').click()
-      
+
       // If we get a verification message, that's fine
       cy.get('body').then(($body) => {
         const pageText = $body.text()
-        if (pageText.includes('verification') || pageText.includes('Verification') || 
-            pageText.includes('email') || pageText.includes('Email')) {
+        if (pageText.includes('verification') || pageText.includes('Verification') ||
+          pageText.includes('email') || pageText.includes('Email')) {
           cy.log('User created through UI with verification required')
           // Verify the user through the API
           cy.verifyUser(email)
@@ -97,7 +97,7 @@ Cypress.Commands.add('createVerifiedUser', (email, password) => {
 // Command to verify a user in the database
 Cypress.Commands.add('verifyUser', (email) => {
   cy.log(`Verifying user with email: ${email}`)
-  
+
   // Make a request to a custom Django view that verifies a user
   cy.request({
     method: 'POST',
@@ -113,6 +113,126 @@ Cypress.Commands.add('verifyUser', (email) => {
     } else {
       cy.log(`User verification failed with status ${response.status}: ${JSON.stringify(response.body)}`)
       // Continue with tests even if verification fails
+    }
+  })
+})
+
+// Command to setup test admin users
+Cypress.Commands.add('setupTestAdmin', (options = {}) => {
+  cy.log('Setting up test admin users')
+
+  const defaultOptions = {
+    reset: true,
+    username: 'admin',
+    password: 'password',
+    email: 'admin@example.com'
+  }
+
+  const finalOptions = { ...defaultOptions, ...options }
+
+  // Make a request to setup test admin users with increased timeout and retry
+  cy.request({
+    method: 'POST',
+    url: '/api/test-setup-admin/',
+    body: finalOptions,
+    timeout: 120000,  // Increase timeout to 120 seconds (2 minutes)
+    retryOnNetworkFailure: true,  // Retry on network failures
+    retryOnStatusCodeFailure: false,  // Don't retry on status code failures
+    failOnStatusCode: false  // Don't fail on non-2xx status codes
+  }).then((response) => {
+    if (response.status === 200) {
+      cy.log(response.body.message)
+    } else {
+      cy.log(`Admin setup failed with status ${response.status}: ${JSON.stringify(response.body)}`)
+
+      // Try a fallback approach - create admin user directly via Django shell
+      cy.log('Trying fallback approach...')
+      cy.exec(`python manage.py shell -c "
+from django.contrib.auth.models import User
+try:
+    # Delete existing admin user if reset is true
+    if ${finalOptions.reset}:
+        User.objects.filter(username='${finalOptions.username}').delete()
+    
+    # Create or update admin user
+    admin_user, created = User.objects.get_or_create(
+        username='${finalOptions.username}',
+        defaults={
+            'email': '${finalOptions.email}',
+            'is_superuser': True,
+            'is_staff': True,
+            'is_active': True,
+        }
+    )
+    
+    # Always set the password
+    admin_user.set_password('${finalOptions.password}')
+    admin_user.save()
+    
+    if created:
+        print('Admin user created successfully via fallback')
+    else:
+        print('Admin user updated successfully via fallback')
+        
+except Exception as e:
+    print(f'Error in fallback: {str(e)}')
+    raise
+"`, { timeout: 60000, failOnNonZeroExit: false }).then((result) => {
+        if (result.code === 0) {
+          cy.log(result.stdout)
+        } else {
+          cy.log(`Fallback approach failed: ${result.stderr}`)
+          throw new Error('Both API and fallback approaches failed to create admin user')
+        }
+      })
+    }
+  })
+})
+
+// Command for admin login with setup
+Cypress.Commands.add('adminLogin', (username = 'admin', password = 'password', setup = true) => {
+  if (setup) {
+    cy.setupTestAdmin({ username, password })
+  }
+
+  cy.visit('/admin/login/')
+  cy.get('#id_username').type(username)
+  cy.get('#id_password').type(password)
+  cy.get('input[type="submit"]').click()
+})
+
+// Command to create admin user using the existing management command
+Cypress.Commands.add('createAdminUser', (username = 'admin', password = 'password', reset = false) => {
+  cy.log(`Creating admin user: ${username}`)
+
+  // Build the command arguments
+  const args = ['load_test_admin', `--username=${username}`, `--password=${password}`]
+  if (reset) args.push('--reset')
+
+  // Execute the Django management command
+  cy.exec(`python manage.py ${args.join(' ')}`, {
+    timeout: 60000,  // Increase timeout to 60 seconds
+    failOnNonZeroExit: false
+  }).then((result) => {
+    if (result.code === 0) {
+      cy.log('Admin user created successfully')
+      cy.log(result.stdout)
+    } else {
+      cy.log(`Failed to create admin user: ${result.stderr}`)
+      // Fallback: try creating user directly through Django shell
+      cy.exec(`python manage.py shell -c "
+from django.contrib.auth.models import User
+try:
+    user = User.objects.get(username='${username}')
+    user.set_password('${password}')
+    user.is_superuser = True
+    user.is_staff = True
+    user.save()
+    print('Admin user updated successfully')
+except User.DoesNotExist:
+    User.objects.create_superuser('${username}', 'admin@example.com', '${password}')
+    print('Admin user created successfully')
+"`, { timeout: 30000 })
     }
   })
 })
