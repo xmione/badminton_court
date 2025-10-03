@@ -180,5 +180,5 @@ versions.json.backup*
 node_modules/
 cypress/screenshots/
 cypress/videos/
+certs/
 
-.env..docker
