@@ -31,14 +31,94 @@ RUN gem install bundler -v 2.4.22
 RUN bundle _2.4.22_ install --without development test
 
 # Create proper vendor SCSS files with required variable definitions
-RUN mkdir -p /postal/app/assets/stylesheets/vendor && \
-    printf "// Color variables\n\$darkBlue: #1a237e;\n\$blue: #3949ab;\n\$lightBlue: #5c6bc0;\n\$white: #ffffff;\n\$gray: #9e9e9e;\n\$darkGray: #616161;\n\$lightGray: #e0e0e0;\n\$green: #4caf50;\n\$red: #f44336;\n\$orange: #ff9800;\n\n// Spacing variables\n\$spacing-xs: 4px;\n\$spacing-sm: 8px;\n\$spacing-md: 16px;\n\$spacing-lg: 24px;\n\$spacing-xl: 32px;\n\n// Font variables\n\$font-size-xs: 12px;\n\$font-size-sm: 14px;\n\$font-size-md: 16px;\n\$font-size-lg: 18px;\n\$font-size-xl: 20px;\n\n// Border radius\n\$border-radius-sm: 2px;\n\$border-radius-md: 4px;\n\$border-radius-lg: 8px;\n" > /postal/app/assets/stylesheets/vendor/_variables.scss && \
-    printf "// Bootstrap-like styles\n@import 'variables';\n\n.btn {\n  display: inline-block;\n  padding: 6px 12px;\n  margin-bottom: 0;\n  font-size: \$font-size-sm;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: middle;\n  cursor: pointer;\n  background-image: none;\n  border: 1px solid transparent;\n  border-radius: \$border-radius-md;\n  color: \$white;\n  background-color: \$blue;\n  border-color: darken(\$blue, 5%);\n\n  &:hover {\n    background-color: darken(\$blue, 10%);\n    border-color: darken(\$blue, 15%);\n  }\n}\n\n.form-control {\n  display: block;\n  width: 100%;\n  height: 34px;\n  padding: 6px 12px;\n  font-size: \$font-size-sm;\n  line-height: 1.42857143;\n  color: \$darkGray;\n  background-color: \$white;\n  background-image: none;\n  border: 1px solid \$lightGray;\n  border-radius: \$border-radius-md;\n  box-shadow: inset 0 1px 1px rgba(0,0,0,.075);\n\n  &:focus {\n    border-color: \$blue;\n    outline: 0;\n    box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(\$blue, .6);\n  }\n}\n\n.alert {\n  padding: \$spacing-md;\n  margin-bottom: \$spacing-md;\n  border: 1px solid transparent;\n  border-radius: \$border-radius-md;\n}\n\n.alert-danger {\n  color: darken(\$red, 10%);\n  background-color: lighten(\$red, 40%);\n  border-color: lighten(\$red, 30%);\n}\n" > /postal/app/assets/stylesheets/vendor/_bootstrap.scss
+RUN mkdir -p /postal/app/assets/stylesheets/vendor
 
-# Create a proper application.scss file that imports vendor files
-RUN mkdir -p /postal/app/assets/stylesheets/application && \
-    printf "/*\n * = require_self\n * = require_tree ./vendor\n * = require_tree ./components\n */\n\n// Application-specific styles\nbody {\n  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;\n  font-size: \$font-size-sm;\n  line-height: 1.42857143;\n  color: \$darkGray;\n  background-color: \$white;\n  margin: 0;\n  padding: 0;\n}\n\n.container {\n  margin-right: auto;\n  margin-left: auto;\n  padding-left: 15px;\n  padding-right: 15px;\n}\n\n" > /postal/app/assets/stylesheets/application/application.scss
+# Create _variables.scss using multiple echo commands
+RUN echo "// Color variables" > /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$darkBlue: #1a237e;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$blue: #3949ab;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$lightBlue: #5c6bc0;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$white: #ffffff;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$gray: #9e9e9e;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$darkGray: #616161;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$lightGray: #e0e0e0;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$green: #4caf50;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$red: #f44336;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$orange: #ff9800;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "// Spacing variables" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$spacing-xs: 4px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$spacing-sm: 8px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$spacing-md: 16px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$spacing-lg: 24px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$spacing-xl: 32px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "// Font variables" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$font-size-xs: 12px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$font-size-sm: 14px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$font-size-md: 16px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$font-size-lg: 18px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$font-size-xl: 20px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "// Border radius" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$border-radius-sm: 2px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$border-radius-md: 4px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    echo "\$border-radius-lg: 8px;" >> /postal/app/assets/stylesheets/vendor/_variables.scss
 
+# Create _bootstrap.scss using multiple echo commands
+RUN echo "// Bootstrap-like styles" > /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "@import 'variables';" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo ".btn {" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  display: inline-block;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  padding: 6px 12px;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  margin-bottom: 0;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  font-size: \$font-size-sm;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  font-weight: normal;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  line-height: 1.42857143;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  text-align: center;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  white-space: nowrap;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  vertical-align: middle;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  cursor: pointer;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  background-image: none;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  border: 1px solid transparent;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  border-radius: \$border-radius-md;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  color: \$white;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  background-color: \$blue;" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  border-color: darken(\$blue, 5%);" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  &:hover {" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "    background-color: darken(\$blue, 10%);" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "    border-color: darken(\$blue, 15%);" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "  }" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss && \
+    echo "}" >> /postal/app/assets/stylesheets/vendor/_bootstrap.scss
+
+# Create a proper application.scss file that imports SCSS variables
+RUN mkdir -p /postal/app/assets/stylesheets/application
+
+RUN echo "/*" > /postal/app/assets/stylesheets/application/application.scss && \
+    echo " * = require_self" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo " */" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "@import './vendor/variables';" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "// Application-specific styles" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "body {" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "  font-size: \$font-size-sm;" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "  line-height: 1.42857143;" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "  color: \$darkGray;" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "  background-color: \$white;" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "  margin: 0;" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "  padding: 0;" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "}" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo ".container {" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "  margin-right: auto;" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "  margin-left: auto;" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "  padding-left: 15px;" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "  padding-right: 15px;" >> /postal/app/assets/stylesheets/application/application.scss && \
+    echo "}" >> /postal/app/assets/stylesheets/application/application.scss
 # Ensure Postal binary is executable
 RUN chmod +x /postal/bin/postal
 
@@ -47,6 +127,30 @@ RUN useradd -r -m -d /postal postal && \
     mkdir -p /postal/log /var/lib/postal && \
     chown -R postal:postal /postal /var/lib/postal
 
+# Create JavaScript directory structure and files
+RUN mkdir -p /postal/app/assets/javascripts/application
+
+# Create a basic jQuery stub file
+RUN echo "// jQuery stub for Postal" > /postal/app/assets/javascripts/jquery.js && \
+    echo "(function(window, undefined) {" >> /postal/app/assets/javascripts/jquery.js && \
+    echo "  'use strict';" >> /postal/app/assets/javascripts/jquery.js && \
+    echo "  var jQuery = function() {" >> /postal/app/assets/javascripts/jquery.js && \
+    echo "    return jQuery;" >> /postal/app/assets/javascripts/jquery.js && \
+    echo "  };" >> /postal/app/assets/javascripts/jquery.js && \
+    echo "  window.jQuery = window.$ = jQuery;" >> /postal/app/assets/javascripts/jquery.js && \
+    echo "})(window);" >> /postal/app/assets/javascripts/jquery.js
+
+# Create application.coffee file
+RUN echo "#= require jquery" > /postal/app/assets/javascripts/application/application.coffee && \
+    echo "" >> /postal/app/assets/javascripts/application/application.coffee && \
+    echo "#= require_self" >> /postal/app/assets/javascripts/application/application.coffee && \
+    echo "" >> /postal/app/assets/javascripts/application/application.coffee && \
+    echo "# Basic application JavaScript" >> /postal/app/assets/javascripts/application/application.coffee && \
+    echo "window.Postal = {} if !window.Postal" >> /postal/app/assets/javascripts/application/application.coffee && \
+    echo "" >> /postal/app/assets/javascripts/application/application.coffee && \
+    echo "document.addEventListener 'DOMContentLoaded', ->" >> /postal/app/assets/javascripts/application/application.coffee && \
+    echo "  console.log 'Postal application loaded'" >> /postal/app/assets/javascripts/application/application.coffee    
+    
 # Switch to root user temporarily for asset precompilation
 USER root
 
