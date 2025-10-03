@@ -1,15 +1,27 @@
 #!/bin/bash
 
+# Print environment variables for debugging
+echo "=== Environment Variables ==="
+echo "POSTAL_DB_HOST: '${POSTAL_DB_HOST}'"
+echo "POSTAL_DB_PORT: '${POSTAL_DB_PORT}'"
+echo "POSTAL_DB_USER: '${POSTAL_DB_USER}'"
+echo "POSTAL_DB_PASS: '${POSTAL_DB_PASS:0:5}...'"
+echo "POSTAL_DB_NAME: '${POSTAL_DB_NAME}'"
+echo "RAILS_SECRET_KEY: '${RAILS_SECRET_KEY:0:10}...'"
+echo "==========================="
+
 # Wait for MariaDB to be ready
-until mysqladmin ping -h $DB_HOST -P $DB_PORT --silent; do
-  echo "Waiting for MariaDB to be ready..."
-  sleep 3
+echo "Waiting for MariaDB to be ready..."
+until mysqladmin ping -h"$POSTAL_DB_HOST" -P"$POSTAL_DB_PORT" --silent; do
+    echo "Waiting for MariaDB to be ready..."
+    sleep 3
 done
 
 # Test connection to the database
-until mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS $DB_NAME -e 'SELECT 1;' > /dev/null 2>&1; do
-  echo "Waiting for database connection..."
-  sleep 3
+echo "Testing database connection..."
+until mysql -h"$POSTAL_DB_HOST" -P"$POSTAL_DB_PORT" -u"$POSTAL_DB_USER" -p"$POSTAL_DB_PASS" "$POSTAL_DB_NAME" -e 'SELECT 1;' > /dev/null 2>&1; do
+    echo "Waiting for database connection..."
+    sleep 3
 done
 
 echo "Database connection successful!"
@@ -22,6 +34,10 @@ bundle exec rake postal:update
 echo "Running postal initialize..."
 bundle exec bin/postal initialize
 
+# Skip asset precompilation for development and set Rails to compile on the fly
+export RAILS_SERVE_STATIC_FILES=true
+export RAILS_ENV=development
+
 # Create admin user if not already created
 ADMIN_EMAIL=${ADMIN_EMAIL:-"admin@aeropace.com"}
 ADMIN_FIRST_NAME=${ADMIN_FIRST_NAME:-"Admin"}
@@ -30,7 +46,7 @@ ADMIN_PASSWORD=${ADMIN_PASSWORD:-"Admin123!"}
 
 echo "Checking if admin user exists..."
 # Check if admin user already exists
-USER_EXISTS=$(mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS $DB_NAME -e "SELECT COUNT(*) FROM users WHERE email = '$ADMIN_EMAIL';" -s -N 2>/dev/null || echo "0")
+USER_EXISTS=$(mysql -h"$POSTAL_DB_HOST" -P"$POSTAL_DB_PORT" -u"$POSTAL_DB_USER" -p"$POSTAL_DB_PASS" "$POSTAL_DB_NAME" -e "SELECT COUNT(*) FROM users WHERE email = '$ADMIN_EMAIL';" -s -N 2>/dev/null || echo "0")
 
 if [ "$USER_EXISTS" = "0" ]; then
     echo "Creating admin user..."
@@ -66,5 +82,6 @@ else
 fi
 
 # Keep the container running and wait for services
-echo "Postal is running. Press Ctrl+C to stop."
+echo "Postal is running. Access it at http://localhost:5000"
+echo "Press Ctrl+C to stop."
 wait

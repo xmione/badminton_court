@@ -1,7 +1,8 @@
-# badminton_court/Scripts/Dockerfile.postal
+# Dockerfile.postal
 FROM ruby:2.7
 
 ENV PATH="$PATH:/postal/bin"
+ENV RAILS_ENV=production
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -29,6 +30,15 @@ WORKDIR /postal
 RUN gem install bundler -v 2.4.22
 RUN bundle _2.4.22_ install --without development test
 
+# Create proper vendor SCSS files with required variable definitions
+RUN mkdir -p /postal/app/assets/stylesheets/vendor && \
+    printf "// Color variables\n\$darkBlue: #1a237e;\n\$blue: #3949ab;\n\$lightBlue: #5c6bc0;\n\$white: #ffffff;\n\$gray: #9e9e9e;\n\$darkGray: #616161;\n\$lightGray: #e0e0e0;\n\$green: #4caf50;\n\$red: #f44336;\n\$orange: #ff9800;\n\n// Spacing variables\n\$spacing-xs: 4px;\n\$spacing-sm: 8px;\n\$spacing-md: 16px;\n\$spacing-lg: 24px;\n\$spacing-xl: 32px;\n\n// Font variables\n\$font-size-xs: 12px;\n\$font-size-sm: 14px;\n\$font-size-md: 16px;\n\$font-size-lg: 18px;\n\$font-size-xl: 20px;\n\n// Border radius\n\$border-radius-sm: 2px;\n\$border-radius-md: 4px;\n\$border-radius-lg: 8px;\n" > /postal/app/assets/stylesheets/vendor/_variables.scss && \
+    printf "// Bootstrap-like styles\n@import 'variables';\n\n.btn {\n  display: inline-block;\n  padding: 6px 12px;\n  margin-bottom: 0;\n  font-size: \$font-size-sm;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: middle;\n  cursor: pointer;\n  background-image: none;\n  border: 1px solid transparent;\n  border-radius: \$border-radius-md;\n  color: \$white;\n  background-color: \$blue;\n  border-color: darken(\$blue, 5%);\n\n  &:hover {\n    background-color: darken(\$blue, 10%);\n    border-color: darken(\$blue, 15%);\n  }\n}\n\n.form-control {\n  display: block;\n  width: 100%;\n  height: 34px;\n  padding: 6px 12px;\n  font-size: \$font-size-sm;\n  line-height: 1.42857143;\n  color: \$darkGray;\n  background-color: \$white;\n  background-image: none;\n  border: 1px solid \$lightGray;\n  border-radius: \$border-radius-md;\n  box-shadow: inset 0 1px 1px rgba(0,0,0,.075);\n\n  &:focus {\n    border-color: \$blue;\n    outline: 0;\n    box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(\$blue, .6);\n  }\n}\n\n.alert {\n  padding: \$spacing-md;\n  margin-bottom: \$spacing-md;\n  border: 1px solid transparent;\n  border-radius: \$border-radius-md;\n}\n\n.alert-danger {\n  color: darken(\$red, 10%);\n  background-color: lighten(\$red, 40%);\n  border-color: lighten(\$red, 30%);\n}\n" > /postal/app/assets/stylesheets/vendor/_bootstrap.scss
+
+# Create a proper application.scss file that imports vendor files
+RUN mkdir -p /postal/app/assets/stylesheets/application && \
+    printf "/*\n * = require_self\n * = require_tree ./vendor\n * = require_tree ./components\n */\n\n// Application-specific styles\nbody {\n  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;\n  font-size: \$font-size-sm;\n  line-height: 1.42857143;\n  color: \$darkGray;\n  background-color: \$white;\n  margin: 0;\n  padding: 0;\n}\n\n.container {\n  margin-right: auto;\n  margin-left: auto;\n  padding-left: 15px;\n  padding-right: 15px;\n}\n\n" > /postal/app/assets/stylesheets/application/application.scss
+
 # Ensure Postal binary is executable
 RUN chmod +x /postal/bin/postal
 
@@ -37,7 +47,30 @@ RUN useradd -r -m -d /postal postal && \
     mkdir -p /postal/log /var/lib/postal && \
     chown -R postal:postal /postal /var/lib/postal
 
-# Switch to Postal user
+# Switch to root user temporarily for asset precompilation
+USER root
+
+# Create a basic postal configuration for precompilation
+RUN mkdir -p /postal/config/postal && \
+    echo "version: 2" > /postal/config/postal/postal.yml && \
+    echo "web_server:" >> /postal/config/postal/postal.yml && \
+    echo "  default_port: 5000" >> /postal/config/postal/postal.yml && \
+    echo "  default_bind_address: 0.0.0.0" >> /postal/config/postal/postal.yml && \
+    echo "  max_threads: 5" >> /postal/config/postal/postal.yml && \
+    echo "main_db:" >> /postal/config/postal/postal.yml && \
+    echo "  host: localhost" >> /postal/config/postal/postal.yml && \
+    echo "  port: 3306" >> /postal/config/postal/postal.yml && \
+    echo "  username: postal" >> /postal/config/postal/postal.yml && \
+    echo "  password: postal" >> /postal/config/postal/postal.yml && \
+    echo "  database: postal" >> /postal/config/postal/postal.yml && \
+    echo "rails:" >> /postal/config/postal/postal.yml && \
+    echo "  environment: production" >> /postal/config/postal/postal.yml && \
+    echo "  secret_key: $(openssl rand -base64 32)" >> /postal/config/postal/postal.yml
+
+# Precompile assets
+RUN bundle exec rake assets:clean assets:precompile
+
+# Switch back to postal user
 USER postal
 WORKDIR /postal/config/postal
 
@@ -63,6 +96,8 @@ USER postal
 
 EXPOSE 5000 25 587 465 
 
-# Set the entrypoint and command
+# Set the entrypoint to handle environment setup
 ENTRYPOINT ["/postal/entrypoint.sh"]
+
+# Set the command to your automation script
 CMD ["/postal/start-postal.sh"]

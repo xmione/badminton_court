@@ -1,3 +1,10 @@
+<#
+    Scripts\createcert.ps1
+
+    To run:    
+        .\Scripts\createcert.ps1
+#>
+
 function New-OpenSSLCertificate {
     [CmdletBinding()]
     param(
@@ -88,5 +95,5 @@ function New-SigningKey {
 }
 
 # Example usage:
-New-OpenSSLCertificate -Subject "/CN=localhost" -Days 365 -CertPath "Scripts/certs/cert.pem" -KeyPath "Scripts/certs/key.pem"
-New-SigningKey -KeySize 2048 -KeyPath "Scripts/certs/signing.key"
+New-OpenSSLCertificate -Subject "/CN=localhost" -Days 365 -CertPath "certs/cert.pem" -KeyPath "certs/key.pem"
+New-SigningKey -KeySize 2048 -KeyPath "certs/signing.key"

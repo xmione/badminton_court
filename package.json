@@ -58,7 +58,8 @@
     "docker:reset-and-restart": "echo '🔄 Resetting and restarting all services...' && npm run docker:reset && npm run docker:build-all-nocache && npm run docker-dev:detached",
 
     "pfs": "echo 'Print the Project Folder Structure..' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\"",
-    "psql":  "echo \u0027Running PSQL..\u0027 \u0026\u0026 docker exec -it db psql -U dbuser -d badminton_court"
+    "psql":  "echo \u0027Running PSQL..\u0027 \u0026\u0026 docker exec -it db psql -U dbuser -d badminton_court",
+    "certs:create": "echo 'Creating openssl certificates for localhost...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\createcert.ps1\""
   },
   "devDependencies": {
     "cypress": "^15.3.0",
