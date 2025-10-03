@@ -57,6 +57,9 @@
     "docker:reset-keep-images": "echo '🔄 Resetting environment (keeping base images)...' && docker-compose --env-file .env.docker down -v && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml --env-file .env.tunnel down -v && docker system prune -f --filter 'until=24h'",
     "docker:reset-and-restart": "echo '🔄 Resetting and restarting all services...' && npm run docker:reset && npm run docker:build-all-nocache && npm run docker-dev:detached",
 
+    "docker:backup-images": "echo '💾 Backing up Docker images...' && docker save -o ./backups/postal-image.tar badminton_court-postal:latest && docker save -o ./backups/web-image.tar badminton_court-web:latest && docker save -o ./backups/celery-image.tar badminton_court-celery:latest && docker save -o ./backups/celery-beat-image.tar badminton_court-celery-beat:latest && echo '✅ Images backed up successfully'",
+    "docker:restore-images": "echo '📂 Restoring Docker images...' && docker load -i ./backups/postal-image.tar && docker load -i ./backups/web-image.tar && docker load -i ./backups/celery-image.tar && docker load -i ./backups/celery-beat-image.tar && echo '✅ Images restored successfully'",
+
     "pfs": "echo 'Print the Project Folder Structure..' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\"",
     "psql":  "echo \u0027Running PSQL..\u0027 \u0026\u0026 docker exec -it db psql -U dbuser -d badminton_court",
     "certs:create": "echo 'Creating openssl certificates for localhost...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\createcert.ps1\""
