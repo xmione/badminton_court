@@ -81,6 +81,41 @@ def index(request):
     
     return render(request, 'court_management/index.html', context)
 
+@csrf_exempt
+@require_POST
+def get_verification_token(request):
+    """
+    Retrieve the email verification token that was generated during normal registration.
+    This uses the same token that would be included in the verification email.
+    """
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        if not email:
+            return JsonResponse({'status': 'error', 'message': 'Email is required'}, status=400)
+        
+        # Get the user
+        user = User.objects.get(email=email)
+        
+        # Import django-allauth models
+        from allauth.account.models import EmailAddress
+        
+        # Get the email address that was created during registration
+        email_address = EmailAddress.objects.get(user=user, email=email)
+        
+        # The token is stored in the 'key' field of the EmailAddress object
+        # This is the same token that would be included in the verification email
+        token = email_address.key
+        
+        return JsonResponse({'status': 'success', 'token': token})
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'User not found'}, status=404)
+    except EmailAddress.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Email address not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        
 class SignUpView(CreateView):
     form_class = UserCreationForm
     success_url = reverse_lazy('account_login')  # Fixed: use 'account_login' instead of 'login'
@@ -772,10 +807,22 @@ def test_create_user(request):
         user.is_active = True
         user.save()
         
+        # Also create and verify the EmailAddress for django-allauth
+        from allauth.account.models import EmailAddress
+        email_address, created = EmailAddress.objects.get_or_create(
+            user=user,
+            email=email,
+            defaults={'primary': True, 'verified': True}
+        )
+        if not created:
+            email_address.verified = True
+            email_address.primary = True
+            email_address.save()
+        
         return JsonResponse({'status': 'success', 'message': 'User created successfully'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
+    
 @csrf_exempt
 @require_POST
 def test_verify_user(request):
@@ -883,3 +930,90 @@ def test_setup_admin(request):
         return JsonResponse({'status': 'success', 'message': message})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+@csrf_exempt
+@require_POST
+def test_create_booking_data(request):
+    """
+    Create test data for bookings (customers and courts).
+    This should only be used in development/testing environments.
+    """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
+    try:
+        # Create test customers
+        Customer.objects.get_or_create(
+            name="John Doe",
+            defaults={
+                'phone': "1234567890",
+                'email': "john@example.com"
+            }
+        )
+        
+        Customer.objects.get_or_create(
+            name="Jane Smith",
+            defaults={
+                'phone': "9876543210",
+                'email': "jane@example.com"
+            }
+        )
+        
+        # Create test courts
+        Court.objects.get_or_create(
+            name="Court 1",
+            defaults={
+                'hourly_rate': 20.00,
+                'description': "Main court"
+            }
+        )
+        
+        Court.objects.get_or_create(
+            name="Court 2",
+            defaults={
+                'hourly_rate': 25.00,
+                'description': "Premium court"
+            }
+        )
+        
+        return JsonResponse({'status': 'success', 'message': 'Booking test data created successfully'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def test_get_verification_token(request):
+    """
+    Generate and return the email verification token for a user.
+    This should only be used in development/testing environments.
+    """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        if not email:
+            return JsonResponse({'status': 'error', 'message': 'Email is required'}, status=400)
+        
+        # Get the user
+        user = User.objects.get(email=email)
+        
+        # Import django-allauth models
+        from allauth.account.models import EmailAddress
+        from allauth.account.utils import generate_token
+        
+        # Get or create the email address
+        email_address, created = EmailAddress.objects.get_or_create(
+            user=user,
+            email=email,
+            defaults={'primary': True}
+        )
+        
+        # Generate the verification token
+        token = generate_token(email_address)
+        
+        return JsonResponse({'status': 'success', 'token': token})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)        

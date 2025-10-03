@@ -54,9 +54,12 @@ urlpatterns = [
     # Test Template
     path('test-template/', views.test_template, name='test-template'),
 
+    path('api/get-verification-token/', views.get_verification_token, name='get-verification-token'),
+
     # Test API endpoints (only available in DEBUG mode)
     path('api/test-reset-database/', views.test_reset_database, name='test-reset-database'),
     path('api/test-create-user/', views.test_create_user, name='test-create-user'),
     path('api/test-verify-user/', views.test_verify_user, name='test-verify-user'),
     path('api/test-setup-admin/', views.test_setup_admin, name='test-setup-admin'),
+    path('api/test-create-booking-data/', views.test_create_booking_data, name='test-create-booking-data'),
 ]

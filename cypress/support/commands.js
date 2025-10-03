@@ -236,3 +236,53 @@ except User.DoesNotExist:
     }
   })
 })
+
+// Command to create test data for bookings (customers and courts)
+Cypress.Commands.add('createBookingTestData', () => {
+  cy.log('Creating test data for bookings')
+  
+  // Make a request to create test customers and courts
+  cy.request({
+    method: 'POST',
+    url: '/api/test-create-booking-data/',
+    timeout: 30000,
+    failOnStatusCode: false
+  }).then((response) => {
+    if (response.status === 200) {
+      cy.log(response.body.message)
+    } else {
+      cy.log(`Failed to create booking test data: ${response.body.message}`)
+      throw new Error(`Failed to create booking test data: ${response.body.message}`)
+    }
+  })
+})
+
+// Command to create and login as a regular user with retry logic
+Cypress.Commands.add('loginAsRegularUser', (email = 'paysol.postal@gmail.com', password = 'StrongPassword123!') => {
+  // Create a verified user using our updated endpoint
+  cy.request({
+    method: 'POST',
+    url: '/api/test-create-user/',
+    body: {
+      email,
+      password
+    },
+    timeout: 10000,
+    failOnStatusCode: false
+  }).then((response) => {
+    if (response.status === 200) {
+      cy.log('User created and verified successfully')
+    } else {
+      cy.log(`User creation failed: ${JSON.stringify(response.body)}`)
+    }
+  })
+  
+  // Now login with the user
+  cy.visit('/accounts/login/')
+  cy.get('#id_login').type(email)
+  cy.get('#id_password').type(password)
+  cy.get('button[type="submit"]').click()
+  
+  // Verify successful login
+  cy.url().should('not.include', '/accounts/login/')
+})

@@ -1,19 +1,42 @@
+// cypress/e2e/booking/booking.cy.js
+
 describe('Booking Management', () => {
   beforeEach(() => {
-    // Login before each test
-    cy.visit('/admin/login/')
-    cy.get('#id_username').type('admin')
-    cy.get('#id_password').type('password')
-    cy.get('input[type="submit"]', {timeout: 5000}).should("be.visible").click()
-    cy.url().should('include', '/admin/')
+    // Clear cookies and localStorage to ensure clean state
+    cy.clearCookies();
+    cy.clearLocalStorage();
+    
+    // Database is already reset in cypress/support/e2e.js beforeEach hook
+    
+    // Create test data for bookings (customers and courts)
+    cy.createBookingTestData()
+    
+    // Login as a regular user (no admin setup needed)
+    cy.loginAsRegularUser()
+    
+    // Verify we're on the booking creation page
+    cy.visit('/bookings/create/')
+    cy.url().should('include', '/bookings/create/')
   })
 
+
   it('should create a new booking', () => {
-    // Navigate to booking creation page
-    cy.visit('/bookings/create/')
+    // Verify we're on the booking creation page
+    cy.url().should('include', '/bookings/create/')
+
+    // Debug: Check if we're actually logged in
+    cy.get('body').then(($body) => {
+      if ($body.text().includes('login') || $body.text().includes('Login')) {
+        cy.log('Login page detected - user not authenticated')
+        // Take a screenshot for debugging
+        cy.screenshot('login-page-detected')
+      } else {
+        cy.log('Not on login page - user appears authenticated')
+      }
+    })
 
     // Select customer
-    cy.get('#id_customer').select('John Doe')
+    cy.get('#id_customer', { timeout: 10000 }).should('be.visible').select('John Doe')
 
     // Select court
     cy.get('#id_court').select('Court 1')
@@ -80,12 +103,7 @@ describe('Booking Management', () => {
     cy.get('#id_start_time').invoke('val', formatDateTime(tomorrow))
     cy.get('#id_end_time').invoke('val', formatDateTime(endTime))
     cy.get('#id_fee').type('20.00')
-    cy.pause()
-    cy.get('button[type="submit"]', {timeout: 5000})
-    .should("be.visible")
-    .should("be.enabled")
-    .click()
-    cy.wait(5000)
+    cy.get('button[type="submit"]').click()
 
     // Now view the booking details
     cy.contains('John Doe').parent().parent().find('a').first().click()
@@ -128,45 +146,13 @@ describe('Booking Management', () => {
     cy.contains('John Doe').parent().parent().find('a').first().click()
     cy.contains('Process Payment').click()
 
-    // Debug the payment page - ALL inside one .then() callback
-    cy.get('body').then($body => {
-      cy.log('=== DEBUG: Checking page content ===');
-      cy.log('Page contains:', $body.text());
-      cy.log('Current URL:', cy.url());
-      cy.log('Page title:', cy.title());
-      cy.log('Page HTML:', $body.html());
-
-      // Look for any amount-related elements
-      const amountElements = $body.find('[id*="amount"], [name*="amount"], [class*="amount"], input[type="number"]');
-      cy.log('Found amount-related elements:', amountElements.length);
-
-      if (amountElements.length > 0) {
-        amountElements.each((index, element) => {
-          cy.log(`Amount element ${index}:`, element.outerHTML);
-        });
-      }
-
-      // Look for any form elements
-      const formElements = $body.find('form input, form select, form textarea');
-      cy.log('Found form elements:', formElements.length);
-
-      if (formElements.length > 0) {
-        formElements.each((index, element) => {
-          cy.log(`Form element ${index}:`, element.outerHTML);
-        });
-      }
-    });
-
-    // Take a screenshot for manual inspection
-    cy.screenshot('payment-page-debug');
-
     // Fill payment form
     cy.get('#id_amount', { timeout: 10000 }).should('be.visible').clear().type('20.00')
     cy.get('#id_payment_method').select('cash')
     cy.get('#id_transaction_id').type('TXN12345')
 
     // Submit payment
-    cy.get('button[type="submit"]', {timeout: 5000}).should("be.visible").click()
+    cy.get('button[type="submit"]').click()
 
     // Verify payment was processed
     cy.contains('Payment processed successfully!').should('be.visible')
