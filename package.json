@@ -44,7 +44,7 @@
     "docker:down-volumes": "echo '🗑️  Stopping all services and removing volumes...' && docker-compose down -v",
     "docker:prune": "echo '🧹 Cleaning up unused Docker resources...' && docker system prune -f",
 
-    "docker:cypress-open": "echo '🔍 Opening Cypress in interactive mode...' && docker-compose --profile test run --rm cypress open",
+    "docker:cypress-open": "echo '🔍 Opening Cypress in interactive mode...' && docker-compose --env-file .env.docker --profile test run --rm cypress open",
     "dockerr:cypress-run": "echo '⚡ Running Cypress tests...' && docker-compose --profile test run --rm cypress run",
     "docker:cypress-run-headed": "echo '🚀 Running Cypress tests (headed)...' && docker-compose --profile test run --rm cypress run --headed",
     "docker:cypress-run-headless": "echo '⚡ Running Cypress tests (headless)...' && docker-compose --profile test run --rm cypress run --headless",
