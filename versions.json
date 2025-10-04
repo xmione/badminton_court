@@ -202,6 +202,17 @@
             "manualInstallPath": "$env:TEMP\\ngrok.zip",
             "isCoreTool": true,
             "maxRetries": 1
+        },
+        {
+            "appName": "FFmpeg",
+            "installCommand": "choco install ffmpeg -y",
+            "checkCommand": "Test-Path \"C:\\ProgramData\\chocolatey\\lib\\ffmpeg\\tools\\ffmpeg\\bin\\ffmpeg.exe\"",
+            "envPath": "C:\\ProgramData\\chocolatey\\lib\\ffmpeg\\tools\\ffmpeg\\bin",
+            "manualInstallUrl": "https://ffmpeg.org/download.html",
+            "manualInstallPath": null,
+            "isCoreTool": true,
+            "maxRetries": 1,
+            "version": "7.1"
         }
     ]
 }
