@@ -79,6 +79,8 @@ describe('Booking Management', () => {
     // Set fee
     cy.get('#id_fee').type('20.00')
 
+    cy.wait(5000)
+
     // Submit form
     cy.get('button[type="submit"]').click()
 
@@ -117,6 +119,8 @@ describe('Booking Management', () => {
     cy.get('#id_start_time').invoke('val', formatDateTime(tomorrow))
     cy.get('#id_end_time').invoke('val', formatDateTime(endTime))
     cy.get('#id_fee').type('20.00')
+
+    cy.wait(5000)
     cy.get('button[type="submit"]').click()
 
     // Now view the booking details
@@ -155,10 +159,14 @@ describe('Booking Management', () => {
     cy.get('#id_start_time').invoke('val', formatDateTime(tomorrow))
     cy.get('#id_end_time').invoke('val', formatDateTime(endTime))
     cy.get('#id_fee').type('20.00')
+    
+    cy.wait(5000)
     cy.get('button[type="submit"]').click()
 
     // Now process payment
+    cy.wait(5000)
     cy.contains('John Doe').parent().parent().find('a').first().click()
+    cy.wait(5000)
     cy.contains('Process Payment').click()
 
     // Fill payment form
@@ -167,6 +175,7 @@ describe('Booking Management', () => {
     cy.get('#id_transaction_id').type('TXN12345')
 
     // Submit payment
+    cy.wait(5000)
     cy.get('button[type="submit"]').click()
 
     // Verify payment was processed
