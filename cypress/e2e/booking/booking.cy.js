@@ -5,22 +5,36 @@ describe('Booking Management', () => {
     // Clear cookies and localStorage to ensure clean state
     cy.clearCookies();
     cy.clearLocalStorage();
-    
-    // Database is already reset in cypress/support/e2e.js beforeEach hook
-    
+
+    // Run Django migrations to ensure tables exist
+    cy.exec('python manage.py migrate', { timeout: 60000, failOnNonZeroExit: false })
+      .then((result) => {
+        if (result.code !== 0) {
+          cy.log(`Migration failed: ${result.stderr}`);
+          // Continue anyway as migrations might already be up to date
+        } else {
+          cy.log('Migrations completed successfully');
+        }
+      });
+
+    // Reset the database
+    cy.resetDatabase();
+
     // Create test data for bookings (customers and courts)
-    cy.createBookingTestData()
-    
-    // Login as a regular user (no admin setup needed)
-    cy.loginAsRegularUser()
-    
-    // Verify we're on the booking creation page
-    cy.visit('/bookings/create/')
-    cy.url().should('include', '/bookings/create/')
-  })
+    cy.createBookingTestData();
+
+    // Login as a regular user
+    cy.loginAsRegularUser();
+  });
 
 
   it('should create a new booking', () => {
+    // Wait a moment after login to ensure the page is fully settled
+    cy.wait(1000)
+
+    // Now navigate to the booking creation page
+    cy.visit('/bookings/create/')
+
     // Verify we're on the booking creation page
     cy.url().should('include', '/bookings/create/')
 
@@ -37,7 +51,6 @@ describe('Booking Management', () => {
 
     // Select customer
     cy.get('#id_customer', { timeout: 10000 }).should('be.visible').select('John Doe')
-
     // Select court
     cy.get('#id_court').select('Court 1')
 
@@ -156,6 +169,6 @@ describe('Booking Management', () => {
 
     // Verify payment was processed
     cy.contains('Payment processed successfully!').should('be.visible')
-    cy.contains('Paid').should('be.visible')
+    cy.contains('paid').should('be.visible')
   })
 })

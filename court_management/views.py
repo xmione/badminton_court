@@ -196,8 +196,8 @@ def customer_booking_history(request, customer_id):
     }
     return render(request, 'court_management/customer_booking_history.html', context)
 
-def make_payment(request, booking_id):
-    booking = get_object_or_404(Booking, pk=booking_id)
+def make_payment(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
     
     if request.method == 'POST':
         form = PaymentForm(request.POST)
@@ -934,6 +934,52 @@ def test_setup_admin(request):
 @csrf_exempt
 @require_POST
 def test_create_booking_data(request):
+    """
+    Create test data for bookings (customers and courts).
+    This should only be used in development/testing environments.
+    """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
+    try:
+        # Delete existing test data to ensure clean state
+        Customer.objects.filter(name__in=["John Doe", "Jane Smith"]).delete()
+        Court.objects.filter(name__in=["Court 1", "Court 2"]).delete()
+        
+        # Create test customers with active=True explicitly set
+        Customer.objects.create(
+            name="John Doe",
+            phone="1234567890",
+            email="john@example.com",
+            active=True
+        )
+        
+        Customer.objects.create(
+            name="Jane Smith",
+            phone="9876543210",
+            email="jane@example.com",
+            active=True
+        )
+        
+        # Create test courts with active=True explicitly set
+        Court.objects.create(
+            name="Court 1",
+            hourly_rate=20.00,
+            description="Main court",
+            active=True
+        )
+        
+        Court.objects.create(
+            name="Court 2",
+            hourly_rate=25.00,
+            description="Premium court",
+            active=True
+        )
+        
+        return JsonResponse({'status': 'success', 'message': 'Booking test data created successfully'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
     """
     Create test data for bookings (customers and courts).
     This should only be used in development/testing environments.

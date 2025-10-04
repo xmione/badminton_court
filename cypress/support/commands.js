@@ -257,7 +257,6 @@ Cypress.Commands.add('createBookingTestData', () => {
   })
 })
 
-// Command to create and login as a regular user with retry logic
 Cypress.Commands.add('loginAsRegularUser', (email = 'paysol.postal@gmail.com', password = 'StrongPassword123!') => {
   // Create a verified user using our updated endpoint
   cy.request({
@@ -283,6 +282,12 @@ Cypress.Commands.add('loginAsRegularUser', (email = 'paysol.postal@gmail.com', p
   cy.get('#id_password').type(password)
   cy.get('button[type="submit"]').click()
   
-  // Verify successful login
-  cy.url().should('not.include', '/accounts/login/')
+  // Wait for login to complete and verify we're redirected to home page
+  cy.url().should('eq', 'http://localhost:8000/')
+  
+  // Verify the user is actually authenticated by checking for the user dropdown in the navbar
+  cy.get('.navbar-nav .dropdown-toggle').should('contain', email.split('@')[0])
+  
+  // Wait a moment for the page to fully load
+  cy.wait(1000)
 })
