@@ -258,6 +258,19 @@ Cypress.Commands.add('createBookingTestData', () => {
 })
 
 Cypress.Commands.add('loginAsRegularUser', (email = 'paysol.postal@gmail.com', password = 'StrongPassword123!') => {
+  // First check if the server is running
+  cy.request({
+    method: 'GET',
+    url: '/',
+    timeout: 5000,
+    failOnStatusCode: false
+  }).then((response) => {
+    if (response.status !== 200) {
+      cy.log('Server is not responding properly. Make sure Django server is running on localhost:8000');
+      throw new Error('Server not responding');
+    }
+  });
+
   // Create a verified user using our updated endpoint
   cy.request({
     method: 'POST',
@@ -266,7 +279,7 @@ Cypress.Commands.add('loginAsRegularUser', (email = 'paysol.postal@gmail.com', p
       email,
       password
     },
-    timeout: 10000,
+    timeout: 30000,
     failOnStatusCode: false
   }).then((response) => {
     if (response.status === 200) {
@@ -291,3 +304,269 @@ Cypress.Commands.add('loginAsRegularUser', (email = 'paysol.postal@gmail.com', p
   // Wait a moment for the page to fully load
   cy.wait(1000)
 })
+
+// Custom command to add neon highlighting and arrow to an element
+// Custom command to add neon highlighting and arrow to an element
+Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject, options = {}) => {
+  // Default options
+  const {
+    duration = 2000, // How long to highlight before clicking (ms)
+    borderColor = '#00ff00', // Neon green
+    borderWidth = '10px', // Thicker border
+    glowColor = '#00ff00', // Glow color
+    arrowColor = '#ffff00', // Bright yellow arrow
+    backgroundColor = 'rgba(0, 255, 0, 0.1)' // Very subtle background
+  } = options;
+
+  // Generate unique ID for this highlight
+  const highlightId = 'cypress-highlight-' + Date.now();
+  const arrowId = 'cypress-arrow-' + Date.now();
+
+  // Store original styles
+  const originalStyles = {
+    border: subject[0].style.border,
+    backgroundColor: subject[0].style.backgroundColor,
+    borderRadius: subject[0].style.borderRadius,
+    zIndex: subject[0].style.zIndex,
+    position: subject[0].style.position,
+    transition: subject[0].style.transition,
+    transform: subject[0].style.transform,
+    boxShadow: subject[0].style.boxShadow,
+    outline: subject[0].style.outline
+  };
+
+  // Apply highlight styles using Cypress
+  cy.wrap(subject).then(($el) => {
+    // Add inline styles directly to the element
+    $el.css({
+      border: `${borderWidth} solid ${borderColor}`,
+      backgroundColor: backgroundColor,
+      borderRadius: '5px',
+      zIndex: '9999',
+      position: 'relative',
+      transition: 'all 0.3s ease',
+      transform: 'scale(1.02)',
+      boxShadow: `0 0 20px ${glowColor}, 0 0 30px ${glowColor}, 0 0 40px ${glowColor}`,
+      outline: `${borderWidth} solid ${borderColor}`
+    });
+    
+    // Add a class for potential additional styling
+    $el.addClass(highlightId);
+  });
+
+  // Create and position arrow using Cypress
+  cy.window().then((win) => {
+    // Get element position
+    const elementRect = subject[0].getBoundingClientRect();
+    
+    // Create arrow element
+    const arrow = win.document.createElement('div');
+    arrow.id = arrowId;
+    
+    // Apply arrow styles
+    arrow.style.cssText = `
+      position: fixed;
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-bottom: 40px solid ${arrowColor};
+      z-index: 10000;
+      filter: drop-shadow(0 0 10px ${arrowColor});
+      top: ${elementRect.top - 60}px;
+      left: ${elementRect.left + elementRect.width / 2 - 20}px;
+      animation: arrow-pulse 0.8s infinite;
+    `;
+    
+    // Add CSS animation for arrow pulse
+    const style = win.document.createElement('style');
+    style.textContent = `
+      @keyframes arrow-pulse {
+        0% { opacity: 0.7; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.1); }
+        100% { opacity: 0.7; transform: scale(1); }
+      }
+      
+      @keyframes neon-glow {
+        0% { box-shadow: 0 0 5px ${glowColor}, 0 0 10px ${glowColor}, 0 0 15px ${glowColor}, 0 0 20px ${glowColor}; }
+        50% { box-shadow: 0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 30px ${glowColor}, 0 0 40px ${glowColor}; }
+        100% { box-shadow: 0 0 5px ${glowColor}, 0 0 10px ${glowColor}, 0 0 15px ${glowColor}, 0 0 20px ${glowColor}; }
+      }
+      
+      .${highlightId} {
+        animation: neon-glow 1s infinite !important;
+      }
+    `;
+    
+    win.document.head.appendChild(style);
+    win.document.body.appendChild(arrow);
+    
+    // Log the highlight action
+    cy.log(`⭐ Highlighting element for ${duration}ms`);
+    
+    // Wait for the highlight duration
+    cy.wait(duration);
+    
+    // Clean up: remove highlight and arrow
+    cy.wrap(subject).then(($el) => {
+      // Restore original styles
+      $el.css(originalStyles);
+      $el.removeClass(highlightId);
+      
+      // Remove arrow
+      const arrowElement = win.document.getElementById(arrowId);
+      if (arrowElement) {
+        arrowElement.remove();
+      }
+      
+      // Remove style tag
+      const styleElements = win.document.querySelectorAll('style');
+      styleElements.forEach((el) => {
+        if (el.textContent.includes('neon-glow') || el.textContent.includes('arrow-pulse')) {
+          el.remove();
+        }
+      });
+    });
+  });
+});
+
+// Custom command to highlight and click an element
+Cypress.Commands.add('clickWithHighlight', { prevSubject: 'element' }, (subject, options = {}) => {
+  const {
+    duration = 2000,
+    ...highlightOptions
+  } = options;
+
+  // Apply highlight with arrow
+  cy.wrap(subject).highlightWithArrow({
+    duration,
+    borderColor: '#00ff00',
+    borderWidth: '10px',
+    arrowColor: '#ffff00',
+    ...highlightOptions
+  });
+
+  // Click the element
+  cy.wrap(subject).click(options);
+});
+
+// Custom command to highlight and type text
+Cypress.Commands.add('typeWithHighlight', { prevSubject: 'element' }, (subject, text, options = {}) => {
+  const {
+    duration = 2000,
+    ...highlightOptions
+  } = options;
+
+  // Apply highlight with arrow
+  cy.wrap(subject).highlightWithArrow({
+    duration,
+    borderColor: '#00ff00',
+    borderWidth: '10px',
+    arrowColor: '#ffff00',
+    ...highlightOptions
+  });
+
+  // Type the text
+  cy.wrap(subject).type(text, options);
+});
+
+// Custom command to highlight and select from dropdown
+Cypress.Commands.add('selectWithHighlight', { prevSubject: 'element' }, (subject, value, options = {}) => {
+  const {
+    duration = 2000,
+    ...highlightOptions
+  } = options;
+
+  // Apply highlight with arrow
+  cy.wrap(subject).highlightWithArrow({
+    duration,
+    borderColor: '#00ff00',
+    borderWidth: '10px',
+    arrowColor: '#ffff00',
+    ...highlightOptions
+  });
+
+  // Select the value
+  cy.wrap(subject).select(value, options);
+});
+
+// Custom command to add a visual indicator before navigation
+Cypress.Commands.add('highlightNavigation', (url) => {
+  cy.log(`🧭 Navigating to: ${url}`);
+  
+  cy.window().then((win) => {
+    // Create overlay
+    const overlay = win.document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 0, 0.2);
+      z-index: 9998;
+      pointer-events: none;
+      animation: flash-overlay 1s ease-in-out 3;
+    `;
+    
+    // Add navigation text
+    const navText = win.document.createElement('div');
+    navText.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      font-weight: bold;
+      color: #ffff00;
+      text-shadow: 0 0 20px #ffff00;
+      z-index: 9999;
+      pointer-events: none;
+      font-family: Arial, sans-serif;
+      white-space: nowrap;
+    `;
+    navText.textContent = `🧭 NAVIGATING TO: ${url}`;
+    
+    // Add CSS animation
+    const style = win.document.createElement('style');
+    style.textContent = `
+      @keyframes flash-overlay {
+        0% { background-color: rgba(255, 255, 0, 0.3); }
+        50% { background-color: rgba(255, 255, 0, 0.1); }
+        100% { background-color: rgba(255, 255, 0, 0.3); }
+      }
+    `;
+    
+    win.document.head.appendChild(style);
+    win.document.body.appendChild(overlay);
+    win.document.body.appendChild(navText);
+    
+    // Log the navigation effect
+    cy.log('🎬 Showing navigation effect');
+    
+    // Wait to show the navigation effect
+    cy.wait(1500);
+    
+    // Log before cleanup
+    cy.log('🧹 Cleaning up navigation effect');
+    
+    // Clean up
+    cy.then(() => {
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+      if (navText.parentNode) {
+        navText.parentNode.removeChild(navText);
+      }
+      if (style.parentNode) {
+        style.parentNode.removeChild(style);
+      }
+      
+      // Small delay before navigation
+      cy.wait(500);
+    });
+  });
+  
+  // Navigate to the URL
+  cy.visit(url);
+});
