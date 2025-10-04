@@ -12,31 +12,27 @@
     "dev:cypress-headless": "echo '⚡ Running Cypress tests (headless)...' && npx cypress run --headless --browser chrome",
     "dev:cypress-presentation": "echo '⚡ Running Cypress tests for presentation (headed)...' && npx cypress run --headed --browser chrome --config video=true && npm run post-process-videos",
     "dev:cypress-presentation-spec": "echo '⚡ Running Cypress tests for presentation spec (headed)...' && npx cypress run --headed --browser chrome --config video=true --spec && npm run post-process-videos",
+    "create-presentation": "node scripts/create-presentation.js",
     "post-process-videos": "echo '⚡ Running Post-Process Videos...' && node scripts/post-process-videos.js",
-
     "docker:dev": "echo '🚀 Starting development environment...' && docker-compose --env-file .env.docker --profile dev up",
     "docker:dev-detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --env-file .env.docker --profile dev up -d",
     "docker:dev-stop": "echo '🛑 Stopping development services...' && docker-compose --env-file .env.docker --profile dev down",
     "docker:dev-logs": "echo '📋 Showing development logs...' && docker-compose --env-file .env.docker --profile dev logs -f",
-    
     "docker:test": "echo '🧪 Starting test environment...' && docker-compose --env-file .env.docker --profile test up",
     "docker:test-detached": "echo '🧪 Starting test environment (detached)...' && docker-compose --env-file .env.docker --profile test up -d",
     "docker:test-stop": "echo '🛑 Stopping test services...' && docker-compose --profile test down",
     "docker:test-logs": "echo '📋 Showing test logs...' && docker-compose --env-file .env.docker --profile test logs -f",
     "docker:test-setup": "echo '🔧 Setting up test data...' && docker-compose --env-file .env.docker --profile test run --rm test-setup",
-    
     "docker:tunnel": "echo '🌐 Starting docker tunnel environment...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel up",
     "docker:tunnel-detached": "echo '🌐 Starting docker tunnel environment (detached)...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel up -d",
     "docker:tunnel-stop": "echo '🛑 Stopping docker tunnel services...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel down",
     "docker:tunnel-logs": "echo '📋 Showing docker tunnel logs...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel logs -f",
     "docker:tunnel-run": "echo '🌐 Running docker tunnel service only...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel up --scale tunnel=1",
-    
     "docker:all": "echo '🌐 Starting docker all environment...' && docker-compose -f docker-compose.yml --env-file .env.docker up && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel up",
     "docker:all-detached": "echo '🌐 Starting docker all environment (detached)...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d",
     "docker:all-stop": "echo '🛑 Stopping docker all services...' && docker-compose -f docker-compose.yml --env-file .env.docker down && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel down",
     "docker:all-logs": "echo '📋 Showing docker all logs...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml logs -f",
     "docker:all-run": "echo '🌐 Running docker all service only...' && docker-compose -f docker-compose.yml -f docker-compose.tunnel.yml up --scale tunnel=1",
-
     "docker:build": "echo '🐳 Building service image...' && docker-compose --env-file .env.docker build",
     "docker:build-nocache": "echo '🐳 Building service image (no cache)...' && docker-compose --env-file .env.docker build --no-cache",
     "docker:build-tunnel": "echo '🐳 Building tunnel service image...' && docker-compose -f docker-compose.tunnel.yml --env-file .env.tunnel build",
@@ -48,29 +44,28 @@
     "docker:shell": "echo '🖥️  Opening shell in service container...' && docker-compose exec",
     "docker:down-volumes": "echo '🗑️  Stopping all services and removing volumes...' && docker-compose down -v",
     "docker:prune": "echo '🧹 Cleaning up unused Docker resources...' && docker system prune -f",
-
     "docker:cypress-open": "echo '🔍 Opening Docker Cypress in interactive mode...' && docker-compose --env-file .env.docker --profile test run --rm cypress open",
     "dockerr:cypress-run": "echo '⚡ Running Docker Cypress tests...' && docker-compose --profile test run --rm cypress run",
     "docker:cypress-run-headed": "echo '🚀 Running Docker Cypress tests (headed)...' && docker-compose --profile test run --rm cypress run --headed",
     "docker:cypress-run-headless": "echo '⚡ Running Docker Cypress tests (headless)...' && docker-compose --profile test run --rm cypress run --headless",
     "docker:test-spec": "echo '🧪 Running specific Docker test file...' && docker-compose --profile test run --rm cypress run --spec",
     "docker:test-spec-headed": "echo '🧪 Running specific Docker test file (headed)...' && docker-compose --profile test run --rm cypress run --headed --spec",
-    
     "status": "echo '📊 Showing service status...' && docker-compose ps",
     "shell": "echo '🖥️  Opening shell in service container...' && docker-compose --profile dev exec",
     "docker:reset": "echo '🔄 Resetting environment...' && docker-compose --env-file .env.dev down -v --rmi all && docker-compose --env-file .env.dev -f postal-compose.yml down -v --rmi all && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml --env-file .env.tunnel down -v --rmi all && docker system prune -f",
     "docker:reset-keep-images": "echo '🔄 Resetting environment (keeping base images)...' && docker-compose --env-file .env.docker down -v && docker-compose --env-file .env.dev -f docker-compose.yml -f docker-compose.tunnel.yml --env-file .env.tunnel down -v && docker system prune -f --filter 'until=24h'",
     "docker:reset-and-restart": "echo '🔄 Resetting and restarting all services...' && npm run docker:reset && npm run docker:build-all-nocache && npm run docker-dev:detached",
-
     "docker:backup-images": "echo '💾 Backing up Docker images...' && docker save -o ./backups/postal-image.tar badminton_court-postal:latest && docker save -o ./backups/web-image.tar badminton_court-web:latest && docker save -o ./backups/celery-image.tar badminton_court-celery:latest && docker save -o ./backups/celery-beat-image.tar badminton_court-celery-beat:latest && echo '✅ Images backed up successfully'",
     "docker:restore-images": "echo '📂 Restoring Docker images...' && docker load -i ./backups/postal-image.tar && docker load -i ./backups/web-image.tar && docker load -i ./backups/celery-image.tar && docker load -i ./backups/celery-beat-image.tar && echo '✅ Images restored successfully'",
-
     "pfs": "echo 'Print the Project Folder Structure..' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\"",
-    "psql":  "echo \u0027Running PSQL..\u0027 \u0026\u0026 docker exec -it db psql -U dbuser -d badminton_court",
+    "psql": "echo 'Running PSQL..' && docker exec -it db psql -U dbuser -d badminton_court",
     "certs:create": "echo 'Creating openssl certificates for localhost...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\createcert.ps1\""
   },
   "devDependencies": {
     "cypress": "^15.3.0",
     "dotenv": "^17.2.3"
+  },
+  "dependencies": {
+    "inquirer": "^12.9.6"
   }
 }
