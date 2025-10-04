@@ -89,6 +89,7 @@ describe('Booking Management', () => {
     // Verify booking appears in list
     cy.contains('John Doe').should('be.visible')
     cy.contains('Court 1').should('be.visible')
+    cy.wait(10000)
   })
 
   it('should view booking details', () => {
@@ -126,6 +127,7 @@ describe('Booking Management', () => {
     cy.contains('Booking Details').should('be.visible')
     cy.contains('John Doe').should('be.visible')
     cy.contains('Court 1').should('be.visible')
+    cy.wait(10000)
   })
 
   it('should process payment for a booking', () => {
@@ -170,5 +172,6 @@ describe('Booking Management', () => {
     // Verify payment was processed
     cy.contains('Payment processed successfully!').should('be.visible')
     cy.contains('paid').should('be.visible')
+    cy.wait(10000)
   })
 })
