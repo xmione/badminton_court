@@ -4,7 +4,7 @@ describe('Booking Management', () => {
   beforeEach(() => {
 
      // Show a status message and get its ID
-    const statusId = cy.showStatusMessage('Clearing cookies and localStorage to ensureclean state...', {
+    const statusId = cy.showStatusMessage('Initializing the app...', {
       showSpinner: true,
       subText: 'This may take a moment...'
     });

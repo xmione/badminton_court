@@ -829,11 +829,13 @@ Cypress.Commands.add('showStatusMessage', (message, options = {}) => {
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 255, 0, 0.1);
+      background-color: rgba(255, 255, 255, 0.95);
       z-index: 9997;
       pointer-events: none;
+      backdrop-filter: blur(2px);
       ${persistent ? '' : 'animation: status-pulse 2s ease-in-out infinite;'}
     `;
+
     
     // Create message container
     const messageContainer = win.document.createElement('div');
@@ -852,8 +854,14 @@ Cypress.Commands.add('showStatusMessage', (message, options = {}) => {
         align-items: center;
         z-index: 9998;
         pointer-events: none;
-        font-family: Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         text-align: center;
+        padding: 24px;
+        background-color: rgba(255, 255, 255, 0.98);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        max-width: 80%;
       `;
     } else if (position === 'bottom') {
       containerStyles = `
@@ -866,8 +874,14 @@ Cypress.Commands.add('showStatusMessage', (message, options = {}) => {
         align-items: center;
         z-index: 9998;
         pointer-events: none;
-        font-family: Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         text-align: center;
+        padding: 24px;
+        background-color: rgba(255, 255, 255, 0.98);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        max-width: 80%;
       `;
     } else { // center (default)
       containerStyles = `
@@ -880,11 +894,17 @@ Cypress.Commands.add('showStatusMessage', (message, options = {}) => {
         align-items: center;
         z-index: 9998;
         pointer-events: none;
-        font-family: Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         text-align: center;
+        padding: 24px;
+        background-color: rgba(255, 255, 255, 0.98);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        max-width: 80%;
       `;
     }
-    
+
     messageContainer.style.cssText = containerStyles;
     
     // Create spinner if requested
@@ -892,13 +912,13 @@ Cypress.Commands.add('showStatusMessage', (message, options = {}) => {
       const spinner = win.document.createElement('div');
       spinner.id = `${messageId}-spinner`;
       spinner.style.cssText = `
-        width: 40px;
-        height: 40px;
-        border: 4px solid rgba(0, 255, 0, 0.3);
-        border-top: 4px solid #00ff00;
+        width: 32px;
+        height: 32px;
+        border: 3px solid rgba(52, 152, 219, 0.2);
+        border-top: 3px solid #3498db;
         border-radius: 50%;
         animation: spin 1s linear infinite;
-        margin-bottom: 15px;
+        margin-bottom: 16px;
       `;
       messageContainer.appendChild(spinner);
     }
@@ -907,13 +927,17 @@ Cypress.Commands.add('showStatusMessage', (message, options = {}) => {
     const messageText = win.document.createElement('div');
     messageText.id = `${messageId}-text`;
     messageText.style.cssText = `
-      font-size: 32px;
-      font-weight: bold;
-      color: #00ff00;
-      text-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00;
-      margin-bottom: ${subText ? '10px' : '0'};
+      font-size: 22px;
+      font-weight: 600;
+      color: #2c3e50;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.4;
+      text-align: center;
+      margin-bottom: ${subText ? '8px' : '0'};
       white-space: nowrap;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
     `;
+
     messageText.textContent = message;
     messageContainer.appendChild(messageText);
     
@@ -922,10 +946,14 @@ Cypress.Commands.add('showStatusMessage', (message, options = {}) => {
       const subTextElement = win.document.createElement('div');
       subTextElement.id = `${messageId}-subtext`;
       subTextElement.style.cssText = `
-        font-size: 18px;
-        color: #00cc00;
-        opacity: 0.8;
+        font-size: 16px;
+        color: #7f8c8d;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        line-height: 1.3;
+        text-align: center;
+        font-weight: 400;
       `;
+
       subTextElement.textContent = subText;
       messageContainer.appendChild(subTextElement);
     }
