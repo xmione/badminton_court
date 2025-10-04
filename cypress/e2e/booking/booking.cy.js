@@ -2,10 +2,19 @@
 
 describe('Booking Management', () => {
   beforeEach(() => {
+
+     // Show a status message and get its ID
+    const statusId = cy.showStatusMessage('Clearing cookies and localStorage to ensureclean state...', {
+      showSpinner: true,
+      subText: 'This may take a moment...'
+    });
+    
     // Clear cookies and localStorage to ensure clean state
     cy.clearCookies();
     cy.clearLocalStorage();
 
+    cy.updateStatusMessage(statusId, 'Initializing database...', 'Please be patient...');
+  
     // Run Django migrations to ensure tables exist
     cy.exec('python manage.py migrate', { timeout: 60000, failOnNonZeroExit: false })
       .then((result) => {
@@ -17,13 +26,20 @@ describe('Booking Management', () => {
       });
 
     // Reset the database
+    cy.updateStatusMessage(statusId, 'Initializing database...', 'Please be patient...');
     cy.resetDatabase();
 
     // Create test data for bookings (customers and courts)
+    cy.updateStatusMessage(statusId, 'Creating test data for Bookings...', 'Please be patient...');
     cy.createBookingTestData();
 
     // Login as a regular user
+    cy.updateStatusMessage(statusId, 'Logging in as a Regular user...', 'Please be patient...');
     cy.loginAsRegularUser();
+
+
+    // Hide the message
+    cy.hideStatusMessage(statusId);
   });
 
   it('should create a new booking', () => {
@@ -83,7 +99,7 @@ describe('Booking Management', () => {
     cy.get('#id_fee').typeWithHighlight('20.00');
 
     // Wait before submitting
-    cy.wait(3000);
+    cy.showWaitMessage('Waiting to complete the form before submitting...', 5000);
 
     // Submit form with highlight
     cy.get('button[type="submit"]').clickWithHighlight();
@@ -95,7 +111,7 @@ describe('Booking Management', () => {
     // Verify booking appears in list with highlight
     cy.contains('John Doe').should('be.visible');
     cy.contains('Court 1').should('be.visible');
-    cy.wait(5000);
+    cy.showWaitMessage('Successfully booked!...', 5000);
   });
 
   it('should view booking details', () => {
@@ -125,11 +141,11 @@ describe('Booking Management', () => {
     cy.get('#id_end_time').invoke('val', formatDateTime(endTime));
     cy.get('#id_fee').typeWithHighlight('20.00');
 
-    cy.wait(3000);
+    cy.showWaitMessage('Submitting...', 3000);
     cy.get('button[type="submit"]').clickWithHighlight();
 
     // Wait for success message
-    cy.wait(2000);
+    cy.showWaitMessage('Waiting for success message...', 3000);
 
     // Now view the booking details with highlight
     cy.contains('John Doe').parent().parent().find('a').first().clickWithHighlight();
@@ -143,7 +159,7 @@ describe('Booking Management', () => {
     // Highlight the back button
     cy.contains('Back to List').clickWithHighlight();
     
-    cy.wait(3000);
+    cy.showWaitMessage('Waiting to process payment for the booking...', 3000);
   });
 
   it('should process payment for a booking', () => {
@@ -173,11 +189,11 @@ describe('Booking Management', () => {
     cy.get('#id_end_time').invoke('val', formatDateTime(endTime));
     cy.get('#id_fee').typeWithHighlight('20.00');
     
-    cy.wait(3000);
+    cy.showWaitMessage('Check payment details before submitting...', 5000);
     cy.get('button[type="submit"]').clickWithHighlight();
 
     // Wait for booking to be created
-    cy.wait(2000);
+    cy.showWaitMessage('Waiting for booking to be created...', 3000);
 
     // Now process payment with highlights
     cy.contains('John Doe').parent().parent().find('a').first().clickWithHighlight();
@@ -204,6 +220,6 @@ describe('Booking Management', () => {
     // Highlight the back to booking details button
     //cy.contains('Back to Booking').clickWithHighlight();
     
-    cy.wait(10000);
+    cy.showWaitMessage('Payment process completed!', 10000);
   });
 });

@@ -313,7 +313,7 @@ Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject,
     borderColor = '#00ff00', // Neon green
     borderWidth = '10px', // Thicker border
     glowColor = '#00ff00', // Glow color
-    arrowColor = '#ffff00', // Bright yellow arrow
+    arrowColor = '#00ff00', // Changed to green to match
     backgroundColor = 'rgba(0, 255, 0, 0.1)', // Very subtle background
     arrowPosition = 'auto', // 'auto', 'top', 'bottom', 'left', 'right'
     arrowSize = '60px' // Size of the arrow
@@ -517,7 +517,7 @@ Cypress.Commands.add('clickWithHighlight', { prevSubject: 'element' }, (subject,
     duration,
     borderColor: '#00ff00',
     borderWidth: '10px',
-    arrowColor: '#ffff00',
+    arrowColor: '#00ff00',
     arrowPosition: arrowPosition,
     ...highlightOptions
   });
@@ -539,7 +539,7 @@ Cypress.Commands.add('typeWithHighlight', { prevSubject: 'element' }, (subject, 
     duration,
     borderColor: '#00ff00',
     borderWidth: '10px',
-    arrowColor: '#ffff00',
+    arrowColor: '#00ff00',
     arrowPosition: arrowPosition,
     ...highlightOptions
   });
@@ -561,7 +561,7 @@ Cypress.Commands.add('selectWithHighlight', { prevSubject: 'element' }, (subject
     duration,
     borderColor: '#00ff00',
     borderWidth: '10px',
-    arrowColor: '#ffff00',
+    arrowColor: '#00ff00',
     arrowPosition: arrowPosition,
     ...highlightOptions
   });
@@ -583,7 +583,7 @@ Cypress.Commands.add('highlightNavigation', (url) => {
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(255, 255, 0, 0.2);
+      background-color: rgba(0, 255, 0, 0.2);
       z-index: 9998;
       pointer-events: none;
       animation: flash-overlay 1s ease-in-out 3;
@@ -598,8 +598,8 @@ Cypress.Commands.add('highlightNavigation', (url) => {
       transform: translate(-50%, -50%);
       font-size: 48px;
       font-weight: bold;
-      color: #ffff00;
-      text-shadow: 0 0 20px #ffff00;
+      color: #00ff00;
+      text-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
       z-index: 9999;
       pointer-events: none;
       font-family: Arial, sans-serif;
@@ -611,9 +611,9 @@ Cypress.Commands.add('highlightNavigation', (url) => {
     const style = win.document.createElement('style');
     style.textContent = `
       @keyframes flash-overlay {
-        0% { background-color: rgba(255, 255, 0, 0.3); }
-        50% { background-color: rgba(255, 255, 0, 0.1); }
-        100% { background-color: rgba(255, 255, 0, 0.3); }
+        0% { background-color: rgba(0, 255, 0, 0.3); }
+        50% { background-color: rgba(0, 255, 0, 0.1); }
+        100% { background-color: rgba(0, 255, 0, 0.3); }
       }
     `;
     
@@ -649,4 +649,368 @@ Cypress.Commands.add('highlightNavigation', (url) => {
   
   // Navigate to the URL
   cy.visit(url);
+});
+
+// New command to display a wait message overlay
+Cypress.Commands.add('showWaitMessage', (message, duration = 3000) => {
+  cy.log(`⏳ Displaying wait message: ${message}`);
+  
+  cy.window().then((win) => {
+    // Create overlay
+    const overlay = win.document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 255, 0, 0.15);
+      z-index: 9998;
+      pointer-events: none;
+      animation: wait-pulse 2s ease-in-out infinite;
+    `;
+    
+    // Create wait message container
+    const messageContainer = win.document.createElement('div');
+    messageContainer.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      pointer-events: none;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    `;
+    
+    // Create spinner
+    const spinner = win.document.createElement('div');
+    spinner.style.cssText = `
+      width: 60px;
+      height: 60px;
+      border: 6px solid rgba(0, 255, 0, 0.3);
+      border-top: 6px solid #00ff00;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    `;
+    
+    // Create message text
+    const messageText = win.document.createElement('div');
+    messageText.style.cssText = `
+      font-size: 36px;
+      font-weight: bold;
+      color: #00ff00;
+      text-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00;
+      margin-bottom: 10px;
+      white-space: nowrap;
+    `;
+    messageText.textContent = message;
+    
+    // Create subtext
+    const subText = win.document.createElement('div');
+    subText.style.cssText = `
+      font-size: 18px;
+      color: #00cc00;
+      opacity: 0.8;
+    `;
+    subText.textContent = 'Please wait...';
+    
+    // Add CSS animations
+    const style = win.document.createElement('style');
+    style.textContent = `
+      @keyframes wait-pulse {
+        0% { background-color: rgba(0, 255, 0, 0.15); }
+        50% { background-color: rgba(0, 255, 0, 0.05); }
+        100% { background-color: rgba(0, 255, 0, 0.15); }
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    
+    // Assemble and append elements
+    messageContainer.appendChild(spinner);
+    messageContainer.appendChild(messageText);
+    messageContainer.appendChild(subText);
+    
+    win.document.head.appendChild(style);
+    win.document.body.appendChild(overlay);
+    win.document.body.appendChild(messageContainer);
+    
+    // Log the message display
+    cy.log('⏳ Showing wait message overlay');
+    
+    // Wait for the specified duration
+    cy.wait(duration);
+    
+    // Log before cleanup
+    cy.log('🧹 Cleaning up wait message');
+    
+    // Clean up
+    cy.then(() => {
+      if (overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+      if (messageContainer.parentNode) {
+        messageContainer.parentNode.removeChild(messageContainer);
+      }
+      if (style.parentNode) {
+        style.parentNode.removeChild(style);
+      }
+    });
+  });
+});
+
+// Add these commands to your existing commands.js file
+
+// Object to store active status messages
+const statusMessages = {};
+
+// Command to hide a status message
+Cypress.Commands.add('hideStatusMessage', (messageId) => {
+  cy.log(`📢 Hiding status message (ID: ${messageId})`);
+  
+  cy.window().then((win) => {
+    const message = statusMessages[messageId];
+    
+    if (message) {
+      // Remove elements from DOM
+      if (message.overlay && message.overlay.parentNode) {
+        message.overlay.parentNode.removeChild(message.overlay);
+      }
+      
+      if (message.messageContainer && message.messageContainer.parentNode) {
+        message.messageContainer.parentNode.removeChild(message.messageContainer);
+      }
+      
+      // Remove from storage
+      delete statusMessages[messageId];
+      
+      cy.log(`📢 Status message hidden (ID: ${messageId})`);
+    } else {
+      cy.log(`⚠️ Status message not found (ID: ${messageId})`);
+    }
+  });
+});
+
+// Command to show a status message
+Cypress.Commands.add('showStatusMessage', (message, options = {}) => {
+  const {
+    id = null, // Optional ID for the message
+    persistent = false, // Whether the message persists until explicitly hidden
+    position = 'center', // 'center', 'top', 'bottom'
+    showSpinner = false, // Whether to show a spinner
+    subText = '' // Optional subtext
+  } = options;
+
+  // Generate unique ID if not provided
+  const messageId = id || 'status-message-' + Date.now();
+  
+  cy.log(`📢 Showing status message: ${message} (ID: ${messageId})`);
+  
+  // First, hide any existing message with the same ID
+  cy.hideStatusMessage(messageId);
+  
+  // Now create the new message
+  return cy.window().then((win) => {
+    // Create overlay
+    const overlay = win.document.createElement('div');
+    overlay.id = `${messageId}-overlay`;
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 255, 0, 0.1);
+      z-index: 9997;
+      pointer-events: none;
+      ${persistent ? '' : 'animation: status-pulse 2s ease-in-out infinite;'}
+    `;
+    
+    // Create message container
+    const messageContainer = win.document.createElement('div');
+    messageContainer.id = `${messageId}-container`;
+    
+    // Position the container based on the position option
+    let containerStyles;
+    if (position === 'top') {
+      containerStyles = `
+        position: fixed;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 9998;
+        pointer-events: none;
+        font-family: Arial, sans-serif;
+        text-align: center;
+      `;
+    } else if (position === 'bottom') {
+      containerStyles = `
+        position: fixed;
+        bottom: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 9998;
+        pointer-events: none;
+        font-family: Arial, sans-serif;
+        text-align: center;
+      `;
+    } else { // center (default)
+      containerStyles = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 9998;
+        pointer-events: none;
+        font-family: Arial, sans-serif;
+        text-align: center;
+      `;
+    }
+    
+    messageContainer.style.cssText = containerStyles;
+    
+    // Create spinner if requested
+    if (showSpinner) {
+      const spinner = win.document.createElement('div');
+      spinner.id = `${messageId}-spinner`;
+      spinner.style.cssText = `
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(0, 255, 0, 0.3);
+        border-top: 4px solid #00ff00;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 15px;
+      `;
+      messageContainer.appendChild(spinner);
+    }
+    
+    // Create message text
+    const messageText = win.document.createElement('div');
+    messageText.id = `${messageId}-text`;
+    messageText.style.cssText = `
+      font-size: 32px;
+      font-weight: bold;
+      color: #00ff00;
+      text-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00;
+      margin-bottom: ${subText ? '10px' : '0'};
+      white-space: nowrap;
+    `;
+    messageText.textContent = message;
+    messageContainer.appendChild(messageText);
+    
+    // Create subtext if provided
+    if (subText) {
+      const subTextElement = win.document.createElement('div');
+      subTextElement.id = `${messageId}-subtext`;
+      subTextElement.style.cssText = `
+        font-size: 18px;
+        color: #00cc00;
+        opacity: 0.8;
+      `;
+      subTextElement.textContent = subText;
+      messageContainer.appendChild(subTextElement);
+    }
+    
+    // Add CSS animations
+    const styleId = `${messageId}-style`;
+    const existingStyle = win.document.getElementById(styleId);
+    
+    if (!existingStyle) {
+      const style = win.document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        @keyframes status-pulse {
+          0% { background-color: rgba(0, 255, 0, 0.15); }
+          50% { background-color: rgba(0, 255, 0, 0.05); }
+          100% { background-color: rgba(0, 255, 0, 0.15); }
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `;
+      win.document.head.appendChild(style);
+    }
+    
+    // Append elements to DOM
+    win.document.body.appendChild(overlay);
+    win.document.body.appendChild(messageContainer);
+    
+    // Store reference to the message elements
+    statusMessages[messageId] = {
+      overlay,
+      messageContainer,
+      styleId
+    };
+    
+    cy.log(`📢 Status message displayed (ID: ${messageId})`);
+    
+    // Return the message ID using cy.wrap to make it available to the test
+    return cy.wrap(messageId);
+  });
+});
+
+// Command to update an existing status message
+Cypress.Commands.add('updateStatusMessage', (messageId, newText, newSubText = null) => {
+  cy.log(`📢 Updating status message (ID: ${messageId})`);
+  
+  cy.window().then((win) => {
+    const message = statusMessages[messageId];
+    
+    if (message) {
+      const textElement = win.document.getElementById(`${messageId}-text`);
+      const subTextElement = win.document.getElementById(`${messageId}-subtext`);
+      
+      if (textElement) {
+        textElement.textContent = newText;
+        cy.log(`📢 Status message text updated (ID: ${messageId})`);
+      }
+      
+      if (subTextElement && newSubText) {
+        subTextElement.textContent = newSubText;
+        cy.log(`📢 Status message subtext updated (ID: ${messageId})`);
+      } else if (subTextElement && !newSubText) {
+        subTextElement.remove();
+        cy.log(`📢 Status message subtext removed (ID: ${messageId})`);
+      } else if (!subTextElement && newSubText) {
+        const newSubTextElement = win.document.createElement('div');
+        newSubTextElement.id = `${messageId}-subtext`;
+        newSubTextElement.style.cssText = `
+          font-size: 18px;
+          color: #00cc00;
+          opacity: 0.8;
+          margin-top: 10px;
+        `;
+        newSubTextElement.textContent = newSubText;
+        
+        const messageContainer = win.document.getElementById(`${messageId}-container`);
+        if (messageContainer) {
+          messageContainer.appendChild(newSubTextElement);
+        }
+        cy.log(`📢 Status message subtext added (ID: ${messageId})`);
+      }
+    } else {
+      cy.log(`⚠️ Status message not found (ID: ${messageId})`);
+    }
+  });
 });
