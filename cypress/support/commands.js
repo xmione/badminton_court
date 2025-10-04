@@ -305,7 +305,7 @@ Cypress.Commands.add('loginAsRegularUser', (email = 'paysol.postal@gmail.com', p
   cy.wait(1000)
 })
 
-// Custom command to add neon highlighting and arrow to an element
+// Custom command to add neon highlighting and arrow to an element using overlay
 Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject, options = {}) => {
   // Default options
   const {
@@ -314,7 +314,6 @@ Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject,
     borderWidth = '10px', // Thicker border
     glowColor = '#00ff00', // Glow color
     arrowColor = '#00ff00', // Changed to green to match
-    backgroundColor = 'rgba(0, 255, 0, 0.1)', // Very subtle background
     arrowPosition = 'auto', // 'auto', 'top', 'bottom', 'left', 'right'
     arrowSize = '60px' // Size of the arrow
   } = options;
@@ -323,44 +322,51 @@ Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject,
   const highlightId = 'cypress-highlight-' + Date.now();
   const arrowId = 'cypress-arrow-' + Date.now();
 
-  // Store original styles
-  const originalStyles = {
-    border: subject[0].style.border,
-    backgroundColor: subject[0].style.backgroundColor,
-    borderRadius: subject[0].style.borderRadius,
-    zIndex: subject[0].style.zIndex,
-    position: subject[0].style.position,
-    transition: subject[0].style.transition,
-    transform: subject[0].style.transform,
-    boxShadow: subject[0].style.boxShadow,
-    outline: subject[0].style.outline
-  };
-
-  // Apply highlight styles using Cypress
-  cy.wrap(subject).then(($el) => {
-    // Add inline styles directly to the element
-    $el.css({
-      border: `${borderWidth} solid ${borderColor}`,
-      backgroundColor: backgroundColor,
-      borderRadius: '5px',
-      zIndex: '9999',
-      position: 'relative',
-      transition: 'all 0.3s ease',
-      transform: 'scale(1.02)',
-      boxShadow: `0 0 20px ${glowColor}, 0 0 30px ${glowColor}, 0 0 40px ${glowColor}`,
-      outline: `${borderWidth} solid ${borderColor}`
-    });
-    
-    // Add a class for potential additional styling
-    $el.addClass(highlightId);
-  });
-
-  // Create and position arrow using Cypress
   cy.window().then((win) => {
     // Get element position and dimensions
     const elementRect = subject[0].getBoundingClientRect();
     const centerX = elementRect.left + elementRect.width / 2;
     const centerY = elementRect.top + elementRect.height / 2;
+    
+    // Create overlay div
+    const overlay = win.document.createElement('div');
+    overlay.id = highlightId;
+    overlay.style.cssText = `
+      position: fixed;
+      top: ${elementRect.top}px;
+      left: ${elementRect.left}px;
+      width: ${elementRect.width}px;
+      height: ${elementRect.height}px;
+      border: ${borderWidth} solid ${borderColor};
+      border-radius: 5px;
+      z-index: 9999;
+      pointer-events: none;
+      background-color: transparent;
+      box-shadow: 0 0 20px ${glowColor}, 0 0 30px ${glowColor}, 0 0 40px ${glowColor};
+      animation: neon-glow 1s infinite;
+    `;
+    
+    // Add CSS animation for the overlay
+    const style = win.document.createElement('style');
+    style.textContent = `
+      @keyframes neon-glow {
+        0% { 
+          box-shadow: 0 0 5px ${glowColor}, 0 0 10px ${glowColor}, 0 0 15px ${glowColor}, 0 0 20px ${glowColor}; 
+          filter: brightness(1);
+        }
+        50% { 
+          box-shadow: 0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 30px ${glowColor}, 0 0 40px ${glowColor}; 
+          filter: brightness(1.2);
+        }
+        100% { 
+          box-shadow: 0 0 5px ${glowColor}, 0 0 10px ${glowColor}, 0 0 15px ${glowColor}, 0 0 20px ${glowColor}; 
+          filter: brightness(1);
+        }
+      }
+    `;
+    
+    win.document.head.appendChild(style);
+    win.document.body.appendChild(overlay);
     
     // Determine arrow position
     let position = arrowPosition;
@@ -435,8 +441,8 @@ Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject,
     `;
     
     // Add CSS animation for arrow pulse
-    const style = win.document.createElement('style');
-    style.textContent = `
+    const arrowStyle = win.document.createElement('style');
+    arrowStyle.textContent = `
       @keyframes arrow-pulse {
         0% { 
           opacity: 0.7; 
@@ -451,28 +457,9 @@ Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject,
           transform: scale(1) rotate(0deg); 
         }
       }
-      
-      @keyframes neon-glow {
-        0% { 
-          box-shadow: 0 0 5px ${glowColor}, 0 0 10px ${glowColor}, 0 0 15px ${glowColor}, 0 0 20px ${glowColor}; 
-          filter: brightness(1);
-        }
-        50% { 
-          box-shadow: 0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 30px ${glowColor}, 0 0 40px ${glowColor}; 
-          filter: brightness(1.2);
-        }
-        100% { 
-          box-shadow: 0 0 5px ${glowColor}, 0 0 10px ${glowColor}, 0 0 15px ${glowColor}, 0 0 20px ${glowColor}; 
-          filter: brightness(1);
-        }
-      }
-      
-      .${highlightId} {
-        animation: neon-glow 1s infinite !important;
-      }
     `;
     
-    win.document.head.appendChild(style);
+    win.document.head.appendChild(arrowStyle);
     win.document.body.appendChild(arrow);
     
     // Log the highlight action
@@ -481,19 +468,19 @@ Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject,
     // Wait for the highlight duration
     cy.wait(duration);
     
-    // Clean up: remove highlight and arrow
-    cy.wrap(subject).then(($el) => {
-      // Restore original styles
-      $el.css(originalStyles);
-      $el.removeClass(highlightId);
+    // Clean up: remove overlay and arrow
+    cy.then(() => {
+      const overlayElement = win.document.getElementById(highlightId);
+      if (overlayElement) {
+        overlayElement.remove();
+      }
       
-      // Remove arrow
       const arrowElement = win.document.getElementById(arrowId);
       if (arrowElement) {
         arrowElement.remove();
       }
       
-      // Remove style tag
+      // Remove style tags
       const styleElements = win.document.querySelectorAll('style');
       styleElements.forEach((el) => {
         if (el.textContent.includes('neon-glow') || el.textContent.includes('arrow-pulse')) {
