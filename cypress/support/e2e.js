@@ -16,7 +16,3 @@
 // Import commands.js using ES2015 syntax:
 import './commands'
 
-// Reset database before each test
-beforeEach(() => {
-  cy.resetDatabase()
-})

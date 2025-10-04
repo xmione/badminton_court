@@ -583,7 +583,7 @@ Cypress.Commands.add('highlightNavigation', (url) => {
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 255, 0, 0.2);
+      background-color: rgba(52, 152, 219, 0.1);
       z-index: 9998;
       pointer-events: none;
       animation: flash-overlay 1s ease-in-out 3;
@@ -596,14 +596,19 @@ Cypress.Commands.add('highlightNavigation', (url) => {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 48px;
-      font-weight: bold;
-      color: #00ff00;
-      text-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
+      font-size: 28px;
+      font-weight: 600;
+      color: #2c3e50;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
       z-index: 9999;
       pointer-events: none;
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       white-space: nowrap;
+      line-height: 1.4;
+      padding: 16px 24px;
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     `;
     navText.textContent = `🧭 NAVIGATING TO: ${url}`;
     
@@ -611,9 +616,9 @@ Cypress.Commands.add('highlightNavigation', (url) => {
     const style = win.document.createElement('style');
     style.textContent = `
       @keyframes flash-overlay {
-        0% { background-color: rgba(0, 255, 0, 0.3); }
-        50% { background-color: rgba(0, 255, 0, 0.1); }
-        100% { background-color: rgba(0, 255, 0, 0.3); }
+        0% { background-color: rgba(52, 152, 219, 0.15); }
+        50% { background-color: rgba(52, 152, 219, 0.05); }
+        100% { background-color: rgba(52, 152, 219, 0.15); }
       }
     `;
     
@@ -664,7 +669,7 @@ Cypress.Commands.add('showWaitMessage', (message, duration = 3000) => {
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 255, 0, 0.15);
+      background-color: rgba(52, 152, 219, 0.1);
       z-index: 9998;
       pointer-events: none;
       animation: wait-pulse 2s ease-in-out infinite;
@@ -683,40 +688,49 @@ Cypress.Commands.add('showWaitMessage', (message, duration = 3000) => {
       justify-content: center;
       z-index: 9999;
       pointer-events: none;
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       text-align: center;
+      padding: 24px;
+      background-color: rgba(255, 255, 255, 0.98);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      max-width: 80%;
     `;
     
     // Create spinner
     const spinner = win.document.createElement('div');
     spinner.style.cssText = `
-      width: 60px;
-      height: 60px;
-      border: 6px solid rgba(0, 255, 0, 0.3);
-      border-top: 6px solid #00ff00;
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(52, 152, 219, 0.2);
+      border-top: 3px solid #3498db;
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     `;
     
     // Create message text
     const messageText = win.document.createElement('div');
     messageText.style.cssText = `
-      font-size: 36px;
-      font-weight: bold;
-      color: #00ff00;
-      text-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00;
-      margin-bottom: 10px;
+      font-size: 22px;
+      font-weight: 600;
+      color: #2c3e50;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      margin-bottom: 8px;
       white-space: nowrap;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.4;
     `;
     messageText.textContent = message;
     
     // Create subtext
     const subText = win.document.createElement('div');
     subText.style.cssText = `
-      font-size: 18px;
-      color: #00cc00;
-      opacity: 0.8;
+      font-size: 16px;
+      color: #7f8c8d;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.3;
     `;
     subText.textContent = 'Please wait...';
     
@@ -724,9 +738,9 @@ Cypress.Commands.add('showWaitMessage', (message, duration = 3000) => {
     const style = win.document.createElement('style');
     style.textContent = `
       @keyframes wait-pulse {
-        0% { background-color: rgba(0, 255, 0, 0.15); }
-        50% { background-color: rgba(0, 255, 0, 0.05); }
-        100% { background-color: rgba(0, 255, 0, 0.15); }
+        0% { background-color: rgba(52, 152, 219, 0.15); }
+        50% { background-color: rgba(52, 152, 219, 0.05); }
+        100% { background-color: rgba(52, 152, 219, 0.15); }
       }
       
       @keyframes spin {
@@ -767,8 +781,6 @@ Cypress.Commands.add('showWaitMessage', (message, duration = 3000) => {
     });
   });
 });
-
-// Add these commands to your existing commands.js file
 
 // Object to store active status messages
 const statusMessages = {};
@@ -1011,11 +1023,32 @@ Cypress.Commands.add('updateStatusMessage', (messageId, newText, newSubText = nu
       
       if (textElement) {
         textElement.textContent = newText;
+        // Apply professional styling to ensure it matches the new design
+        textElement.style.cssText = `
+          font-size: 22px;
+          font-weight: 600;
+          color: #2c3e50;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+          line-height: 1.4;
+          text-align: center;
+          margin-bottom: ${newSubText ? '8px' : '0'};
+          white-space: nowrap;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        `;
         cy.log(`📢 Status message text updated (ID: ${messageId})`);
       }
       
       if (subTextElement && newSubText) {
         subTextElement.textContent = newSubText;
+        // Apply professional styling to subtext
+        subTextElement.style.cssText = `
+          font-size: 16px;
+          color: #7f8c8d;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+          line-height: 1.3;
+          text-align: center;
+          font-weight: 400;
+        `;
         cy.log(`📢 Status message subtext updated (ID: ${messageId})`);
       } else if (subTextElement && !newSubText) {
         subTextElement.remove();
@@ -1023,11 +1056,14 @@ Cypress.Commands.add('updateStatusMessage', (messageId, newText, newSubText = nu
       } else if (!subTextElement && newSubText) {
         const newSubTextElement = win.document.createElement('div');
         newSubTextElement.id = `${messageId}-subtext`;
+        // Apply professional styling to new subtext element
         newSubTextElement.style.cssText = `
-          font-size: 18px;
-          color: #00cc00;
-          opacity: 0.8;
-          margin-top: 10px;
+          font-size: 16px;
+          color: #7f8c8d;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+          line-height: 1.3;
+          text-align: center;
+          font-weight: 400;
         `;
         newSubTextElement.textContent = newSubText;
         
