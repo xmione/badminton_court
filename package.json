@@ -8,6 +8,8 @@
     "dev:stop": "echo '🛑 Stopping local dev server development...' && node scripts/stop-server.js",
     "dev:load-data": "echo '📊 Loading local dev data...' && python manage.py load_test_data",
     "dev:cypress-open": "npx cypress open",
+    "dev:cypress-headed": "npx cypress run --headed --browser chrome",
+    "dev:cypress-headless": "npx cypress run --headless --browser chrome",
 
     "docker:dev": "echo '🚀 Starting development environment...' && docker-compose --env-file .env.docker --profile dev up",
     "docker:dev-detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --env-file .env.docker --profile dev up -d",
