@@ -306,7 +306,6 @@ Cypress.Commands.add('loginAsRegularUser', (email = 'paysol.postal@gmail.com', p
 })
 
 // Custom command to add neon highlighting and arrow to an element
-// Custom command to add neon highlighting and arrow to an element
 Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject, options = {}) => {
   // Default options
   const {
@@ -315,7 +314,9 @@ Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject,
     borderWidth = '10px', // Thicker border
     glowColor = '#00ff00', // Glow color
     arrowColor = '#ffff00', // Bright yellow arrow
-    backgroundColor = 'rgba(0, 255, 0, 0.1)' // Very subtle background
+    backgroundColor = 'rgba(0, 255, 0, 0.1)', // Very subtle background
+    arrowPosition = 'auto', // 'auto', 'top', 'bottom', 'left', 'right'
+    arrowSize = '60px' // Size of the arrow
   } = options;
 
   // Generate unique ID for this highlight
@@ -356,41 +357,114 @@ Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject,
 
   // Create and position arrow using Cypress
   cy.window().then((win) => {
-    // Get element position
+    // Get element position and dimensions
     const elementRect = subject[0].getBoundingClientRect();
+    const centerX = elementRect.left + elementRect.width / 2;
+    const centerY = elementRect.top + elementRect.height / 2;
+    
+    // Determine arrow position
+    let position = arrowPosition;
+    if (position === 'auto') {
+      // Auto-determine best position based on element location
+      const viewportWidth = win.innerWidth;
+      const viewportHeight = win.innerHeight;
+      
+      if (centerY < viewportHeight * 0.3) {
+        position = 'bottom'; // Element is in top third, put arrow below
+      } else if (centerY > viewportHeight * 0.7) {
+        position = 'top'; // Element is in bottom third, put arrow above
+      } else if (centerX < viewportWidth * 0.3) {
+        position = 'right'; // Element is in left third, put arrow to the right
+      } else {
+        position = 'left'; // Element is in right third, put arrow to the left
+      }
+    }
+    
+    // Choose arrow character based on position
+    const arrowChars = {
+      'top': '⬇️',
+      'bottom': '⬆️',
+      'left': '➡️',
+      'right': '⬅️'
+    };
+    
+    const arrowChar = arrowChars[position];
     
     // Create arrow element
     const arrow = win.document.createElement('div');
     arrow.id = arrowId;
+    arrow.textContent = arrowChar;
+    
+    // Calculate arrow position based on position
+    let arrowTop, arrowLeft;
+    const arrowDistance = 80; // Distance from element
+    
+    switch (position) {
+      case 'top':
+        arrowTop = elementRect.top - arrowDistance;
+        arrowLeft = centerX - 30; // Center the arrow horizontally
+        break;
+      case 'bottom':
+        arrowTop = elementRect.bottom + arrowDistance - 60;
+        arrowLeft = centerX - 30; // Center the arrow horizontally
+        break;
+      case 'left':
+        arrowTop = centerY - 30; // Center the arrow vertically
+        arrowLeft = elementRect.left - arrowDistance;
+        break;
+      case 'right':
+        arrowTop = centerY - 30; // Center the arrow vertically
+        arrowLeft = elementRect.right + arrowDistance - 60;
+        break;
+    }
     
     // Apply arrow styles
     arrow.style.cssText = `
       position: fixed;
-      width: 0;
-      height: 0;
-      border-left: 20px solid transparent;
-      border-right: 20px solid transparent;
-      border-bottom: 40px solid ${arrowColor};
+      font-size: ${arrowSize};
       z-index: 10000;
-      filter: drop-shadow(0 0 10px ${arrowColor});
-      top: ${elementRect.top - 60}px;
-      left: ${elementRect.left + elementRect.width / 2 - 20}px;
+      top: ${arrowTop}px;
+      left: ${arrowLeft}px;
+      color: ${arrowColor};
+      text-shadow: 0 0 20px ${arrowColor}, 0 0 40px ${arrowColor}, 0 0 60px ${arrowColor};
       animation: arrow-pulse 0.8s infinite;
+      filter: brightness(1.5) saturate(2);
+      pointer-events: none;
+      font-weight: bold;
+      transform-origin: center;
     `;
     
     // Add CSS animation for arrow pulse
     const style = win.document.createElement('style');
     style.textContent = `
       @keyframes arrow-pulse {
-        0% { opacity: 0.7; transform: scale(1); }
-        50% { opacity: 1; transform: scale(1.1); }
-        100% { opacity: 0.7; transform: scale(1); }
+        0% { 
+          opacity: 0.7; 
+          transform: scale(1) rotate(0deg); 
+        }
+        50% { 
+          opacity: 1; 
+          transform: scale(1.3) rotate(5deg); 
+        }
+        100% { 
+          opacity: 0.7; 
+          transform: scale(1) rotate(0deg); 
+        }
       }
       
       @keyframes neon-glow {
-        0% { box-shadow: 0 0 5px ${glowColor}, 0 0 10px ${glowColor}, 0 0 15px ${glowColor}, 0 0 20px ${glowColor}; }
-        50% { box-shadow: 0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 30px ${glowColor}, 0 0 40px ${glowColor}; }
-        100% { box-shadow: 0 0 5px ${glowColor}, 0 0 10px ${glowColor}, 0 0 15px ${glowColor}, 0 0 20px ${glowColor}; }
+        0% { 
+          box-shadow: 0 0 5px ${glowColor}, 0 0 10px ${glowColor}, 0 0 15px ${glowColor}, 0 0 20px ${glowColor}; 
+          filter: brightness(1);
+        }
+        50% { 
+          box-shadow: 0 0 10px ${glowColor}, 0 0 20px ${glowColor}, 0 0 30px ${glowColor}, 0 0 40px ${glowColor}; 
+          filter: brightness(1.2);
+        }
+        100% { 
+          box-shadow: 0 0 5px ${glowColor}, 0 0 10px ${glowColor}, 0 0 15px ${glowColor}, 0 0 20px ${glowColor}; 
+          filter: brightness(1);
+        }
       }
       
       .${highlightId} {
@@ -402,7 +476,7 @@ Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject,
     win.document.body.appendChild(arrow);
     
     // Log the highlight action
-    cy.log(`⭐ Highlighting element for ${duration}ms`);
+    cy.log(`⭐ Highlighting element with ${position} arrow for ${duration}ms`);
     
     // Wait for the highlight duration
     cy.wait(duration);
@@ -430,10 +504,11 @@ Cypress.Commands.add('highlightWithArrow', { prevSubject: 'element' }, (subject,
   });
 });
 
-// Custom command to highlight and click an element
+// Custom command to highlight and click an element with arrow position control
 Cypress.Commands.add('clickWithHighlight', { prevSubject: 'element' }, (subject, options = {}) => {
   const {
     duration = 2000,
+    arrowPosition = 'auto',
     ...highlightOptions
   } = options;
 
@@ -443,6 +518,7 @@ Cypress.Commands.add('clickWithHighlight', { prevSubject: 'element' }, (subject,
     borderColor: '#00ff00',
     borderWidth: '10px',
     arrowColor: '#ffff00',
+    arrowPosition: arrowPosition,
     ...highlightOptions
   });
 
@@ -450,10 +526,11 @@ Cypress.Commands.add('clickWithHighlight', { prevSubject: 'element' }, (subject,
   cy.wrap(subject).click(options);
 });
 
-// Custom command to highlight and type text
+// Custom command to highlight and type text with arrow position control
 Cypress.Commands.add('typeWithHighlight', { prevSubject: 'element' }, (subject, text, options = {}) => {
   const {
     duration = 2000,
+    arrowPosition = 'auto',
     ...highlightOptions
   } = options;
 
@@ -463,6 +540,7 @@ Cypress.Commands.add('typeWithHighlight', { prevSubject: 'element' }, (subject, 
     borderColor: '#00ff00',
     borderWidth: '10px',
     arrowColor: '#ffff00',
+    arrowPosition: arrowPosition,
     ...highlightOptions
   });
 
@@ -470,10 +548,11 @@ Cypress.Commands.add('typeWithHighlight', { prevSubject: 'element' }, (subject, 
   cy.wrap(subject).type(text, options);
 });
 
-// Custom command to highlight and select from dropdown
+// Custom command to highlight and select from dropdown with arrow position control
 Cypress.Commands.add('selectWithHighlight', { prevSubject: 'element' }, (subject, value, options = {}) => {
   const {
     duration = 2000,
+    arrowPosition = 'auto',
     ...highlightOptions
   } = options;
 
@@ -483,6 +562,7 @@ Cypress.Commands.add('selectWithHighlight', { prevSubject: 'element' }, (subject
     borderColor: '#00ff00',
     borderWidth: '10px',
     arrowColor: '#ffff00',
+    arrowPosition: arrowPosition,
     ...highlightOptions
   });
 
