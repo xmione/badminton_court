@@ -43,8 +43,8 @@ describe('Booking Management', { testIsolation: false }, () => {
     cy.processPayment();
     cy.editBooking();
     cy.deleteBooking();
-    cy.deletePaidBooking();
-    //cy.showWaitMessage('Booking Happy Path Test has ended.', 5000);
+    cy.processPayment();
+    cy.deletePaidBooking(); 
     cy.showStatusMessage('Aeropace Badminton Court Management System', {
       showSpinner: false,
       subText: 'The Happy Path Test for the Booking Process has ended!'
