@@ -1,8 +1,21 @@
 // cypress/e2e/admin/admin-login.cy.js
+// isolation: true by default clears browser state. You need to login for each spec.
 describe('Admin Login', () => {
+  before(() => {
+    cy.log('ADMIN SPEC: Starting admin-login.cy.js before()');
+    // The database is already migrated from global before().
+    // Now, reset and add admin-specific data.
+    cy.resetDatabase(); // Resets tables *after* migrations
+    cy.setupTestAdmin({ reset: true }); // Creates admin user
+    cy.log('ADMIN SPEC: Finished admin-login.cy.js before()');
+  })
+
   beforeEach(() => {
-    // Setup test admin users before each test
-    cy.setupTestAdmin({ reset: true })
+    cy.log('ADMIN SPEC: Starting beforeEach()');
+    
+    // Ensure the admin user exists *before every test*
+    // without resetting the whole database.
+    cy.setupTestAdmin({ reset: false })
   })
 
   it('should successfully login to admin panel', () => {

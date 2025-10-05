@@ -53,26 +53,7 @@ before(() => {
             cy.log('Migrations completed successfully');
           }
         });
-    })
-    .then(() => {
-      // Reset the database
-      cy.resetDatabase();
-    })
-    .then(() => {
-      // Create test data for bookings (customers and courts)
-      cy.updateStatusMessage(statusId, 'Creating test data for Bookings...', 'Please be patient...');
-    })
-    .wait(1000) // Add a small wait
-    .then(() => {
-      cy.createBookingTestData();
-    })
-    .then(() => {
-      // Login as a regular user
-      cy.updateStatusMessage(statusId, 'Logging in as a Regular user...', 'Please be patient...');
-    })
-    .wait(1000) // Add a small wait
-    .then(() => {
-      cy.loginAsRegularUser();
+    
     });
 
 

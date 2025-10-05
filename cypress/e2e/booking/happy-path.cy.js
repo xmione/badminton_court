@@ -1,10 +1,44 @@
 // cypress/e2e/booking/happy-path.cy.js
-
+// isolation: true by default clears browser state. You need to login for each spec.
+// here, you don't need to login in each spec.
 describe('Booking Management', { testIsolation: false }, () => {
 
-  it('should pass booking happy path test', () => {
+  let statusId;
+  before(() => {
+    cy.log('BOOKING HAPPY PATH SPEC: Starting admin-login.cy.js before()');
     cy.showWaitMessage('This will process the Happy Path Booking Test.', 10000);
-    cy.createNewBooking(); 
+
+    cy.showStatusMessage('Resetting Database...', {
+      showSpinner: true,
+      subText: 'Please be wait...'
+    }).then(id => {
+      statusId = id; // Assign the ID returned by showStatusMessage
+    });
+
+    // Reset the database
+    cy.resetDatabase();
+
+    // Create test data for bookings (customers and courts)
+    cy.updateStatusMessage(statusId, 'Creating test data for Bookings...', 'Please be patient...');
+
+    cy.wait(1000) // Add a small wait
+    cy.createBookingTestData();
+
+    // Login as a regular user
+    cy.updateStatusMessage(statusId, 'Logging in as a Regular user...', 'Please be patient...');
+
+    cy.wait(1000) // Add a small wait
+    cy.loginAsRegularUser();
+  });
+
+  beforeEach(() => {
+    cy.log('BOOKING HAPPY PATH SPEC: Starting beforeEach()');
+
+  });
+
+  it('should pass booking happy path test', () => {
+
+    cy.createNewBooking();
     cy.viewBookingDetails();
     cy.processPayment();
     cy.editBooking();
@@ -13,11 +47,9 @@ describe('Booking Management', { testIsolation: false }, () => {
     //cy.showWaitMessage('Booking Happy Path Test has ended.', 5000);
     cy.showStatusMessage('Aeropace Badminton Court Management System', {
       showSpinner: false,
-      subText: 'The Booking Happy Path Test hs ended!'
+      subText: 'The Happy Path Test for the Booking Process has ended!'
     });
   });
-
-  // Add more tests here...
 
 });
 
