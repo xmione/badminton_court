@@ -48,7 +48,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 # Dynamic ALLOWED_HOSTS configuration
-allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,web')
+allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,web,ALLOWED_HOSTS=localhost,127.0.0.1,aeropace-portal.loca.lt')
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts.split(',')]
 
 # Add tunnel host if tunnel is enabled

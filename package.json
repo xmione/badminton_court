@@ -12,6 +12,7 @@
     "dev:cypress-headless": "echo '⚡ Running Cypress tests (headless)...' && npx cypress run --headless --browser chrome",
     "dev:cypress-presentation": "echo '⚡ Running Cypress tests for presentation (headed)...' && npx cypress run --headed --browser chrome --config video=true && npm run post-process-videos",
     "dev:cypress-presentation-spec": "echo '⚡ Running Cypress tests for presentation spec (headed)...' && npx cypress run --headed --browser chrome --config video=true --spec && npm run post-process-videos",
+    "dev:tunnel": "echo '⚡ Running App in the tunnel...' && python tunnel.py",
     "create-presentation": "node scripts/create-presentation.js",
     "post-process-videos": "echo '⚡ Running Post-Process Videos...' && node scripts/post-process-videos.js",
     "docker:dev": "echo '🚀 Starting development environment...' && docker-compose --env-file .env.docker --profile dev up",
