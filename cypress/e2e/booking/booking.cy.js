@@ -106,6 +106,7 @@ describe('Booking Management', { testIsolation: false }, () => {
     cy.viewBookingDetails();
     cy.processPayment();
     cy.editBooking();
+    cy.deleteBooking();
   });
 
   // Add more tests here...
