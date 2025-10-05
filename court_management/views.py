@@ -9,6 +9,9 @@ from django.db.models import Sum, Count
 from django.db.models.functions import TruncDate, TruncMonth
 from django.http import HttpResponse
 from django.conf import settings
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+
 import matplotlib.pyplot as plt
 import io
 import base64
@@ -174,11 +177,44 @@ class BookingDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'court_management/booking_confirm_delete.html'
     success_url = reverse_lazy('booking-list')
     
-    def delete(self, request, *args, **kwargs):
-        response = super().delete(request, *args, **kwargs)
-        messages.success(self.request, 'Booking deleted successfully!')
-        return response
-
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        booking = self.object
+        
+        # Add validation flags to context
+        context['can_delete'] = (
+            booking.payment_status != 'paid' and 
+            booking.start_time >= timezone.now()
+        )
+        context['delete_blocked_reason'] = self.get_delete_blocked_reason(booking)
+        
+        return context
+    
+    def get_delete_blocked_reason(self, booking):
+        if booking.payment_status == 'paid':
+            return 'This booking has been paid for and cannot be deleted.'
+        elif booking.start_time < timezone.now():
+            return 'This booking is in the past and cannot be deleted.'
+        return None
+    
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        
+        # Double-check validation before attempting deletion
+        if self.object.payment_status == 'paid':
+            messages.error(request, 'Cannot delete a paid booking. Please contact administrator for assistance.')
+            return redirect('booking-detail', pk=self.object.pk)
+        
+        if self.object.start_time < timezone.now():
+            messages.error(request, 'Cannot delete past bookings.')
+            return redirect('booking-detail', pk=self.object.pk)
+        
+        try:
+            return super().post(request, *args, **kwargs)
+        except ValueError as e:
+            messages.error(request, str(e))
+            return redirect('booking-detail', pk=self.object.pk)
+                
 def customer_booking_history(request, customer_id):
     customer = get_object_or_404(Customer, pk=customer_id)
     bookings = Booking.objects.filter(customer=customer).order_by('-start_time')
@@ -502,6 +538,7 @@ def clock_out(request, employee_id):
     return redirect('employee-detail', pk=employee.pk)
 
 # Report Views
+@login_required
 def sales_report(request):
     # Get date range from request or use default (last 30 days)
     end_date = timezone.now().date()
@@ -590,6 +627,7 @@ def sales_report(request):
     
     return render(request, 'court_management/sales_report.html', context)
 
+@login_required
 def payroll_report(request, year=None, month=None):
     if year is None:
         year = timezone.now().year
@@ -639,6 +677,7 @@ def payroll_report(request, year=None, month=None):
     
     return render(request, 'court_management/payroll_report.html', context)
 
+@login_required
 def export_sales_report_csv(request):
     # Get date range from request or use default (last 30 days)
     end_date = timezone.now().date()
@@ -1074,3 +1113,24 @@ def test_get_verification_token(request):
         return JsonResponse({'status': 'success', 'token': token})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)        
+    
+@login_required
+def cancel_booking(request, pk):
+    booking = get_object_or_404(Booking, pk=pk)
+    
+    # Prevent cancellation of paid bookings
+    if booking.payment_status == 'paid':
+        messages.error(request, 'Cannot cancel a paid booking. Please contact administrator for refund assistance.')
+        return redirect('booking-detail', pk=booking.pk)
+    
+    # Prevent cancellation of past bookings
+    if booking.start_time < timezone.now():
+        messages.error(request, 'Cannot cancel past bookings.')
+        return redirect('booking-detail', pk=booking.pk)
+    
+    # Mark as cancelled instead of deleting
+    booking.status = 'cancelled'
+    booking.save()
+    
+    messages.success(request, 'Booking cancelled successfully!')
+    return redirect('booking-detail', pk=booking.pk)    

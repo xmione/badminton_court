@@ -18,6 +18,7 @@ urlpatterns = [
     path('bookings/<int:pk>/update/', views.BookingUpdateView.as_view(), name='booking-update'),
     path('bookings/<int:pk>/delete/', views.BookingDeleteView.as_view(), name='booking-delete'),
     path('bookings/<int:pk>/payment/', views.make_payment, name='make-payment'),
+    path('bookings/<int:pk>/cancel/', views.cancel_booking, name='booking-cancel'),
     
     # Customer URLs
     path('customers/', views.CustomerListView.as_view(), name='customer-list'),

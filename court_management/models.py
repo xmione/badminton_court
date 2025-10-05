@@ -56,6 +56,18 @@ class Booking(models.Model):
     
     def duration_hours(self):
         return (self.end_time - self.start_time).total_seconds() / 3600
+    
+    def delete(self, *args, **kwargs):
+        # Prevent deletion of paid bookings at model level
+        if self.payment_status == 'paid':
+            raise ValueError("Cannot delete a paid booking")
+        
+        # Prevent deletion of past bookings
+        if self.start_time < timezone.now():
+            raise ValueError("Cannot delete past bookings")
+        
+        super().delete(*args, **kwargs)
+
 
 class Employee(models.Model):
     POSITION_CHOICES = [
