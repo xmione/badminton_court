@@ -24,6 +24,11 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 
+import './commands/signUp.cy.js'
+import './commands/signUpDuplicateEmails.cy.js'
+import './commands/signUpMismatchedPasswords.cy.js'
+import './commands/loginAsRegistered.cy.js'
+import './commands/loginAsInvalidCredentials.js'
 import './commands/login.cy.js'
 import './commands/loginAsRegularUser.cy.js'
 import './commands/logout.cy.js'
