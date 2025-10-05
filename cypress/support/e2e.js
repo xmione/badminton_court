@@ -28,6 +28,7 @@ before(() => {
     statusId = id; // Assign the ID returned by showStatusMessage
   });
 
+  cy.wait(10000);
   // Chaining the commands ensures proper sequence and visual updates
   cy.then(() => {
     cy.updateStatusMessage(statusId, 'Clearing cookies and localStorage to ensure clean state...', 'This may take a moment...');

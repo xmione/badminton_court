@@ -10,8 +10,11 @@ describe('Booking Management', { testIsolation: false }, () => {
     cy.editBooking();
     cy.deleteBooking();
     cy.deletePaidBooking();
-    cy.showWaitMessage('Booking Happy Path Test has ended.', 5000);
-
+    //cy.showWaitMessage('Booking Happy Path Test has ended.', 5000);
+    cy.showStatusMessage('Aeropace Badminton Court Management System', {
+      showSpinner: true,
+      subText: 'Please be patient while the system loads the tests...'
+    });
   });
 
   // Add more tests here...
