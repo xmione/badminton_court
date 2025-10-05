@@ -2,6 +2,7 @@
 
 describe('Booking Management', { testIsolation: false }, () => {
   let statusId; // Declare the variable to hold the status ID
+  let testErrors = []; // Array to collect errors
 
   before(() => {
     // Show initial status message before any tests run
@@ -45,11 +46,45 @@ describe('Booking Management', { testIsolation: false }, () => {
     cy.updateStatusMessage(statusId, 'Logging in as a Regular user...', 'Please be patient...');
     cy.loginAsRegularUser();
 
+    // Set up error collection
+    Cypress.on('fail', (error, runnable) => {
+      // Collect error details
+      testErrors.push({
+        test: runnable.title,
+        error: error.name,
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Re-throw the error to fail the test
+      throw error;
+    });
   });
   
   after(() => {
     // Hide the status message after all tests complete
     cy.hideStatusMessage(statusId);
+    
+    // Write errors to log file if any occurred
+    if (testErrors.length > 0) {
+      let logContent = '=== Test Errors Log ===\n';
+      logContent += `Generated at: ${new Date().toISOString()}\n`;
+      logContent += `Total errors: ${testErrors.length}\n\n`;
+      
+      testErrors.forEach((error, index) => {
+        logContent += `Error #${index + 1}:\n`;
+        logContent += `  Test: ${error.test}\n`;
+        logContent += `  Type: ${error.error}\n`;
+        logContent += `  Message: ${error.message}\n`;
+        logContent += `  Time: ${error.timestamp}\n\n`;
+      });
+      
+      // Write to file using cy.writeFile
+      cy.writeFile('cypress/logs/test-errors.log', logContent, { flag: 'a+' })
+        .then(() => {
+          cy.log(`Error log saved with ${testErrors.length} errors`);
+        });
+    }
   });
 
   it('should create a new booking', () => {
@@ -113,7 +148,7 @@ describe('Booking Management', { testIsolation: false }, () => {
     cy.get('#id_end_time').should('have.value', formatDateTime(endTime));
 
     // Set fee with highlight
-    cy.get('#id_fee').typeWithHighlight('20.00', {arrowPosition: 'right'});
+    cy.get('#id_fee').typeWithHighlight('20.00', { arrowPosition: 'right' });
 
     // Wait before submitting
     cy.showWaitMessage('Waiting to complete the form before submitting...', 5000);
@@ -132,10 +167,10 @@ describe('Booking Management', { testIsolation: false }, () => {
   });
 
   it('should view booking details', () => {
-    
+
     // Click on the "Bookings" link in the navigation bar
     cy.get('.navbar-nav .nav-link').contains('Bookings').clickWithHighlight();
-    
+
     // Verify we're on the booking list page
     cy.url().should('include', '/bookings/');
     cy.contains('h1', 'Bookings').should('be.visible');
@@ -191,7 +226,7 @@ describe('Booking Management', { testIsolation: false }, () => {
 
     cy.get('#id_start_time').invoke('val', formatDateTime(tomorrow));
     cy.get('#id_end_time').invoke('val', formatDateTime(endTime));
-    cy.get('#id_fee').typeWithHighlight('20.00', {arrowPosition: 'right'});
+    cy.get('#id_fee').typeWithHighlight('20.00', { arrowPosition: 'right' });
 
     cy.showWaitMessage('Check payment details before submitting...', 5000);
     cy.get('button[type="submit"]').clickWithHighlight();
@@ -226,4 +261,218 @@ describe('Booking Management', { testIsolation: false }, () => {
 
     cy.showWaitMessage('Payment process completed!', 10000);
   });
+
+  it('should edit an existing booking', () => {
+    // Navigate to bookings list
+    cy.get('.navbar-nav .nav-link').contains('Bookings').clickWithHighlight();
+    
+    // Verify we're on the booking list page
+    cy.url().should('include', '/bookings/');
+    cy.contains('h1', 'Bookings').should('be.visible');
+    
+    // Find an existing booking and click the edit button
+    cy.contains('td', 'John Doe')
+      .parent('tr') // Get the parent row
+      .find('a') // Find any link in the row
+      .contains('update') // Look for the Edit text
+      .clickWithHighlight();
+    
+    // Verify we're on the edit page
+    cy.url().should('match', /\/bookings\/\d+\/update\/$/);
+    
+    // Wait for the form to load
+    cy.wait(1000);
+    
+    // Modify the booking details
+    cy.get('#id_court').selectWithHighlight('Court 2'); // Change court
+    
+    // Change start time to tomorrow at 14:00
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(14, 0);
+    
+    // Change end time to tomorrow at 15:30
+    const endTime = new Date(tomorrow);
+    endTime.setHours(15, 30);
+    
+    const formatDateTime = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+    
+    // Update the times with highlight
+    cy.get('#id_start_time').invoke('val', formatDateTime(tomorrow));
+    cy.get('#id_start_time').should('have.value', formatDateTime(tomorrow));
+    
+    cy.get('#id_end_time').invoke('val', formatDateTime(endTime));
+    cy.get('#id_end_time').should('have.value', formatDateTime(endTime));
+    
+    // Update the fee with highlight
+    cy.get('#id_fee').clear().typeWithHighlight('30.00', {arrowPosition: 'right'});
+    
+    // Wait before submitting
+    cy.showWaitMessage('Reviewing changes before submitting...', 3000);
+    
+    // Submit the form with highlight
+    cy.get('button[type="submit"]').clickWithHighlight();
+    
+    // Verify success
+    cy.contains('Booking updated successfully!').should('be.visible');
+    
+    // Verify the changes were applied
+    cy.contains('Court 2').should('be.visible');
+    cy.contains('$30.00').should('be.visible');
+    
+    cy.showWaitMessage('Booking updated successfully!', 3000);
+  });
+
+  it('should delete an unpaid booking', () => {
+    // First create a new unpaid booking
+    cy.highlightNavigation('/bookings/create/');
+    
+    cy.get('#id_customer', { timeout: 10000 }).should('be.visible').selectWithHighlight('Jane Smith');
+    cy.get('#id_court').selectWithHighlight('Court 1');
+    
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 2);
+    tomorrow.setHours(16, 0);
+    
+    const endTime = new Date(tomorrow);
+    endTime.setHours(17, 0);
+    
+    const formatDateTime = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+    
+    cy.get('#id_start_time').invoke('val', formatDateTime(tomorrow));
+    cy.get('#id_end_time').invoke('val', formatDateTime(endTime));
+    cy.get('#id_fee').typeWithHighlight('25.00', {arrowPosition: 'right'});
+    
+    cy.showWaitMessage('Creating booking for deletion test...', 3000);
+    cy.get('button[type="submit"]').clickWithHighlight();
+    
+    // Wait for booking to be created
+    cy.showWaitMessage('Waiting for booking to be created...', 2000);
+    
+    // Now delete the booking
+    cy.contains('Jane Smith')
+      .parent('tr') // Get the parent row
+      .find('a') // Find any link in the row
+      .contains('Delete') // Look for the Delete text
+      .clickWithHighlight();
+    
+    // Verify we're on the delete confirmation page
+    cy.url().should('match', /\/bookings\/\d+\/delete\/$/);
+    cy.contains('Delete Booking').should('be.visible');
+    
+    // Verify the booking details are shown
+    cy.contains('Jane Smith').should('be.visible');
+    cy.contains('Court 1').should('be.visible');
+    
+    // Wait before confirming deletion
+    cy.showWaitMessage('Confirming deletion of unpaid booking...', 3000);
+    
+    // Confirm deletion with highlight
+    cy.get('button[type="submit"]').clickWithHighlight();
+    
+    // Verify success
+    cy.contains('Booking deleted successfully!').should('be.visible');
+    
+    // Verify the booking is no longer in the list
+    cy.contains('Jane Smith').should('not.exist');
+    
+    cy.showWaitMessage('Unpaid booking deleted successfully!', 3000);
+  });
+
+  it('should not allow deletion of a paid booking', () => {
+    // First, create a booking and pay for it
+    cy.highlightNavigation('/bookings/create/');
+    
+    cy.get('#id_customer', { timeout: 10000 }).should('be.visible').selectWithHighlight('John Doe');
+    cy.get('#id_court').selectWithHighlight('Court 2');
+    
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 3);
+    tomorrow.setHours(18, 0);
+    
+    const endTime = new Date(tomorrow);
+    endTime.setHours(19, 0);
+    
+    const formatDateTime = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+    
+    cy.get('#id_start_time').invoke('val', formatDateTime(tomorrow));
+    cy.get('#id_end_time').invoke('val', formatDateTime(endTime));
+    cy.get('#id_fee').typeWithHighlight('35.00', {arrowPosition: 'right'});
+    
+    cy.showWaitMessage('Creating booking for paid deletion test...', 3000);
+    cy.get('button[type="submit"]').clickWithHighlight();
+    
+    // Wait for booking to be created
+    cy.showWaitMessage('Waiting for booking to be created...', 2000);
+    
+    // Process payment
+    cy.contains('John Doe').parent().parent().find('a').first().clickWithHighlight();
+    cy.wait(2000);
+    
+    cy.contains('Process Payment').clickWithHighlight();
+    
+    cy.get('#id_amount', { timeout: 10000 }).should('be.visible').clear().typeWithHighlight('35.00');
+    cy.get('#id_payment_method').selectWithHighlight('cash');
+    cy.get('#id_transaction_id').typeWithHighlight('TXN67890');
+    
+    cy.showWaitMessage('Processing payment...', 2000);
+    cy.get('button[type="submit"]').clickWithHighlight();
+    
+    // Verify payment was processed
+    cy.contains('Payment processed successfully!').should('be.visible');
+    
+    // Navigate back to booking list
+    cy.get('.navbar-nav .nav-link').contains('Bookings').clickWithHighlight();
+    cy.wait(1000);
+    
+    // Now try to delete the paid booking
+    cy.contains('John Doe')
+      .parent('tr') // Get the parent row
+      .find('a') // Find any link in the row
+      .contains('Delete') // Look for the Delete text
+      .clickWithHighlight();
+    
+    // Verify we're on the delete page but deletion is blocked
+    cy.url().should('match', /\/bookings\/\d+\/delete\/$/);
+    
+    // Verify the warning message is shown
+    cy.contains('Cannot Delete Booking').should('be.visible');
+    cy.contains('This booking has been paid for and cannot be deleted.').should('be.visible');
+    
+    // Verify the delete button is not present
+    cy.get('button[type="submit"]').should('not.exist');
+    
+    // Verify there's a back button
+    cy.contains('Back to Booking').should('be.visible').clickWithHighlight();
+    
+    // Verify we're back on the booking detail page
+    cy.url().should('match', /\/bookings\/\d+\/$/);
+    
+    cy.showWaitMessage('Verified that paid booking cannot be deleted!', 3000);
+  });
+
+  // Add more tests here...
+
 });
+
