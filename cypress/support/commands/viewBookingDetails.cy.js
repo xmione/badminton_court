@@ -1,7 +1,8 @@
 // cypress/support/commands/viewBookingDetails.cy.js
 export const viewBookingDetails = () => {
   Cypress.Commands.add('viewBookingDetails', () => {
-    // Extracted from your existing view-booking.cy.js test logic
+    
+    cy.showWaitMessage('This Test will view newly created Booking...', 10000)
     const statusId = cy.showStatusMessage('Viewing booking details.', {
       showSpinner: true,
       subText: 'Please wait...'

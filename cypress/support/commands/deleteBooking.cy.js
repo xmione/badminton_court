@@ -1,6 +1,8 @@
 // cypress/support/commands/deleteBooking.cy.js
 export const deleteBooking = () => {
   Cypress.Commands.add('deleteBooking', () => {
+
+    cy.showWaitMessage('This Test will try to delete UnPaid Booking and System should allow it...', 10000)
     // Navigate to bookings list
     cy.get('.navbar-nav .nav-link').contains('Bookings').clickWithHighlight();
     cy.wait(1000);

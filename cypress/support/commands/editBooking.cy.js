@@ -1,6 +1,8 @@
 // cypress/support/commands/editBooking.cy.js
 export const editBooking = () => {
   Cypress.Commands.add('editBooking', () => {
+
+    cy.showWaitMessage('This Test will edit newly created Booking...', 10000)
     // Navigate to bookings list
     cy.get('.navbar-nav .nav-link').contains('Bookings').clickWithHighlight();
     

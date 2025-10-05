@@ -2,6 +2,7 @@
 export const processPayment = () => {
   Cypress.Commands.add('processPayment', () => {
     
+    cy.showWaitMessage('This Test will create new Booking and process Payment...', 10000)
     const statusId = cy.showStatusMessage('Creating new booking for Payment.', {
       showSpinner: true,
       subText: 'Please wait...'

@@ -1,6 +1,8 @@
 // cypress/support/commands/createNewBooking.cy.js
 export const createNewBooking = () => {
+  
   Cypress.Commands.add('createNewBooking', () => {
+    cy.showWaitMessage('This Test will create a new Booking...', 10000)
     const statusId = cy.showStatusMessage('Creating new booking.', {
       showSpinner: true,
       subText: 'Please wait...'
