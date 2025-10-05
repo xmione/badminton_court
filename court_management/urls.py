@@ -62,5 +62,5 @@ urlpatterns = [
     path('api/test-create-user/', views.test_create_user, name='test-create-user'),
     path('api/test-verify-user/', views.test_verify_user, name='test-verify-user'),
     path('api/test-setup-admin/', views.test_setup_admin, name='test-setup-admin'),
-    path('api/test-create-booking-data/', views.test_create_booking_data, name='test-create-booking-data'),
+    
 ]

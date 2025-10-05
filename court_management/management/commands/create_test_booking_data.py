@@ -1,0 +1,65 @@
+# court_management/management/commands/create_test_booking_data.py
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.utils import timezone  # Import timezone utility
+from datetime import timedelta
+from court_management.models import Customer, Court, Booking
+
+class Command(BaseCommand):
+    help = 'Create test data for bookings (customers, courts, and bookings)'
+
+    def handle(self, *args, **options):
+        try:
+            with transaction.atomic():
+                # Delete existing test data to ensure clean state
+                Customer.objects.filter(name__in=["John Doe", "Jane Smith"]).delete()
+                Court.objects.filter(name__in=["Court 1", "Court 2"]).delete()
+                Booking.objects.filter(customer__name__in=["John Doe", "Jane Smith"]).delete()
+                
+                # Create test customers
+                john_doe = Customer.objects.create(
+                    name="John Doe",
+                    phone="1234567890",
+                    email="john@example.com",
+                    active=True
+                )
+                
+                jane_smith = Customer.objects.create(
+                    name="Jane Smith",
+                    phone="9876543210",
+                    email="jane@example.com",
+                    active=True
+                )
+                
+                # Create test courts
+                court_1 = Court.objects.create(
+                    name="Court 1",
+                    hourly_rate=20.00,
+                    description="Main court",
+                    active=True
+                )
+                
+                court_2 = Court.objects.create(
+                    name="Court 2",
+                    hourly_rate=25.00,
+                    description="Premium court",
+                    active=True
+                )
+                
+                # Create a test booking for John Doe with timezone-aware datetimes
+                tomorrow = timezone.now() + timedelta(days=1)  # Use timezone.now() instead of datetime.now()
+                tomorrow = tomorrow.replace(hour=10, minute=0, second=0, microsecond=0)
+                end_time = tomorrow.replace(hour=11, minute=0)
+                
+                Booking.objects.create(
+                    customer=john_doe,
+                    court=court_1,
+                    start_time=tomorrow,
+                    end_time=end_time,
+                    fee=20.00
+                )
+                
+                self.stdout.write(self.style.SUCCESS('Successfully created test booking data'))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'Error creating test data: {str(e)}'))
+            raise
