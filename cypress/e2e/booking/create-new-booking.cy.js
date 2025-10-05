@@ -4,7 +4,7 @@ describe('Booking Management', () => {
   let statusId; 
   
   it('should create a new booking', () => {
-    cy.createNewBookingCommand();
+    cy.createNewBooking();
   });
 });
 

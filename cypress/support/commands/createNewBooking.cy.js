@@ -1,6 +1,6 @@
-// cypress/support/commands/createNewBookingCommand.cy.js
-export const createNewBookingCommand = () => {
-  Cypress.Commands.add('createNewBookingCommand', () => {
+// cypress/support/commands/createNewBooking.cy.js
+export const createNewBooking = () => {
+  Cypress.Commands.add('createNewBooking', () => {
     const statusId = cy.showStatusMessage('Creating new booking.', {
       showSpinner: true,
       subText: 'Please wait...'
@@ -47,4 +47,4 @@ export const createNewBookingCommand = () => {
   });
 };
 
-createNewBookingCommand();
+createNewBooking();

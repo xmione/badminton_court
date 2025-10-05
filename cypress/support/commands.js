@@ -44,5 +44,6 @@ import './commands/hideStatusMessage.cy.js'
 import './commands/showStatusMessage.cy.js'
 import './commands/updateStatusMessage.cy.js'
 
-import './commands/createNewBookingCommand.cy.js'
-import './commands/viewBookingDetailsCommand.cy.js'
+import './commands/createNewBooking.cy.js'
+import './commands/viewBookingDetails.cy.js'
+import './commands/processPayment.cy.js'

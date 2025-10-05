@@ -1,6 +1,6 @@
-// cypress/support/commands/viewBookingDetailsCommand.cy.js
-export const viewBookingDetailsCommand = () => {
-  Cypress.Commands.add('viewBookingDetailsCommand', () => {
+// cypress/support/commands/viewBookingDetails.cy.js
+export const viewBookingDetails = () => {
+  Cypress.Commands.add('viewBookingDetails', () => {
     // Extracted from your existing view-booking.cy.js test logic
     const statusId = cy.showStatusMessage('Viewing booking details.', {
       showSpinner: true,
@@ -29,4 +29,4 @@ export const viewBookingDetailsCommand = () => {
   });
 };
 
-viewBookingDetailsCommand();
+viewBookingDetails();
