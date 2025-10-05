@@ -2,7 +2,7 @@
 
 describe('Booking Management', () => {
 
-    let statusId;
+  let statusId;
   before(() => {
     cy.log('BOOKING HAPPY PATH SPEC: Starting admin-login.cy.js before()');
     cy.showWaitMessage('This will process the Happy Path Booking Test.', 10000);
