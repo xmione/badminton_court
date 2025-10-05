@@ -43,5 +43,3 @@ import './commands/showWaitMessage.cy.js'
 import './commands/hideStatusMessage.cy.js'
 import './commands/showStatusMessage.cy.js'
 import './commands/updateStatusMessage.cy.js'
-// Object to store active status messages
-const statusMessages = {};

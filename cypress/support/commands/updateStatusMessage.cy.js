@@ -1,4 +1,6 @@
 // cypress/support/commands/updateStatusMessage.cy.js
+
+import { statusMessages } from './statusMessagesStore.js';
 export const updateStatusMessage = () => {
     // Command to update an existing status message
     Cypress.Commands.add('updateStatusMessage', (messageId, newText, newSubText = null) => {

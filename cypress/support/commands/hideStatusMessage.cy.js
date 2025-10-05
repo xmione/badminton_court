@@ -1,4 +1,6 @@
 // cypress/support/commands/hideStatusMessage.cy.js
+
+import { statusMessages } from './statusMessagesStore.js';
 export const hideStatusMessage = () => {
     // Command to hide a status message
     Cypress.Commands.add('hideStatusMessage', (messageId) => {
