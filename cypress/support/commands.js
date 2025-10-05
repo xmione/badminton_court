@@ -43,3 +43,6 @@ import './commands/showWaitMessage.cy.js'
 import './commands/hideStatusMessage.cy.js'
 import './commands/showStatusMessage.cy.js'
 import './commands/updateStatusMessage.cy.js'
+
+import './commands/createNewBookingCommand.cy.js'
+import './commands/viewBookingDetailsCommand.cy.js'
