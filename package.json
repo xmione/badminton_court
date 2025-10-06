@@ -60,7 +60,9 @@
     "docker:restore-images": "echo '📂 Restoring Docker images...' && docker load -i ./backups/postal-image.tar && docker load -i ./backups/web-image.tar && docker load -i ./backups/celery-image.tar && docker load -i ./backups/celery-beat-image.tar && echo '✅ Images restored successfully'",
     "pfs": "echo 'Print the Project Folder Structure..' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\"",
     "psql": "echo 'Running PSQL..' && docker exec -it db psql -U dbuser -d badminton_court",
-    "certs:create": "echo 'Creating openssl certificates for localhost...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\createcert.ps1\""
+    "certs:create": "echo 'Creating openssl certificates for localhost...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\createcert.ps1\"",
+    "encryptenvfiles" : "echo 'Encrypting .env files...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\encryptenvfiles.ps1\"",
+    "decryptenvfiles" : "echo 'Decrypting .env files...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\decryptenvfiles.ps1\""
   },
   "devDependencies": {
     "cypress": "^15.3.0",

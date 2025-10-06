@@ -1,119 +1,56 @@
-import subprocess
-import sys
+from pyngrok import ngrok
 import time
+import sys
 
-def start_localtunnel(subdomain=None):
+def start_ngrok_tunnel(port=8000, authtoken=None):
+    print("Starting ngrok tunnel...")
     try:
-        print("Starting LocalTunnel...")
-        
-        # Build the command
-        cmd = ["pylt", "port", "8000"]
-        if subdomain:
-            cmd.extend(["-s", subdomain])
-            print(f"Using custom subdomain: {subdomain}")
-        
-        # Start localtunnel using subprocess
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1
-        )
-        
-        # Give it a moment to start
-        time.sleep(2)
-        
-        if process.poll() is None:
-            print("✓ LocalTunnel started successfully")
-            
-            # Read the output line by line in real-time
-            tunnel_url = None
-            password = None
-            output_captured = False
-            
-            print("\n" + "="*60)
-            print("🌐 LOOKING FOR TUNNEL INFORMATION...")
-            print("="*60)
-            
-            # Read output for up to 10 seconds to find the tunnel info
-            start_time = time.time()
-            while (time.time() - start_time) < 10 and process.poll() is None:
-                line = process.stdout.readline()
-                if not line:
-                    time.sleep(0.1)
-                    continue
-                
-                line = line.strip()
-                print(f"📝 Output: {line}")
-                
-                # Look for the tunnel URL
-                if 'https://' in line and ('loca.lt' in line or 'pinggy.link' in line):
-                    tunnel_url = line
-                    output_captured = True
-                
-                # Look for password/token
-                elif 'password:' in line.lower() or 'token:' in line.lower():
-                    password = line
-                    output_captured = True
-            
-            # Display the tunnel information
-            print("\n" + "="*60)
-            print("🌐 TUNNEL INFORMATION:")
-            print("="*60)
-            print("🌐 URL: " + (tunnel_url if tunnel_url else "Not found in output"))
-            
-            if password:
-                print("🔐 Password: " + password)
-                print("\n⚠  IMPORTANT: Share both the URL AND password!")
-            else:
-                print("🔐 Password: None (no authentication required)")
-                print("\n✅ Just share the URL above")
-            
-            print("="*60)
-            
-            if output_captured:
-                print("\n✓ Tunnel information captured successfully!")
-            else:
-                print("\n⚠  Could not capture tunnel information from output")
-                print("✓ The tunnel is still running in the background")
-            
-            print("\n✓ Tunnel is running. Press Ctrl+C to stop the tunnel")
-            
-            # Keep the tunnel running and wait for user to stop it
-            try:
-                while process.poll() is None:
-                    line = process.stdout.readline()
-                    if line:
-                        print(f"📝 {line.strip()}")
-                    else:
-                        time.sleep(0.1)
-            except KeyboardInterrupt:
-                print("\n\nStopping tunnel...")
-                process.terminate()
-                process.wait(timeout=5)
-                print("✓ Tunnel stopped successfully")
-                
+        # Set authtoken from argument or environment variable
+        if authtoken:
+            ngrok.set_auth_token(authtoken)
         else:
-            stdout, stderr = process.communicate()
-            print("Error starting tunnel:")
-            if stdout:
-                print("STDOUT:", stdout)
-            if stderr:
-                print("STDERR:", stderr)
-            
-    except FileNotFoundError:
-        print("Error: pylt command not found.")
-        print("Please install py-localtunnel using: pip install py-localtunnel")
-        return False
+            # Attempt to read from default config file (e.g., ~/.ngrok2/ngrok.yml)
+            # or an environment variable NGROK_AUTHTOKEN
+            print("No authtoken provided. Will attempt to use pre-configured token or environment variable.")
+
+        # Connect to the specified port
+        # pyngrok will download ngrok.exe if it's not found in expected locations
+        tunnel = ngrok.connect(port)
+        print(f"✓ ngrok tunnel established!")
+        print(f"🌐 Public URL: {tunnel.public_url}")
+        print("\n✓ Tunnel is running. Press Ctrl+C to stop.")
+
+        # Keep the script running to keep the tunnel alive
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("\n\nStopping ngrok tunnel...")
+            ngrok.disconnect(tunnel.public_url)
+            ngrok.kill() # Kill all ngrok processes associated with this pyngrok instance
+            print("✓ ngrok tunnel stopped.")
     except Exception as e:
-        print(f"Error: {e}")
-        return False
+        print(f"Error starting ngrok tunnel: {e}")
+        print("\n**Troubleshooting ngrok:**")
+        print("1. Ensure you have an ngrok account and a free authtoken from dashboard.ngrok.com/get-started/your-authtoken")
+        print("2. Set the authtoken in your script (replace 'YOUR_NGR_AUTHTOKEN') or configure it via `ngrok.set_auth_token()` or via environment variable.")
+        print("3. Check your internet connection and ensure your local app is running on port", port)
+        sys.exit(1) # Exit if tunnel failed
 
 if __name__ == "__main__":
-    # You can specify a custom subdomain here, or pass None for random
-    custom_subdomain = "aeropace-portal"  # Change this to your desired subdomain
-    success = start_localtunnel(subdomain=custom_subdomain)
-    if not success:
-        print("Failed to start tunnel")
-        sys.exit(1)
+    # Make sure your Python web app is running on this port BEFORE running this script
+    app_port = 8000 
+    
+    # Replace 'YOUR_NGR_AUTHTOKEN_HERE' with the free token you got from ngrok.com
+    # It's safer to load this from an environment variable or a config file in production
+    # For quick testing, you can paste it directly here.
+    ngrok_auth_token = "YOUR_NGR_AUTHTOKEN_HERE" 
+    
+    # --- IMPORTANT ---
+    # If you already have ngrok.exe downloaded (e.g., in C:\ngrok\ngrok.exe),
+    # you can tell pyngrok where to find it:
+    # from pyngrok import ngrok_path
+    # ngrok_path.set("C:/ngrok/ngrok.exe")
+    # This prevents pyngrok from downloading a new copy.
+    
+    start_ngrok_tunnel(port=app_port, authtoken=ngrok_auth_token)
