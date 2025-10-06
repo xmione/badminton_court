@@ -44,6 +44,9 @@ from django.views.generic import CreateView
 from django.urls import reverse_lazy
 from django.template.loader import get_template
 
+# Import Decimal for precise calculations
+from decimal import Decimal
+
 User = get_user_model()
 
 @login_required
@@ -556,7 +559,7 @@ def sales_report(request):
     )
     
     # Calculate total revenue
-    total_revenue = bookings.aggregate(total=Sum('fee'))['total'] or 0
+    total_revenue = bookings.aggregate(total=Sum('fee'))['total'] or Decimal('0.00') # Ensure Decimal type
     
     # Calculate daily revenue
     daily_revenue = bookings.annotate(
@@ -565,6 +568,14 @@ def sales_report(request):
         revenue=Sum('fee'),
         bookings_count=Count('id')
     ).order_by('date')
+    
+    # Calculate total bookings count (sum of bookings_count from daily_revenue)
+    total_bookings_count = sum(item['bookings_count'] for item in daily_revenue)
+
+    # Calculate average revenue per booking
+    avg_revenue_per_booking = Decimal('0.00')
+    if total_bookings_count > 0:
+        avg_revenue_per_booking = total_revenue / total_bookings_count
     
     # Calculate monthly revenue
     monthly_revenue = bookings.annotate(
@@ -623,6 +634,8 @@ def sales_report(request):
         'daily_chart': daily_chart,
         'court_chart': court_chart,
         'payment_chart': payment_chart,
+        'total_bookings_count': total_bookings_count, # Pass the total bookings count
+        'avg_revenue_per_booking': avg_revenue_per_booking, # Pass the calculated average
     }
     
     return render(request, 'court_management/sales_report.html', context)

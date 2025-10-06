@@ -46,7 +46,7 @@
         <div class="card bg-success text-white">
             <div class="card-body">
                 <h5 class="card-title">Total Bookings</h5>
-                <h2>{{ daily_revenue|length }}</h2>
+                <h2>{{ total_bookings_count }}</h2>
             </div>
         </div>
     </div>
@@ -54,7 +54,7 @@
         <div class="card bg-info text-white">
             <div class="card-body">
                 <h5 class="card-title">Avg. Revenue/Booking</h5>
-                <h2>${% if daily_revenue %}{{ total_revenue|div:daily_revenue|length|floatformat:2 }}{% else %}0.00{% endif %}</h2>
+            <h2>${{ avg_revenue_per_booking|floatformat:2 }}</h2> 
             </div>
         </div>
     </div>

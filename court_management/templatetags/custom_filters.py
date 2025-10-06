@@ -1,13 +1,23 @@
 from django import template
+from decimal import Decimal, InvalidOperation
 
 register = template.Library()
 
 @register.filter
 def div(value, arg):
+    """
+    Divides the value by the arg. Handles Decimal objects.
+    """
     try:
-        return float(value.toString()) / float(arg.toString())
-    except (ValueError, ZeroDivisionError):
-        return 0
+        # Convert both to Decimal for precise division
+        # Ensure arg is not zero before division
+        val = Decimal(str(value))
+        agr = Decimal(str(arg))
+        if agr == 0:
+            return Decimal('0.00')
+        return val / agr
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal('0.00') # Return a Decimal for consistency
 
 @register.filter
 def sum_attribute(value, arg):
