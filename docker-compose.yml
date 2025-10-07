@@ -70,6 +70,8 @@ services:
     volumes: *app-volumes
     ports:
       - "8000:8000"
+    environment:
+      - CYPRESS=true  # Add this for test profile
     env_file:
       - .env.docker
     networks:
@@ -81,7 +83,7 @@ services:
       - presentation
     depends_on:
       - redis
-      
+  
   # Celery Worker
   celery:
     container_name: celery
@@ -217,7 +219,7 @@ services:
       - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
       - ./scripts:/e2e/scripts
     environment:
-      - CYPRESS_baseUrl=${CYPRESS_baseUrl}
+      - CYPRESS_baseUrl=http://web:8000  # Use internal Docker network URL
       - CYPRESS_headed=${CYPRESS_headed}
     env_file:
       - .env.docker
@@ -227,7 +229,7 @@ services:
       - test
     networks:
       - app-network
-
+      
   # Test Data Setup
   test-setup:
     container_name: test-setup

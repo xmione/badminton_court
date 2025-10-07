@@ -1,4 +1,4 @@
-# settings.py
+# badminton_court/settings.py
 
 """
 Django settings for badminton_court project.
@@ -146,8 +146,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'badminton_court.wsgi.application'
 
+
 # Database configuration
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3')
+def get_database_url():
+    """
+    Returns the appropriate DATABASE_URL based on the environment
+    """
+    # Check if we're in a test environment
+    if os.environ.get('PYTEST_CURRENT_TEST') or os.environ.get('CYPRESS'):
+        # For test environment, construct URL with db-test
+        db_name = os.getenv('POSTGRES_DB', 'badminton_court_test')
+        db_user = os.getenv('POSTGRES_USER', 'dbuser')
+        db_password = os.getenv('POSTGRES_PASSWORD', 'dbpass')
+        return f'postgresql://{db_user}:{db_password}@db-test:5432/{db_name}'
+    else:
+        # For development environment, use the standard DATABASE_URL or construct with db
+        database_url = os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3')
+        if database_url.startswith('postgres'):
+            return database_url
+        elif database_url == 'sqlite:///db.sqlite3':
+            # Default PostgreSQL configuration for dev
+            db_name = os.getenv('POSTGRES_DB', 'badminton_court')
+            db_user = os.getenv('POSTGRES_USER', 'dbuser')
+            db_password = os.getenv('POSTGRES_PASSWORD', 'dbpass')
+            return f'postgresql://{db_user}:{db_password}@db:5432/{db_name}'
+        else:
+            return database_url
+
+DATABASE_URL = get_database_url()
 
 if DATABASE_URL.startswith('postgres'):
     # PostgreSQL configuration
@@ -163,7 +189,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-
+    
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
