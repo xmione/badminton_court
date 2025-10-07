@@ -15,7 +15,6 @@ function EncryptEnvFiles {
     $envFiles = @(
         ".env.dev" 
         ,".env.docker" 
-        ,".env.tunnel" 
         # ,"cypress.env.json"
     )
 

@@ -37,10 +37,18 @@ def start_ngrok_tunnel(port=8000, authtoken=None):
         sys.exit(1)
 
 if __name__ == "__main__":
-    dotenv_path = os.path.join(os.path.dirname(__file__), '.env.tunnel')
+    # Load environment variables from .env.docker
+    dotenv_path = os.path.join(os.path.dirname(__file__), '.env.docker')
     load_dotenv(dotenv_path=dotenv_path)
 
-    app_port = 8000
+    # Get configuration from environment variables
+    app_port = int(os.getenv("APP_PORT", "8000"))
     ngrok_auth_token = os.getenv("NGR_AUTHTOKEN")
+    
+    # Check if required environment variables are set
+    if not ngrok_auth_token:
+        print("❌ Error: NGR_AUTHTOKEN environment variable is not set.")
+        print("Please add it to your .env.docker file.")
+        sys.exit(1)
     
     start_ngrok_tunnel(port=app_port, authtoken=ngrok_auth_token)

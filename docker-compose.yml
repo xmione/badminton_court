@@ -187,7 +187,7 @@ services:
       - NGR_AUTHTOKEN=${NGR_AUTHTOKEN}
       - APP_PORT=${APP_PORT}
     env_file:
-      - .env.tunnel
+      - .env.docker
     networks:
       - app-network
     profiles:
@@ -211,7 +211,7 @@ services:
       - CYPRESS_headed=${CYPRESS_headed}
     env_file:
       - .env.docker
-      - .env.tunnel
+      - .env.docker
     depends_on:
       - web
     profiles:
@@ -261,7 +261,7 @@ services:
       - DISPLAY=:99  # Virtual display for headed mode
     env_file:
       - .env.docker
-      - .env.tunnel
+      - .env.docker
     depends_on:
       - web
     profiles:

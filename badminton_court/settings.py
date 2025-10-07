@@ -30,10 +30,7 @@ TUNNEL_ENABLED = os.environ.get('TUNNEL_ENABLED', 'false').lower() == 'true'
 
 # Load the appropriate .env file
 if DOCKER:
-    if TUNNEL_ENABLED:
-        env_file = '.env.tunnel'
-    else:
-        env_file = '.env.docker'
+    env_file = '.env.docker'
 else:
     env_file = '.env.dev'
 

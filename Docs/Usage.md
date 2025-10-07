@@ -15,15 +15,82 @@ CYPRESS_baseUrl=http://web:8000
 CYPRESS_headed=true
 ```
 
-### Create .env.tunnel file
-Create a `.env.tunnel` file for tunnel configuration:
+### Create .env.docker file
+Create a `.env.docker` file for Docker configuration:
 ```env
-TUNNEL_SUBDOMAIN=aeropace-portal
-TUNNEL_ENABLED=true
-TUNNEL_URL=https://aeropace-portal.loca.lt
-ALLOWED_HOSTS=localhost,127.0.0.1,web,aeropace-portal.loca.lt
-CYPRESS_baseUrl=https://aeropace-portal.loca.lt
+# Application Configuration
+DEBUG=true
+DOCKER=true
+
+# Application base URL settings
+APP_PROTOCOL=http
+APP_DOMAIN=localhost
+APP_PORT=8000
+
+# Django Configuration
+SECRET_KEY=your-secret-key-here
+DATABASE_URL=postgres://dbuser:password@db:5432/badminton_court
+REDIS_URL=redis://redis:6379/0
+ALLOWED_HOSTS=localhost,127.0.0.1,web
+
+# Tunnel Configuration
+NGR_AUTHTOKEN=your-ngrok-auth-token-here
+TUNNEL_ENABLED=false
+TUNNEL_URL=
+CYPRESS_baseUrl=http://localhost:8000
 CYPRESS_headed=true
+
+# PostgreSQL Configuration
+POSTGRES_DB=badminton_court
+POSTGRES_USER=dbuser
+POSTGRES_PASSWORD=password
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+
+# MariaDB Configuration (for Postal)
+MYSQL_ROOT_PASSWORD=password
+MYSQL_DATABASE=postal
+MYSQL_USER=postal
+MYSQL_PASSWORD=password
+
+# Postal Configuration
+POSTAL_HOST=localhost
+POSTAL_PORT=5000
+POSTRAL_DB_HOST=mariadb
+POSTAL_DB_PORT=3306
+POSTAL_DB_USER=postal
+POSTAL_DB_PASS=password
+POSTAL_DB_NAME=postal
+MSG_DB_HOST=mariadb
+MSG_DB_PORT=3306
+MSG_DB_USER=postal
+MSG_DB_PASS=password
+MSG_DB_NAME=postal
+
+# SMTP Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM_EMAIL=your-email@gmail.com
+SMTP_FROM_NAME=Badminton Court Management
+
+# Admin Configuration
+ADMIN_EMAIL=admin@example.com
+ADMIN_FIRST_NAME=Admin
+ADMIN_LAST_NAME=User
+ADMIN_PASSWORD=password
+
+# Support Configuration
+SUPPORT_EMAIL=support@example.com
+
+# Social Media Configuration
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+FACEBOOK_CLIENT_ID=your-facebook-client-id
+FACEBOOK_CLIENT_SECRET=your-facebook-client-secret
+TWITTER_CLIENT_ID=your-twitter-client-id
+TWITTER_CLIENT_SECRET=your-twitter-client-secret
 ```
 
 ## Dependencies
@@ -33,6 +100,7 @@ Add to your requirements.txt:
 ```
 python-dotenv==16.0.3
 dj-database-url==2.0.0
+pyngrok=7.1.6
 ```
 
 ### Node.js Dependencies
@@ -66,6 +134,11 @@ npm run dev:stop
 ### Load test data
 ```powershell
 npm run dev:load-data
+```
+
+### Start tunnel service locally
+```powershell
+npm run dev:tunnel
 ```
 
 ## Docker Development Environment
@@ -117,6 +190,28 @@ npm run docker:test-logs
 npm run docker:test-setup
 ```
 
+## Docker Tunnel Environment
+
+### Start tunnel environment
+```powershell
+npm run docker:tunnel
+```
+
+### Start tunnel environment in detached mode
+```powershell
+npm run docker:tunnel-detached
+```
+
+### Stop tunnel services
+```powershell
+npm run docker:tunnel-stop
+```
+
+### Show tunnel logs
+```powershell
+npm run docker:tunnel-logs
+```
+
 ## Cypress Testing
 
 ### Local Cypress Testing
@@ -144,6 +239,16 @@ npm run dev:cypress-presentation
 #### Create presentation videos for specific test
 ```powershell
 npm run dev:cypress-presentation-spec
+```
+
+#### Select and run a test for presentation
+```powershell
+npm run dev:select-presentation
+```
+
+#### Post-process existing videos
+```powershell
+npm run dev:post-process-videos
 ```
 
 ### Docker Cypress Testing
@@ -180,7 +285,7 @@ npm run docker:cypress-run-headless
 
 #### Create presentation videos in Docker
 ```powershell
-npm run docker:cypress-presentation
+npm run docker:create-presentation
 ```
 
 #### Process videos in Docker
@@ -188,48 +293,45 @@ npm run docker:cypress-presentation
 npm run docker:post-process-videos
 ```
 
-## Tunnel Environment
-
-### Local Tunnel
+#### Run Cypress tests for presentation spec in Docker
 ```powershell
-npm run dev:tunnel
-```
-
-### Docker Tunnel Environment
-
-#### Start tunnel environment
-```powershell
-npm run docker:tunnel
-```
-
-#### Start tunnel environment in detached mode
-```powershell
-npm run docker:tunnel-detached
-```
-
-#### Stop tunnel services
-```powershell
-npm run docker:tunnel-stop
-```
-
-#### Show tunnel logs
-```powershell
-npm run docker:tunnel-logs
+npm run docker:cypress-presentation-spec
 ```
 
 ## Docker Management
 
-### Build Docker images
+### Build all Docker images
 ```powershell
 npm run docker:build
 ```
 
-### Build Docker images without cache
+### Build all Docker images without cache
 ```powershell
 npm run docker:build-nocache
 ```
 
-### Stop all services
+### Build specific profile images
+```powershell
+npm run docker:build-dev
+npm run docker:build-test
+npm run docker:build-tunnel
+npm run docker:build-presentation
+```
+
+### Rebuild all services
+```powershell
+npm run docker:rebuild
+```
+
+### Rebuild specific profile services
+```powershell
+npm run docker:rebuild-dev
+npm run docker:rebuild-test
+npm run docker:rebuild-tunnel
+npm run docker:rebuild-presentation
+```
+
+### Stop all services and remove volumes
 ```powershell
 npm run docker:down-volumes
 ```
@@ -301,7 +403,7 @@ npm run decryptenvfiles
 ### Access the application
 - Local development: http://localhost:8000
 - Docker development: http://localhost:8000
-- Through tunnel: https://aeropace-portal.loca.lt (when tunnel is running)
+- Through tunnel: https://your-ngrok-subdomain.ngrok-free.dev (when tunnel is running)
 
 ### Admin Login
 - Username: admin
@@ -325,6 +427,9 @@ jobs:
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
+    
+    - name: Build Docker images
+      run: npm run docker:build
     
     - name: Run tests
       run: npm run docker:cypress-run-headless
@@ -372,6 +477,12 @@ jobs:
    ```powershell
    npm run docker:test-setup
    npm run docker:logs db
+   ```
+
+5. **Environment variable warnings**
+   ```powershell
+   # Make sure all required variables are set in .env.docker
+   # Check for typos in variable names
    ```
 
 ### Getting Help

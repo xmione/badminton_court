@@ -12,4 +12,4 @@ services:
       NGR_AUTHTOKEN: ${NGR_AUTHTOKEN}
       APP_PORT: ${APP_PORT}
     env_file:
-      - .env.tunnel
+      - .env.docker

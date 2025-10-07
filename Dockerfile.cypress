@@ -23,9 +23,6 @@ RUN npm ci
 COPY cypress/ ./cypress/
 COPY cypress.config.js ./
 
-# Copy scripts directory for any utility scripts
-COPY scripts/ ./scripts/
-
 # Create a script to start virtual display and run commands
 RUN echo '#!/bin/bash\n\
 Xvfb :99 -screen 0 1920x1080x24 &\n\
