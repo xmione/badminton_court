@@ -3,10 +3,15 @@ const { defineConfig } = require("cypress");
 const fs = require('fs');
 const path = require('path');
 
+// Load environment variables from .env file if not already set (for local development)
+if (!process.env.APP_PROTOCOL) {
+  require('dotenv').config();
+}
+
 module.exports = defineConfig({
   projectId: 'zr2raz',
   e2e: {
-    baseUrl: "http://localhost:8000",
+    baseUrl: process.env.CYPRESS_baseUrl || `${process.env.APP_PROTOCOL}://${process.env.APP_DOMAIN}:${process.env.APP_PORT}`,
     supportFile: "cypress/support/e2e.js",
     specPattern: "cypress/e2e/**/*.cy.{js,jsx,ts,tsx}",
     viewportWidth: 1280,

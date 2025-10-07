@@ -82,6 +82,6 @@ else
 fi
 
 # Keep the container running and wait for services
-echo "Postal is running. Access it at http://localhost:5000"
+echo "Postal is running. Access it at http://$POSTAL_HOST:$POSTAL_PORT"
 echo "Press Ctrl+C to stop."
 wait

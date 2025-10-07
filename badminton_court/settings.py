@@ -47,18 +47,35 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-# Dynamic ALLOWED_HOSTS configuration
-allowed_hosts = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,web,ALLOWED_HOSTS=localhost,127.0.0.1,aeropace-portal.loca.lt')
-ALLOWED_HOSTS = [host.strip() for host in allowed_hosts.split(',')]
+# Get the base components
+APP_PROTOCOL = os.getenv('APP_PROTOCOL', 'http')
+APP_DOMAIN = os.getenv('APP_DOMAIN', 'localhost')
+APP_PORT = os.getenv('APP_PORT', '8000')
+
+# Build derived values
+APP_BASE_URL = f"{APP_PROTOCOL}://{APP_DOMAIN}"
+APP_FULL_URL = f"{APP_BASE_URL}:{APP_PORT}"
+
+# Base ALLOWED_HOSTS with valid default values
+allowed_hosts_str = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,web')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
+
+# Add ngrok domain patterns as a fallback for free tier
+ngrok_domains = ['.ngrok-free.dev', '.ngrok-free.app', '.ngrok.io']
+for domain in ngrok_domains:
+    if domain not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(domain)
 
 # Add tunnel host if tunnel is enabled
 if TUNNEL_ENABLED:
     tunnel_url = os.getenv('TUNNEL_URL')
     if tunnel_url:
+        from urllib.parse import urlparse
         parsed = urlparse(tunnel_url)
         tunnel_host = parsed.netloc
         if tunnel_host and tunnel_host not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(tunnel_host)
+            print(f"Added {tunnel_host} to ALLOWED_HOSTS")
 
 # Application definition
 INSTALLED_APPS = [
@@ -109,6 +126,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'badminton_court.context_processors.app_settings', 
             ],
         },
     },
@@ -262,8 +280,14 @@ EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))  # Postal SMTP port
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('SMTP_USER', 'postal')  # Or your SMTP username
 EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASS', 'postal')  # Or your SMTP password
-DEFAULT_FROM_EMAIL = os.getenv('SMTP_FROM_EMAIL', 'noreply@badmintoncourt.com')
+DEFAULT_FROM_EMAIL = os.getenv('SMTP_FROM_EMAIL', 'noreply@aeropace.com')
 
+ADMIN_EMAIL=os.getenv('ADMIN_EMAIL', 'admin@aeropace.com')
+ADMIN_FIRST_NAME=os.getenv('ADMIN_FIRST_NAME', 'Admin')
+ADMIN_LAST_NAME=os.getenv('ADMIN_LAST_NAME', 'User')
+ADMIN_PASSWORD=os.getenv('ADMIN_PASSWORD', 'Admin123!')
+
+SUPPORT_EMAIL=os.getenv('SUPPORT_EMAIL', 'support@aeropace.com')
 # Authentication Configuration
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',

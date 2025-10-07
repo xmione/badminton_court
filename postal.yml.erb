@@ -76,6 +76,6 @@ rails:
   environment: production
   secret_key: <%= ENV['RAILS_SECRET_KEY'] || ENV['AUTH_SECRET'] %>
   allowed_hosts: 
-    - localhost
-    - 127.0.0.1
-    - 0.0.0.0
+    <% (ENV['ALLOWED_HOSTS'] || 'localhost,127.0.0.1,0.0.0.0').split(',').each do |host| %>
+    - <%= host.strip %>
+    <% end %>
