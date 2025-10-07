@@ -33,12 +33,79 @@
 
    # Create .env.docker file
    cat > .env.docker << EOF
-   TUNNEL_SUBDOMAIN=aeropace-portal
-   TUNNEL_ENABLED=true
-   TUNNEL_URL=https://aeropace-portal.loca.lt
-   ALLOWED_HOSTS=localhost,127.0.0.1,web,aeropace-portal.loca.lt
-   CYPRESS_baseUrl=https://aeropace-portal.loca.lt
+   # Application Configuration
+   DEBUG=true
+   DOCKER=true
+
+   # Application base URL settings
+   APP_PROTOCOL=http
+   APP_DOMAIN=localhost
+   APP_PORT=8000
+
+   # Django Configuration
+   SECRET_KEY=your-secret-key-here
+   DATABASE_URL=postgres://dbuser:yourpassword@db:5432/badminton_court
+   REDIS_URL=redis://redis:6379/0
+   ALLOWED_HOSTS=localhost,127.0.0.1,web
+
+   # Tunnel Configuration
+   NGR_AUTHTOKEN=your-ngrok-auth-token-here
+   TUNNEL_ENABLED=false
+   TUNNEL_URL=
+   CYPRESS_baseUrl=http://localhost:8000
    CYPRESS_headed=true
+
+   # PostgreSQL Configuration
+   POSTGRES_DB=badminton_court
+   POSTGRES_USER=dbuser
+   POSTGRES_PASSWORD=yourpassword
+   POSTGRES_HOST=db
+   POSTGRES_PORT=5432
+
+   # MariaDB Configuration (for Postal)
+   MYSQL_ROOT_PASSWORD=yourpassword
+   MYSQL_DATABASE=postal
+   MYSQL_USER=postal
+   MYSQL_PASSWORD=yourpassword
+
+   # Postal Configuration
+   POSTAL_HOST=localhost
+   POSTAL_PORT=5000
+   POSTRAL_DB_HOST=mariadb
+   POSTAL_DB_PORT=3306
+   POSTAL_DB_USER=postal
+   POSTAL_DB_PASS=yourpassword
+   POSTAL_DB_NAME=postal
+   MSG_DB_HOST=mariadb
+   MSG_DB_PORT=3306
+   MSG_DB_USER=postal
+   MSG_DB_PASS=yourpassword
+   MSG_DB_NAME=postal
+
+   # SMTP Configuration
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-app-password
+   SMTP_FROM_EMAIL=your-email@gmail.com
+   SMTP_FROM_NAME=Badminton Court Management
+
+   # Admin Configuration
+   ADMIN_EMAIL=admin@example.com
+   ADMIN_FIRST_NAME=Admin
+   ADMIN_LAST_NAME=User
+   ADMIN_PASSWORD=yourpassword
+
+   # Support Configuration
+   SUPPORT_EMAIL=support@example.com
+
+   # Social Media Configuration
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+   FACEBOOK_CLIENT_ID=your-facebook-client-id
+   FACEBOOK_CLIENT_SECRET=your-facebook-client-secret
+   TWITTER_CLIENT_ID=your-twitter-client-id
+   TWITTER_CLIENT_SECRET=your-twitter-client-secret
    EOF
    ```
 
@@ -58,12 +125,12 @@
 
 5. **Start development environment**
    ```bash
-   npm run dev:detached
+   npm run docker:dev-detached
    ```
 
 6. **Set up test data**
    ```bash
-   npm run test:setup
+   npm run docker:test-setup
    ```
 
 7. **Verify setup**
@@ -90,7 +157,7 @@
 
 1. **Run tests in interactive mode**
    ```bash
-   npm run cypress:open
+   npm run dev:cypress-open
    ```
    - Cypress Test Runner opens in browser
    - Select test files to run interactively
@@ -98,7 +165,7 @@
 
 2. **Run tests in headed mode**
    ```bash
-   npm run test:booking-headed
+   npm run dev:cypress-headed
    ```
    - Browser window opens showing test execution
    - Visual debugging of test steps
@@ -106,57 +173,57 @@
 
 3. **Run tests in headless mode**
    ```bash
-   npm run test:booking
+   npm run dev:cypress-headless
    ```
    - Tests run in background without browser UI
    - Suitable for automated testing
    - Results in command line
 
-4. **Run all tests**
+4. **Create presentation videos**
    ```bash
-   npm run test:e2e
+   npm run dev:cypress-presentation
    ```
-   - Executes all end-to-end tests
-   - Generates comprehensive test report
-   - Records videos for all tests
+   - Runs tests with video recording
+   - Processes videos to remove Cypress UI
+   - Saves to presentation-videos folder
 
-5. **Debug specific tests**
+5. **Create presentation videos for specific test**
    ```bash
-   npm run test:payment-debug
+   npm run dev:cypress-presentation-spec
    ```
-   - Runs debug version of payment tests
-   - Provides detailed logging
-   - Takes screenshots for manual inspection
+   - Runs specific test with video recording
+   - Processes videos to remove Cypress UI
+   - Useful for focused demonstrations
 
 ---
 
-## Scenario 3: Using LocalTunnel for External Testing
+## Scenario 3: Using Ngrok Tunnel for External Testing
 
-### Objective: Test the application externally using LocalTunnel
+### Objective: Test the application externally using Ngrok tunnel
 
 #### Prerequisites
 - Local Development Setup completed
-- py-localtunnel installed (`pip install py-localtunnel`)
+- Ngrok auth token configured in .env.docker
 
 #### Steps
 
 1. **Start development environment**
    ```bash
-   npm run dev:detached
+   npm run docker:dev-detached
    ```
 
-2. **Start LocalTunnel**
+2. **Start Ngrok tunnel**
    ```bash
-   npm run docker-tunnel:run
+   npm run docker:tunnel
    ```
    - Tunnel service starts
-   - Outputs tunnel URL (e.g., https://aeropace-portal.loca.lt)
+   - Outputs tunnel URL (e.g., https://random-string.ngrok-free.dev)
    - Note the URL for external access
 
 3. **Verify tunnel accessibility**
    ```bash
    # Check tunnel logs
-   npm run docker-tunnel:logs
+   npm run docker:tunnel-logs
    
    # Access the application via tunnel URL in browser
    # Verify admin login works
@@ -164,16 +231,17 @@
 
 4. **Run tests against tunnel**
    ```bash
-   npm run test:tunnel
+   # Update CYPRESS_baseUrl to use tunnel URL
+   CYPRESS_baseUrl=https://random-string.ngrok-free.dev npm run dev:cypress-headed
    ```
    - Tests run against the tunnel URL
    - Simulates external user access
-   - Validates external configuration
+   - Validates ALLOWED_HOSTS configuration
 
 5. **Test external features**
    ```bash
    # Run specific tests in headed mode against tunnel
-   CYPRESS_baseUrl=https://aeropace-portal.loca.lt npm run test:admin-login-headed
+   CYPRESS_baseUrl=https://random-string.ngrok-free.dev npm run dev:cypress-headed
    ```
    - Tests admin login externally
    - Validates ALLOWED_HOSTS configuration
@@ -193,13 +261,17 @@
 
 1. **Prepare production configuration**
    ```bash
-   # Create production .env.dev file
-   cat > .env.dev.prod << EOF
+   # Create production .env.docker file
+   cat > .env.docker.prod << EOF
+   # Application Configuration
    DEBUG=false
-   DATABASE_URL=postgres://user:password@prod-db:5432/badminton_court_prod
-   REDIS_URL=redis://prod-redis:6379/0
-   ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+   DOCKER=true
+
+   # Django Configuration
    SECRET_KEY=your-production-secret-key
+   DATABASE_URL=postgres://dbuser:password@db:5432/badminton_court
+   REDIS_URL=redis://redis:6379/0
+   ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
    EOF
    ```
 
@@ -212,13 +284,13 @@
 3. **Start production services**
    ```bash
    # Using production profile (if configured)
-   docker-compose --profile prod up -d
+   docker-compose --env-file .env.docker.prod --profile dev up -d
    ```
 
 4. **Run production tests**
    ```bash
    # Run tests against production configuration
-   CYPRESS_baseUrl=https://yourdomain.com npm run test:e2e
+   CYPRESS_baseUrl=https://yourdomain.com npm run docker:cypress-run-headless
    ```
 
 5. **Validate production setup**
@@ -230,7 +302,7 @@
    curl -I https://yourdomain.com
    
    # Test all critical user flows
-   npm run test:booking-headed
+   npm run docker:cypress-run-headed
    ```
 
 ---
@@ -277,15 +349,13 @@
          run: npm run docker:build
        
        - name: Start test environment
-         run: npm run test:detached
-         env:
-           COMPOSE_DOCKER_CLI_BUILD: 1
+         run: npm run docker:test-detached
        
        - name: Set up test data
-         run: npm run test:setup
+         run: npm run docker:test-setup
        
        - name: Run Cypress tests
-         run: npm run test:e2e
+         run: npm run docker:cypress-run-headless
        
        - name: Upload Cypress artifacts
          uses: actions/upload-artifact@v3
@@ -299,7 +369,7 @@
        
        - name: Stop test environment
          if: always()
-         run: npm run test:stop
+         run: npm run docker:test-stop
    ```
 
 2. **Test pipeline locally**
@@ -311,7 +381,7 @@
    npm run docker:build-nocache
    
    # Run tests
-   npm run test:e2e
+   npm run docker:cypress-run-headless
    ```
 
 3. **Push and trigger pipeline**
@@ -371,7 +441,7 @@
 
 2. **Start services**
    ```bash
-   npm run dev:detached
+   npm run docker:dev-detached
    ```
 
 3. **Run load test**
@@ -385,13 +455,13 @@
 4. **Analyze results**
    ```bash
    # Check logs for any errors
-   npm run logs:web
+   npm run docker:logs
    
    # Monitor database performance
-   npm run logs:db
+   npm run docker:logs db
    
    # Check Redis usage
-   npm run logs:redis
+   npm run docker:logs redis
    ```
 
 5. **Optimize based on results**
@@ -414,7 +484,7 @@
 
 1. **Start services**
    ```bash
-   npm run dev:detached
+   npm run docker:dev-detached
    ```
 
 2. **Run security tests with OWASP ZAP**
@@ -429,7 +499,7 @@
 3. **Test authentication and authorization**
    ```bash
    # Test admin access
-   npm run test:admin-login-headed
+   npm run dev:cypress-headed
    
    # Test unauthorized access
    # Manually try accessing admin areas without login
@@ -456,6 +526,67 @@
 
 ---
 
+## Scenario 8: Creating Presentation Videos
+
+### Objective: Create professional presentation videos from Cypress tests
+
+#### Prerequisites
+- Local Development Setup completed
+- FFmpeg installed for video processing
+
+#### Steps
+
+1. **Run tests with video recording**
+   ```bash
+   # Run all tests with video recording
+   npm run dev:cypress-presentation
+   
+   # Run specific test with video recording
+   npm run dev:cypress-presentation-spec
+   ```
+
+2. **Select specific test for presentation**
+   ```bash
+   # Interactively select a test to run for presentation
+   npm run dev:select-presentation
+   ```
+   - Interactive menu appears
+   - Select test from the list
+   - Test runs with video recording
+   - Video is automatically processed
+
+3. **Post-process existing videos**
+   ```bash
+   # Process existing videos to remove Cypress UI
+   npm run dev:post-process-videos
+   ```
+   - Removes Cypress Test Runner sidebar
+   - Creates clean presentation videos
+   - Generates preview clips
+
+4. **Create presentation videos in Docker**
+   ```bash
+   # Start Cypress container
+   npm run docker:cypress-start
+   
+   # Run tests with video recording
+   npm run docker:cypress-run-headed --config video=true
+   
+   # Process videos in Docker
+   npm run docker:post-process-videos
+   ```
+
+5. **Review presentation videos**
+   ```bash
+   # Check output folder
+   ls -la cypress/presentation-videos/
+   
+   # Play videos to verify quality
+   # Check that Cypress UI is properly removed
+   ```
+
+---
+
 ## Troubleshooting Common Issues
 
 ### Issue: Docker containers not starting
@@ -465,7 +596,7 @@
 docker --version
 
 # Reset Docker environment
-npm run reset
+npm run docker:reset
 
 # Check for port conflicts
 netstat -an | grep 8000
@@ -478,18 +609,18 @@ netstat -an | grep 8000
 # Add explicit waits
 # Check for race conditions
 # Run tests in headed mode for debugging
-npm run test:booking-headed
+npm run dev:cypress-headed
 ```
 
 ### Issue: Tunnel not accessible
 **Solution:**
 ```bash
 # Check tunnel logs
-npm run docker-tunnel:logs
+npm run docker:tunnel-logs
 
 # Restart tunnel
-npm run docker-tunnel:stop
-npm run docker-tunnel:run
+npm run docker:tunnel-stop
+npm run docker:tunnel
 
 # Verify ALLOWED_HOSTS configuration
 ```
@@ -498,24 +629,41 @@ npm run docker-tunnel:run
 **Solution:**
 ```bash
 # Check database logs
-npm run logs:db
+npm run docker:logs db
 
 # Reset database
-npm run test:setup
+npm run docker:test-setup
 
-# Verify database URL in .env.dev
+# Verify database URL in .env.docker
 ```
 
 ### Issue: Cypress tests not finding elements
 **Solution:**
 ```bash
 # Run in interactive mode
-npm run cypress:open
+npm run dev:cypress-open
 
-# Use debugging test
-npm run test:payment-debug
+# Run specific test with debugging
+npm run dev:cypress-headed
 
 # Check screenshots and videos
 ls cypress/screenshots/
 ls cypress/videos/
+```
+
+### Issue: Video processing fails
+**Solution:**
+```bash
+# Check if FFmpeg is installed
+ffmpeg -version
+
+# Install FFmpeg if missing
+# For macOS: brew install ffmpeg
+# For Ubuntu: sudo apt install ffmpeg
+
+# Check video file permissions
+ls -la cypress/videos/
+
+# Run post-processing with verbose output
+npm run dev:post-process-videos
 ```
