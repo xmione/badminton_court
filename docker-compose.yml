@@ -29,7 +29,10 @@ services:
       - "5432:5432"
     networks:
       - app-network
-
+    profiles:
+      - dev
+      - test
+  
   # Redis (shared service)
   redis:
     container_name: redis
@@ -38,7 +41,10 @@ services:
       - "6379:6379"
     networks:
       - app-network
-
+    profiles:
+      - dev
+      - test
+  
   # Django Web Application
   web:
     container_name: web
@@ -57,6 +63,11 @@ services:
       - .env.docker
     networks:
       - app-network
+    profiles:
+      - dev
+      - tunnel
+      - test
+      - presentation
       
   # Celery Worker
   celery:
@@ -74,7 +85,9 @@ services:
       - .env.docker
     networks:
       - app-network
-
+    profiles:
+      - dev
+  
   # Celery Beat Scheduler
   celery-beat:
     container_name: celery-beat
@@ -91,7 +104,9 @@ services:
       - .env.docker
     networks:
       - app-network
-
+    profiles:
+      - dev
+  
   # MariaDB for Postal
   mariadb:
     container_name: mariadb
@@ -108,6 +123,8 @@ services:
     networks:
       - app-network
     command: --default-authentication-plugin=mysql_native_password
+    profiles:
+      - dev
   
   # Postal SMTP Service
   postal:
@@ -123,7 +140,6 @@ services:
     environment:
     - RAILS_ENV=production
     - POSTAL_HOST=${POSTAL_HOST}
-    - POSTAL_PASSWORD=${POSTAL_PASSWORD}
     - POSTAL_PORT=${POSTAL_PORT}
     - POSTAL_DB_HOST=${POSTAL_DB_HOST}
     - POSTAL_DB_PORT=${POSTAL_DB_PORT}
@@ -155,6 +171,27 @@ services:
       - ./certs:/postal/config/tls 
     networks:
       - app-network
+    profiles:
+      - dev
+
+  # Ngrok Tunnel Service
+  tunnel:
+    container_name: ngrok_tunnel
+    build:
+      context: .
+      dockerfile: Dockerfile.tunnel
+    command: python tunnel.py
+    depends_on:
+      - web
+    environment:
+      - NGR_AUTHTOKEN=${NGR_AUTHTOKEN}
+      - APP_PORT=${APP_PORT}
+    env_file:
+      - .env.tunnel
+    networks:
+      - app-network
+    profiles:
+      - tunnel
 
   # Cypress Testing
   cypress:
@@ -167,6 +204,8 @@ services:
       - ./cypress.config.js:/e2e/cypress.config.js
       - ./cypress/videos:/e2e/cypress/videos
       - ./cypress/screenshots:/e2e/cypress/screenshots
+      - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
+      - ./scripts:/e2e/scripts
     environment:
       - CYPRESS_baseUrl=${CYPRESS_baseUrl}
       - CYPRESS_headed=${CYPRESS_headed}
@@ -202,5 +241,30 @@ services:
       - .env.docker
     profiles:
       - test
+    networks:
+      - app-network
+  
+  # Presentation Video Creation Service
+  presentation:
+    container_name: presentation
+    build:
+      context: .
+      dockerfile: Dockerfile.presentation
+    volumes:
+      - ./cypress:/e2e/cypress
+      - ./cypress.config.js:/e2e/cypress.config.js
+      - ./scripts:/e2e/scripts
+      - ./cypress/videos:/e2e/cypress/videos
+      - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
+    environment:
+      - CYPRESS_baseUrl=${CYPRESS_baseUrl}
+      - DISPLAY=:99  # Virtual display for headed mode
+    env_file:
+      - .env.docker
+      - .env.tunnel
+    depends_on:
+      - web
+    profiles:
+      - presentation
     networks:
       - app-network

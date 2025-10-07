@@ -46,7 +46,7 @@ Already included in package.json:
 }
 ```
 
-## Development Environment
+## Local Development Environment
 
 ### Start development environment
 ```powershell
@@ -63,183 +63,173 @@ npm run dev:detached
 npm run dev:stop
 ```
 
-### Show development logs
+### Load test data
 ```powershell
-npm run dev:logs
+npm run dev:load-data
 ```
 
-## Testing Environment
+## Docker Development Environment
+
+### Start development environment
+```powershell
+npm run docker:dev
+```
+
+### Start development environment in detached mode
+```powershell
+npm run docker:dev-detached
+```
+
+### Stop development services
+```powershell
+npm run docker:dev-stop
+```
+
+### Show development logs
+```powershell
+npm run docker:dev-logs
+```
+
+## Docker Testing Environment
 
 ### Start test environment
 ```powershell
-npm run test
-
-# Run any test file
-npm run test:spec cypress/e2e/booking/booking.cy.js
-npm run test:spec cypress/e2e/admin/admin-login.cy.js
-
-# Run any test file in headed mode
-npm run test:spec-headed cypress/e2e/booking/booking.cy.js
+npm run docker:test
 ```
 
 ### Start test environment in detached mode
 ```powershell
-npm run test:detached
+npm run docker:test-detached
 ```
 
 ### Stop test services
 ```powershell
-npm run test:stop
+npm run docker:test-stop
 ```
 
 ### Show test logs
 ```powershell
-npm run test:logs
+npm run docker:test-logs
 ```
 
 ### Set up test data
 ```powershell
-npm run test:setup
+npm run docker:test-setup
 ```
 
 ## Cypress Testing
 
-### Open Cypress in interactive mode
+### Local Cypress Testing
+
+#### Open Cypress in interactive mode
 ```powershell
-npm run cypress:open
+npm run dev:cypress-open
 ```
 
-### Run Cypress tests in headless mode
+#### Run Cypress tests in headless mode
 ```powershell
-npm run cypress:run
+npm run dev:cypress-headless
 ```
 
-### Run Cypress tests in headed mode
+#### Run Cypress tests in headed mode
 ```powershell
-npm run cypress:run-headed
+npm run dev:cypress-headed
 ```
 
-### Run all E2E tests
+#### Create presentation videos
 ```powershell
-npm run test:e2e
+npm run dev:cypress-presentation
 ```
 
-### Run all tests
+#### Create presentation videos for specific test
 ```powershell
-npm run test:all
+npm run dev:cypress-presentation-spec
 ```
 
-### Run booking tests
+### Docker Cypress Testing
+
+#### Start Cypress container
 ```powershell
-npm run test:booking
+npm run docker:cypress-start
 ```
 
-### Run booking tests in headed mode
+#### Open Cypress in existing container
 ```powershell
-npm run test:booking-headed
+npm run docker:cypress-open
 ```
 
-### Run admin login tests
+#### Run Cypress tests in existing container
 ```powershell
-npm run test:admin-login
+npm run docker:cypress-run
 ```
 
-### Run admin login tests in headed mode
+#### Stop Cypress container
 ```powershell
-npm run test:admin-login-headed
+npm run docker:cypress-stop
 ```
 
-### Run admin login tests in interactive mode
+#### Run Cypress tests in new container (headed)
 ```powershell
-npm run test:admin-login-interactive
+npm run docker:cypress-run-headed
 ```
 
-### Run payment debug tests
+#### Run Cypress tests in new container (headless)
 ```powershell
-npm run test:payment-debug
+npm run docker:cypress-run-headless
 ```
 
-### Run connectivity tests
+#### Create presentation videos in Docker
 ```powershell
-npm run test:connectivity
+npm run docker:cypress-presentation
 ```
 
-### Run headers tests
+#### Process videos in Docker
 ```powershell
-npm run test:headers
-```
-
-### Run tests against tunnel
-```powershell
-npm run test:tunnel
+npm run docker:post-process-videos
 ```
 
 ## Tunnel Environment
 
-### Start tunnel environment
+### Local Tunnel
 ```powershell
-npm run docker-tunnel
+npm run dev:tunnel
 ```
 
-### Start tunnel environment in detached mode
+### Docker Tunnel Environment
+
+#### Start tunnel environment
 ```powershell
-npm run docker-tunnel:detached
+npm run docker:tunnel
 ```
 
-### Stop tunnel services
+#### Start tunnel environment in detached mode
 ```powershell
-npm run docker-tunnel:stop
+npm run docker:tunnel-detached
 ```
 
-### Show tunnel logs
+#### Stop tunnel services
 ```powershell
-npm run docker-tunnel:logs
+npm run docker:tunnel-stop
 ```
 
-### Run tunnel service only
+#### Show tunnel logs
 ```powershell
-npm run docker-tunnel:run
+npm run docker:tunnel-logs
 ```
 
 ## Docker Management
 
-### Build Cypress image
+### Build Docker images
 ```powershell
 npm run docker:build
-
-# Build any service
-npm run docker:build web
-npm run docker:build db
-npm run docker:build cypress
 ```
 
-### Build Cypress image without cache
+### Build Docker images without cache
 ```powershell
 npm run docker:build-nocache
-
-# Build any service with no cache
-npm run docker:build-nocache web
-npm run docker:build-nocache db
-
-# Build Cypress specifically (with profile)
-npm run docker:build-cypress
-npm run docker:build-cypress-nocache
-
-# Logs for any service
-npm run docker:logs web
-npm run docker:logs-service web
-
-# Shell for any service
-npm run docker:shell web bash
-npm run docker:shell-service web bash
 ```
 
 ### Stop all services
-```powershell
-npm run docker:down
-```
-
-### Stop all services and remove volumes
 ```powershell
 npm run docker:down-volumes
 ```
@@ -249,77 +239,68 @@ npm run docker:down-volumes
 npm run docker:prune
 ```
 
+### Reset environment
+```powershell
+npm run docker:reset
+```
+
+### Reset environment (keeping images)
+```powershell
+npm run docker:reset-keep-images
+```
+
+### Reset and restart all services
+```powershell
+npm run docker:reset-and-restart
+```
+
 ## Utility Commands
-
-### General Commands
-```powershell
-# Logs for any service
-npm run logs web
-npm run logs-service web
-
-# Shell for any service
-npm run shell web bash
-```
-
-### Show all logs
-```powershell
-npm run logs
-```
-
-### Show web service logs
-```powershell
-npm run logs:web
-```
-
-### Show database logs
-```powershell
-npm run logs:db
-```
-
-### Show Redis logs
-```powershell
-npm run logs:redis
-```
-
-### Show Celery logs
-```powershell
-npm run logs:celery
-```
-
-### Show Celery Beat logs
-```powershell
-npm run logs:celery-beat
-```
 
 ### Show service status
 ```powershell
 npm run status
 ```
 
-### Open shell in web container
+### Show all logs
 ```powershell
-npm run shell:web
+npm run docker:logs
 ```
 
-### Open shell in database container
+### Open shell in container
 ```powershell
-npm run shell:db
+npm run shell
 ```
 
-### Open shell in Redis container
+### Access PostgreSQL
 ```powershell
-npm run shell:redis
+npm run psql
 ```
 
-### Reset entire environment
+### Print project folder structure
 ```powershell
-npm run reset
+npm run pfs
+```
+
+### Create SSL certificates
+```powershell
+npm run certs:create
+```
+
+### Encrypt environment files
+```powershell
+npm run encryptenvfiles
+```
+
+### Decrypt environment files
+```powershell
+npm run decryptenvfiles
 ```
 
 ## Application Access
 
 ### Access the application
 - Local development: http://localhost:8000
+- Docker development: http://localhost:8000
 - Through tunnel: https://aeropace-portal.loca.lt (when tunnel is running)
 
 ### Admin Login
@@ -346,7 +327,7 @@ jobs:
       uses: docker/setup-buildx-action@v2
     
     - name: Run tests
-      run: npm run test:e2e
+      run: npm run docker:cypress-run-headless
     
     - name: Upload Cypress screenshots
       uses: actions/upload-artifact@v3
@@ -369,34 +350,34 @@ jobs:
 
 1. **Port already in use**
    ```powershell
-   npm run docker:down
+   npm run docker:down-volumes
    npm run dev
    ```
 
 2. **Cypress tests failing**
    ```powershell
    npm run docker:build
-   npm run test:setup
-   npm run test:booking-headed
+   npm run docker:test-setup
+   npm run docker:cypress-run-headed
    ```
 
 3. **Tunnel not accessible**
    ```powershell
-   npm run docker-tunnel:run
+   npm run docker:tunnel
    # Check tunnel logs for URL
-   npm run docker-tunnel:logs
+   npm run docker:tunnel-logs
    ```
 
 4. **Database connection issues**
    ```powershell
-   npm run test:setup
-   npm run logs:db
+   npm run docker:test-setup
+   npm run docker:logs db
    ```
 
 ### Getting Help
 
-- Check logs: `npm run logs`
+- Check logs: `npm run docker:logs`
 - Check service status: `npm run status`
-- Reset environment: `npm run reset`
-- Open shell in container: `npm run shell:web`
+- Reset environment: `npm run docker:reset`
+- Open shell in container: `npm run shell web`
 ------------------------------------- NOTHING FOLLOWS ---------------------------------

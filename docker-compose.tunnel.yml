@@ -9,5 +9,7 @@ services:
     environment:
       TUNNEL_SUBDOMAIN: ${TUNNEL_SUBDOMAIN}
       TUNNEL_ENABLED: ${TUNNEL_ENABLED}
-  env_file:
+      NGR_AUTHTOKEN: ${NGR_AUTHTOKEN}
+      APP_PORT: ${APP_PORT}
+    env_file:
       - .env.tunnel

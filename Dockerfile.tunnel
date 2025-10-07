@@ -1,0 +1,43 @@
+# Dockerfile.tunnel
+FROM python:3.12
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user
+RUN adduser --disabled-password --gecos '' appuser
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Copy and install Python dependencies
+COPY requirements.txt /app/
+RUN pip install --user -r requirements.txt
+
+# Add user's local bin to PATH
+ENV PATH=/home/appuser/.local/bin:$PATH
+
+# Explicitly install python-dotenv and pyngrok
+RUN pip install --user python-dotenv==1.1.1 pyngrok
+
+# Copy project files
+COPY --chown=appuser:appuser . /app/
+
+# Copy the tunnel script
+COPY --chown=appuser:appuser tunnel.py /app/
+
+# Convert line endings from CRLF to LF
+RUN sed -i 's/\r$//' /app/tunnel.py
+
+# Make the script executable
+RUN chmod +x /app/tunnel.py
+
+# Set the command
+CMD ["python", "tunnel.py"]

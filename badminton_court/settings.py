@@ -56,6 +56,7 @@ APP_PORT = os.getenv('APP_PORT', '8000')
 APP_BASE_URL = f"{APP_PROTOCOL}://{APP_DOMAIN}"
 APP_FULL_URL = f"{APP_BASE_URL}:{APP_PORT}"
 
+# Hosts configuration
 # Base ALLOWED_HOSTS with valid default values
 allowed_hosts_str = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,web')
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
@@ -66,16 +67,30 @@ for domain in ngrok_domains:
     if domain not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(domain)
 
-# Add tunnel host if tunnel is enabled
+# CSRF Trusted Origins configuration
+# Base CSRF_TRUSTED_ORIGINS with default values
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
+# Combined tunnel configuration for both ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS
 if TUNNEL_ENABLED:
     tunnel_url = os.getenv('TUNNEL_URL')
     if tunnel_url:
-        from urllib.parse import urlparse
         parsed = urlparse(tunnel_url)
         tunnel_host = parsed.netloc
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+        
+        # Add to ALLOWED_HOSTS if not already there
         if tunnel_host and tunnel_host not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(tunnel_host)
             print(f"Added {tunnel_host} to ALLOWED_HOSTS")
+        
+        # Add to CSRF_TRUSTED_ORIGINS if not already there
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
+            print(f"Added {origin} to CSRF_TRUSTED_ORIGINS")
 
 # Application definition
 INSTALLED_APPS = [
@@ -152,23 +167,6 @@ else:
         }
     }
 
-# Custom password validators to match test expectations
-class CustomPasswordValidator:
-    def validate(self, password, user=None):
-        if len(password) < 8:
-            raise ValidationError("Password must be at least 8 characters long.")
-        if not re.search(r'[A-Z]', password):
-            raise ValidationError("Password must contain at least one uppercase letter.")
-        if not re.search(r'[a-z]', password):
-            raise ValidationError("Password must contain at least one lowercase letter.")
-        if not re.search(r'[0-9]', password):
-            raise ValidationError("Password must contain at least one digit.")
-        if not re.search(r'[^A-Za-z0-9]', password):
-            raise ValidationError("Password must contain at least one special character.")
-    
-    def get_help_text(self):
-        return "Your password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters."
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -191,6 +189,23 @@ AUTH_PASSWORD_VALIDATORS = [
     }
 ]
 
+# Custom password validators to match test expectations
+class CustomPasswordValidator:
+    def validate(self, password, user=None):
+        if len(password) < 8:
+            raise ValidationError("Password must be at least 8 characters long.")
+        if not re.search(r'[A-Z]', password):
+            raise ValidationError("Password must contain at least one uppercase letter.")
+        if not re.search(r'[a-z]', password):
+            raise ValidationError("Password must contain at least one lowercase letter.")
+        if not re.search(r'[0-9]', password):
+            raise ValidationError("Password must contain at least one digit.")
+        if not re.search(r'[^A-Za-z0-9]', password):
+            raise ValidationError("Password must contain at least one special character.")
+    
+    def get_help_text(self):
+        return "Your password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters."
+
 # Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
@@ -211,83 +226,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Celery Configuration
-REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
-
-# Security settings
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
-
-# If in production and DEBUG is False, add these security settings:
-if not DEBUG:
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = True
-
-# Logging configuration
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs/django.log'),
-            'formatter': 'verbose',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'propagate': False,
-        },
-        'court_management': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-    },
-}
-
-# Email configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('SMTP_HOST', 'localhost')  # Postal server
-EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))  # Postal SMTP port
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('SMTP_USER', 'postal')  # Or your SMTP username
-EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASS', 'postal')  # Or your SMTP password
-DEFAULT_FROM_EMAIL = os.getenv('SMTP_FROM_EMAIL', 'noreply@aeropace.com')
-
-ADMIN_EMAIL=os.getenv('ADMIN_EMAIL', 'admin@aeropace.com')
-ADMIN_FIRST_NAME=os.getenv('ADMIN_FIRST_NAME', 'Admin')
-ADMIN_LAST_NAME=os.getenv('ADMIN_LAST_NAME', 'User')
-ADMIN_PASSWORD=os.getenv('ADMIN_PASSWORD', 'Admin123!')
-
-SUPPORT_EMAIL=os.getenv('SUPPORT_EMAIL', 'support@aeropace.com')
 # Authentication Configuration
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -358,6 +296,86 @@ SOCIALACCOUNT_PROVIDERS = {
             'key': ''
         }
     }
+}
+
+# Security settings
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+# If in production and DEBUG is False, add these security settings:
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+
+# Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('SMTP_HOST', 'localhost')  # Postal server
+EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))  # Postal SMTP port
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('SMTP_USER', 'postal')  # Or your SMTP username
+EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASS', 'postal')  # Or your SMTP password
+DEFAULT_FROM_EMAIL = os.getenv('SMTP_FROM_EMAIL', 'noreply@aeropace.com')
+
+# Admin user settings
+ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@aeropace.com')
+ADMIN_FIRST_NAME = os.getenv('ADMIN_FIRST_NAME', 'Admin')
+ADMIN_LAST_NAME = os.getenv('ADMIN_LAST_NAME', 'User')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'Admin123!')
+
+# Support email
+SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', 'support@aeropace.com')
+
+# Celery Configuration
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs/django.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+        'court_management': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
 }
 
 # Create logs directory if it doesn't exist
