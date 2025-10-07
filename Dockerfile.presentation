@@ -13,8 +13,20 @@ RUN npm ci
 # Copy the rest of the application
 COPY . .
 
-# Install xvfb for virtual display (needed for headed mode)
-RUN apt-get update && apt-get install -y xvfb
+# --- NEW FIX ATTEMPT ---
+# Ensure apt-get update can run without GPG key issues for other packages.
+# First, remove any potentially problematic source files.
+# The `ls /etc/apt/sources.list.d/*google*` part is to dynamically find
+# any google-related source files and remove them.
+# The `|| true` makes sure the build doesn't fail if the files don't exist.
+RUN rm -f /etc/apt/sources.list.d/google-chrome.list \
+           /etc/apt/sources.list.d/microsoft-edge-stable.list \
+           $(ls /etc/apt/sources.list.d/*google* 2>/dev/null) \
+           $(ls /etc/apt/sources.list.d/*microsoft* 2>/dev/null) || true && \
+    # Now, try to update and install xvfb.
+    apt-get update && apt-get install -y xvfb
+
+# --- END NEW FIX ATTEMPT ---
 
 # Create a script to start virtual display and run commands
 RUN echo '#!/bin/bash\n\

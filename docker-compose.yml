@@ -1,5 +1,6 @@
 # docker-compose.yml
 
+# Volume and network definitions
 x-app-volumes: &app-volumes
   - .:/app
   - /app/node_modules
@@ -48,12 +49,11 @@ services:
   # Django Web Application
   web:
     container_name: web
-    build: .
+    build: 
+      context: .
+      target: web  # Use the web stage from multi-stage build
     command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/venv
+    volumes: *app-volumes  # Use the defined volume template
     ports:
       - "8000:8000"
     depends_on:
@@ -72,12 +72,11 @@ services:
   # Celery Worker
   celery:
     container_name: celery
-    build: .
+    build: 
+      context: .
+      target: web  # Can use web stage since it has all dependencies
     command: celery -A badminton_court worker --loglevel=info
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/venv
+    volumes: *app-volumes  # Use the defined volume template
     depends_on:
       - db
       - redis
@@ -91,12 +90,11 @@ services:
   # Celery Beat Scheduler
   celery-beat:
     container_name: celery-beat
-    build: .
+    build: 
+      context: .
+      target: web  # Can use web stage since it has all dependencies
     command: celery -A badminton_court beat --loglevel=info
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/venv
+    volumes: *app-volumes  # Use the defined volume template
     depends_on:
       - db
       - redis
@@ -177,10 +175,11 @@ services:
   # Ngrok Tunnel Service
   tunnel:
     container_name: ngrok_tunnel
-    build:
+    build: 
       context: .
-      dockerfile: Dockerfile.tunnel
+      target: tunnel  # Use the tunnel stage from multi-stage build
     command: python tunnel.py
+    volumes: *app-volumes  # Use the defined volume template
     depends_on:
       - web
     environment:
@@ -211,7 +210,6 @@ services:
       - CYPRESS_headed=${CYPRESS_headed}
     env_file:
       - .env.docker
-      - .env.docker
     depends_on:
       - web
     profiles:
@@ -222,12 +220,11 @@ services:
   # Test Data Setup
   test-setup:
     container_name: test-setup
-    build: .
+    build: 
+      context: .
+      target: web  # Can use web stage since it has all dependencies
     command: python manage.py load_test_data
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/venv
+    volumes: *app-volumes  # Use the defined volume template
     depends_on:
       - db
       - redis
@@ -260,7 +257,6 @@ services:
       - CYPRESS_baseUrl=${CYPRESS_baseUrl}
       - DISPLAY=:99  # Virtual display for headed mode
     env_file:
-      - .env.docker
       - .env.docker
     depends_on:
       - web

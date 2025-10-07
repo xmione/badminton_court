@@ -4,23 +4,22 @@ FROM ruby:2.7
 ENV PATH="$PATH:/postal/bin"
 ENV RAILS_ENV=production
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    build-essential \
-    libssl-dev \
-    libreadline-dev \
-    zlib1g-dev \
-    libpq-dev \
-    nodejs \
-    npm \
-    mariadb-client \
-    redis \
-    rabbitmq-server \
-    netcat \
-    sudo \
-    dos2unix
+# Separate apt-get update into its own layer
+RUN apt-get update
+
+# Install dependencies in smaller groups for better caching
+RUN apt-get install -y --no-install-recommends git curl
+
+RUN apt-get install -y --no-install-recommends build-essential libssl-dev libreadline-dev zlib1g-dev
+
+RUN apt-get install -y --no-install-recommends libpq-dev nodejs npm
+
+RUN apt-get install -y --no-install-recommends mariadb-client redis rabbitmq-server
+
+RUN apt-get install -y --no-install-recommends netcat sudo dos2unix
+
+# Clean up apt cache
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Clone the Postal repository
 RUN git clone -b main https://github.com/postalserver/postal.git /postal
@@ -119,6 +118,7 @@ RUN echo "/*" > /postal/app/assets/stylesheets/application/application.scss && \
     echo "  padding-left: 15px;" >> /postal/app/assets/stylesheets/application/application.scss && \
     echo "  padding-right: 15px;" >> /postal/app/assets/stylesheets/application/application.scss && \
     echo "}" >> /postal/app/assets/stylesheets/application/application.scss
+
 # Ensure Postal binary is executable
 RUN chmod +x /postal/bin/postal
 
