@@ -59,6 +59,7 @@ services:
     profiles:
       - dev
       - test
+      - presentation
   
   # Django Web Application
   web:

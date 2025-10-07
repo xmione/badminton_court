@@ -33,4 +33,4 @@ chmod +x /start-xvfb.sh
 ENTRYPOINT ["/start-xvfb.sh"]
 
 # Default command
-CMD ["cypress", "run", "--headless"]
+# CMD ["cypress", "run", "--headless"]
