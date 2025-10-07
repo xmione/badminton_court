@@ -1,6 +1,3 @@
-# docker-compose.yml
-
-# Volume and network definitions
 x-app-volumes: &app-volumes
   - .:/app
   - /app/node_modules
@@ -8,6 +5,7 @@ x-app-volumes: &app-volumes
 
 volumes:
   postgres_data:
+  postgres_test_data:
   postal_data:
   mariadb_data:
 
@@ -16,7 +14,7 @@ networks:
     driver: bridge
 
 services:
-  # PostgreSQL Database
+  # Development Database (only for dev profile)
   db:
     container_name: db
     image: postgres:14
@@ -32,9 +30,25 @@ services:
       - app-network
     profiles:
       - dev
+  
+  # Test Database (only for test profile)
+  db-test:
+    container_name: db-test
+    image: postgres:14
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data/
+    ports:
+      - "5433:5432"
+    networks:
+      - app-network
+    profiles:
       - test
   
-  # Redis (shared service)
+  # Redis (shared by both dev and test)
   redis:
     container_name: redis
     image: redis:7-alpine
@@ -51,14 +65,11 @@ services:
     container_name: web
     build: 
       context: .
-      target: web  # Use the web stage from multi-stage build
+      target: web
     command: python manage.py runserver 0.0.0.0:8000
-    volumes: *app-volumes  # Use the defined volume template
+    volumes: *app-volumes
     ports:
       - "8000:8000"
-    depends_on:
-      - db
-      - redis
     env_file:
       - .env.docker
     networks:
@@ -68,17 +79,18 @@ services:
       - tunnel
       - test
       - presentation
+    depends_on:
+      - redis
       
   # Celery Worker
   celery:
     container_name: celery
     build: 
       context: .
-      target: web  # Can use web stage since it has all dependencies
+      target: web
     command: celery -A badminton_court worker --loglevel=info
-    volumes: *app-volumes  # Use the defined volume template
+    volumes: *app-volumes
     depends_on:
-      - db
       - redis
     env_file:
       - .env.docker
@@ -92,11 +104,10 @@ services:
     container_name: celery-beat
     build: 
       context: .
-      target: web  # Can use web stage since it has all dependencies
+      target: web
     command: celery -A badminton_court beat --loglevel=info
-    volumes: *app-volumes  # Use the defined volume template
+    volumes: *app-volumes
     depends_on:
-      - db
       - redis
     env_file:
       - .env.docker
@@ -131,7 +142,7 @@ services:
       context: .
       dockerfile: Dockerfile.postal
     ports:
-      - "5000:5000"  # Postal Web UI
+      - "5000:5000"
       - "465:465"    
       - "25:25"
       - "587:587"
@@ -177,9 +188,9 @@ services:
     container_name: ngrok_tunnel
     build: 
       context: .
-      target: tunnel  # Use the tunnel stage from multi-stage build
+      target: tunnel
     command: python tunnel.py
-    volumes: *app-volumes  # Use the defined volume template
+    volumes: *app-volumes
     depends_on:
       - web
     environment:
@@ -222,16 +233,16 @@ services:
     container_name: test-setup
     build: 
       context: .
-      target: web  # Can use web stage since it has all dependencies
+      target: web
     command: python manage.py load_test_data
-    volumes: *app-volumes  # Use the defined volume template
+    volumes: *app-volumes
     depends_on:
-      - db
+      - db-test
       - redis
       - web
     environment:
       - DEBUG=${DEBUG}
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-test:5432/${POSTGRES_DB}
       - REDIS_URL=${REDIS_URL}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS}
     env_file:
@@ -255,7 +266,7 @@ services:
       - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
     environment:
       - CYPRESS_baseUrl=${CYPRESS_baseUrl}
-      - DISPLAY=:99  # Virtual display for headed mode
+      - DISPLAY=:99
     env_file:
       - .env.docker
     depends_on:

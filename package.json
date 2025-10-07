@@ -39,11 +39,6 @@
     "docker:dev-stop": "echo '🛑 Stopping development services...' && docker-compose --env-file .env.docker --profile dev down",
     "docker:dev-logs": "echo '📋 Showing development logs...' && docker-compose --env-file .env.docker --profile dev logs -f",
     
-    "docker:staging": "echo '🌐 Starting docker staging environment...' && docker-compose --env-file .env.docker --profile staging up",
-    "docker:staging-detached": "echo '🌐 Starting docker staging environment (detached)...' && docker-compose --env-file .env.docker --profile staging up -d",
-    "docker:staging-stop": "echo '🛑 Stopping docker staging services...' && docker-compose --env-file .env.docker --profile staging down",
-    "docker:staging-logs": "echo '📋 Showing docker staging logs...' && docker-compose --env-file .env.docker --profile staging logs -f",
-    
     "docker:test": "echo '🧪 Starting test environment...' && docker-compose --env-file .env.docker --profile test up",
     "docker:test-detached": "echo '🧪 Starting test environment (detached)...' && docker-compose --env-file .env.docker --profile test up -d",
     "docker:test-stop": "echo '🛑 Stopping test services...' && docker-compose --env-file .env.docker --profile test down",
