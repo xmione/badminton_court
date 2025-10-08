@@ -18,6 +18,6 @@ describe('Authentication Flow', () => {
   })
 
   it('should show error for mismatched passwords during registration', () => {
-    cy.signUpMisMatchedPasswords();
+    cy.signUpMismatchedPasswords();
   })
 })
