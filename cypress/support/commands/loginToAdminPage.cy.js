@@ -12,7 +12,7 @@ export const loginToAdminPage = () => {
         cy.url().should('include', '/admin/');
         cy.contains('Site administration').should('be.visible');
         cy.contains('Welcome, admin').should('be.visible');
-        cy.showWaitMessage('Admins can view and manage the site...', 10000);
+        cy.showWaitMessage('Admins with valid credentials can view and manage the site...', 10000);
         
     })
 

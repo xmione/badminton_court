@@ -57,7 +57,11 @@
     "psql": "echo 'Running PSQL..' && docker exec -it db psql -U dbuser -d badminton_court",
     "certs:create": "echo 'Creating openssl certificates for localhost...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\createcert.ps1\"",
     "encryptenvfiles": "echo 'Encrypting .env files...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\encryptenvfiles.ps1\"",
-    "decryptenvfiles": "echo 'Decrypting .env files...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\decryptenvfiles.ps1\""
+    "decryptenvfiles": "echo 'Decrypting .env files...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\decryptenvfiles.ps1\"",
+    "docker:backup-images": "echo '💾 Backing up Docker images...' && mkdir -p ./backups && docker save $(docker-compose -f docker-compose.yml images -q) > ./backups/all-images.tar && docker-compose -f docker-compose.yml images --format \"table {{.Service}}\\t{{.Image}}\" | tail -n +2 | while read service image; do echo \"Backing up $service ($image)\"; docker save -o ./backups/$service-image.tar $image; done && echo '✅ Images backed up successfully'",
+    "docker:restore-images": "echo '📂 Restoring Docker images...' && docker load -i ./backups/all-images.tar && echo '✅ Images restored successfully'",
+    "docker:restore-image": "echo '📂 Restoring specific Docker image...' && [ -f \"./backups/$1-image.tar\" ] && docker load -i \"./backups/$1-image.tar\" && echo \"✅ $1 image restored successfully\" || echo \"❌ Error: $1 image backup not found\"",
+    "docker:list-backups": "echo '📋 Available image backups:' && ls -la ./backups/*-image.tar 2>/dev/null | sed 's/.*\///g' | sed 's/-image.tar//g' || echo 'No image backups found'"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

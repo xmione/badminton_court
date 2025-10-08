@@ -16,6 +16,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 import os
 import re
+from django.contrib import admin
 from django.core.exceptions import ValidationError
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -33,6 +34,14 @@ else:
 # Load environment variables from the selected .env file
 from dotenv import load_dotenv
 load_dotenv(env_file)
+
+SITE_HEADER = os.getenv('SITE_HEADER', 'Badminton Court')
+SITE_TITLE = os.getenv('SITE_TITLE', 'Badminton Court Administration Portal')
+SITE_INDEX_TITLE = os.getenv('SITE_INDEX_TITLE', 'Welcome to Badminton Court Administration Portal')
+
+admin.site.site_header = SITE_HEADER
+admin.site.site_title = SITE_TITLE
+admin.site.index_title = SITE_INDEX_TITLE
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
