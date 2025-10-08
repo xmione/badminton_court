@@ -23,11 +23,17 @@ module.exports = defineConfig({
     // Video configuration
     video: true,
     videoCompression: 15, // Better quality for presentations
-    videoUploadOnPasses: true,
+    // videoUploadOnPasses: true, // Removed - deprecated in Cypress 13.0.0
     videosFolder: 'cypress/videos',
     screenshotOnRunFailure: true,
     screenshotFolder: 'cypress/screenshots',
     record: false, // Disable Cypress Dashboard
+    
+    // Chrome configuration to disable sandboxing (fixes D-Bus errors)
+    chromeWebSecurity: false,
+    browser: "chrome",
+    modifiedObstructiveThirdPartyCodeResolution: "warning",
+    experimentalModifyObstructiveThirdPartyCode: true,
     
     setupNodeEvents(on, config) {
       // Ensure videos folder exists

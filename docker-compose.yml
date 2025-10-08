@@ -50,7 +50,7 @@ services:
     profiles:
       - test
   
-  # Redis (shared by all profiles)
+  # Redis (shared by all profiles including tunnel)
   redis:
     container_name: redis
     image: redis:7-alpine
@@ -62,8 +62,9 @@ services:
       - dev
       - test
       - presentation
+      - tunnel  
   
-  # Development Web Service (only for dev profile)
+  # Development Web Service (dev and tunnel profiles only)
   web-dev:
     container_name: web-dev
     build: 
@@ -79,9 +80,10 @@ services:
       - app-network
     profiles:
       - dev
+      - tunnel  
     depends_on:
       - redis
-  
+      
   # Test Web Service (only for test profile)
   web-test:
     container_name: web-test

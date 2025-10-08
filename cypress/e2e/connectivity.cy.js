@@ -8,7 +8,7 @@ describe('Web Service Connectivity', () => {
       cy.log(`Response status: ${response.status}`);
       cy.log(`Response headers:`, response.headers);
       cy.log(`Response body:`, response.body);
-      expect(response.status).to.eq(200);
+      expect(response.status).to.eq(200, `Got status ${response.status} with body: ${JSON.stringify(response.body)}`);
     });
   });
 
@@ -20,7 +20,7 @@ describe('Web Service Connectivity', () => {
       cy.log(`Response status: ${response.status}`);
       cy.log(`Response headers:`, response.headers);
       cy.log(`Response body:`, response.body);
-      expect(response.status).to.eq(200);
+      expect(response.status).to.eq(200, `Got status ${response.status} with body: ${JSON.stringify(response.body)}`);
     });
   });
 
