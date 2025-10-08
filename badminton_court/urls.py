@@ -21,6 +21,11 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+# Admin site customization using environment variables
+admin.site.site_header = settings.SITE_HEADER
+admin.site.site_title = settings.SITE_TITLE
+admin.site.index_title = settings.SITE_INDEX_TITLE
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),  # Django Allauth URLs

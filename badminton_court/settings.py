@@ -39,10 +39,6 @@ SITE_HEADER = os.getenv('SITE_HEADER', 'Badminton Court')
 SITE_TITLE = os.getenv('SITE_TITLE', 'Badminton Court Administration Portal')
 SITE_INDEX_TITLE = os.getenv('SITE_INDEX_TITLE', 'Welcome to Badminton Court Administration Portal')
 
-admin.site.site_header = SITE_HEADER
-admin.site.site_title = SITE_TITLE
-admin.site.index_title = SITE_INDEX_TITLE
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
 
