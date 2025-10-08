@@ -1,3 +1,5 @@
+# docker-compose.yml
+
 x-app-volumes: &app-volumes
   - .:/app
   - /app/node_modules
@@ -48,7 +50,7 @@ services:
     profiles:
       - test
   
-  # Redis (shared by both dev and test)
+  # Redis (shared by all profiles)
   redis:
     container_name: redis
     image: redis:7-alpine
@@ -61,9 +63,9 @@ services:
       - test
       - presentation
   
-  # Django Web Application
-  web:
-    container_name: web
+  # Development Web Service (only for dev profile)
+  web-dev:
+    container_name: web-dev
     build: 
       context: .
       target: web
@@ -71,21 +73,37 @@ services:
     volumes: *app-volumes
     ports:
       - "8000:8000"
-    environment:
-      - CYPRESS=true  # Add this for test profile
     env_file:
       - .env.docker
     networks:
       - app-network
     profiles:
       - dev
-      - tunnel
-      - test
-      - presentation
     depends_on:
       - redis
   
-  # Celery Worker
+  # Test Web Service (only for test profile)
+  web-test:
+    container_name: web-test
+    build: 
+      context: .
+      target: web
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes: *app-volumes
+    ports:
+      - "8001:8000"  # Different port to avoid conflict
+    environment:
+      - CYPRESS=true  # Only set for test environment
+    env_file:
+      - .env.docker
+    networks:
+      - app-network
+    profiles:
+      - test
+    depends_on:
+      - redis
+  
+  # Celery Worker (dev profile only)
   celery:
     container_name: celery
     build: 
@@ -102,7 +120,7 @@ services:
     profiles:
       - dev
   
-  # Celery Beat Scheduler
+  # Celery Beat Scheduler (dev profile only)
   celery-beat:
     container_name: celery-beat
     build: 
@@ -157,7 +175,7 @@ services:
     - POSTAL_DB_PORT=${POSTAL_DB_PORT}
     - POSTAL_DB_USER=${POSTAL_DB_USER}
     - POSTAL_DB_PASS=${POSTAL_DB_PASS}
-    - POSTAL_DB_NAME=${POSTAL_DB_NAME}
+    - POSTAL_DB_NAME=${POSTGRES_DB_NAME}
     - MSG_DB_HOST=${MSG_DB_HOST}
     - MSG_DB_PORT=${MSG_DB_PORT}
     - MSG_DB_USER=${MSG_DB_USER}
@@ -186,7 +204,7 @@ services:
     profiles:
       - dev
 
-  # Ngrok Tunnel Service
+  # Ngrok Tunnel Service (depends on dev web service)
   tunnel:
     container_name: ngrok_tunnel
     build: 
@@ -195,7 +213,7 @@ services:
     command: python tunnel.py
     volumes: *app-volumes
     depends_on:
-      - web
+      - web-dev  # Changed from web to web-dev
     environment:
       - NGR_AUTHTOKEN=${NGR_AUTHTOKEN}
       - APP_PORT=${APP_PORT}
@@ -206,7 +224,7 @@ services:
     profiles:
       - tunnel
 
-  # Cypress Testing
+  # Cypress Testing (depends on test web service)
   cypress:
     container_name: cypress
     build:
@@ -220,18 +238,18 @@ services:
       - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
       - ./scripts:/e2e/scripts
     environment:
-      - CYPRESS_baseUrl=http://web:8000  # Use internal Docker network URL
+      - CYPRESS_baseUrl=http://web-test:8000  # Updated to use web-test
       - CYPRESS_headed=${CYPRESS_headed}
     env_file:
       - .env.docker
     depends_on:
-      - web
+      - web-test  # Changed from web to web-test
     profiles:
       - test
     networks:
       - app-network
       
-  # Test Data Setup
+  # Test Data Setup (depends on test web service)
   test-setup:
     container_name: test-setup
     build: 
@@ -242,7 +260,7 @@ services:
     depends_on:
       - db-test
       - redis
-      - web
+      - web-test  # Changed from web to web-test
     environment:
       - DEBUG=${DEBUG}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-test:5432/${POSTGRES_DB}
@@ -255,7 +273,7 @@ services:
     networks:
       - app-network
   
-  # Presentation Video Creation Service
+  # Presentation Video Creation Service (can use either web service)
   presentation:
     container_name: presentation
     build:
@@ -273,7 +291,7 @@ services:
     env_file:
       - .env.docker
     depends_on:
-      - web
+      - web-dev  # Default to dev web service
     profiles:
       - presentation
     networks:
