@@ -1,6 +1,18 @@
+// Scripts/create-presentations.js
+
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+// At the top of the script, ensure the correct environment is loaded
+require('dotenv').config({ path: `.env.${process.env.ENVIRONMENT || 'dev'}` });
+
+// When building the Cypress command, use the appropriate base URL
+const baseUrl = process.env.CYPRESS_INTERNAL_baseUrl || 'http://localhost:8000';
+const environment = process.env.ENVIRONMENT || 'development';
+let postProcessVideos = "dev:post-process-videos";
+if (environment === 'docker') {
+    postProcessVideos = 'docker:post-process-videos';
+}
 
 // Try to import inquirer with different approaches
 let inquirer;
@@ -99,14 +111,14 @@ function runTestAndCreateVideo(testFile) {
   try {
     // Run the test with video recording
     console.log('🚀 Running Cypress test...');
-    execSync(`npx cypress run --headed --browser chrome --config video=true --spec cypress/e2e/${testFile}`, { 
+    execSync(`npx cypress run --headed --browser chrome --config video=true,baseUrl=${baseUrl} --spec cypress/e2e/${testFile}`, { 
       stdio: 'inherit',
       timeout: 300000 // 5 minutes timeout
     });
     
     // Post-process the video
     console.log('\n🎥 Processing video to remove Cypress UI...');
-    execSync('npm run post-process-videos', { stdio: 'inherit' });
+    execSync(`npm run ${postProcessVideos}`, { stdio: 'inherit' });
     
     console.log('\n✅ Presentation video created successfully!');
     console.log(`📁 Video location: cypress/presentation-videos/${path.basename(testFile, '.js')}.mp4`);

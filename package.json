@@ -3,20 +3,18 @@
   "version": "1.0.0",
   "description": "Badminton Court Management System",
   "scripts": {
-    "dev": "echo '🚀 Starting local development environment...' && ENVIRONMENT=development python manage.py runserver 0.0.0.0:8000",
-    "dev:detached": "echo '🚀 Starting local development environment in detached mode...' && ENVIRONMENT=development node scripts/run-detached.js",
-    "dev:stop": "echo '🛑 Stopping local dev server development...' && ENVIRONMENT=development node scripts/stop-server.js",
-    "dev:load-data": "echo '📊 Loading local dev data...' && ENVIRONMENT=development python manage.py load_test_data",
-    "dev:.env.docker": "echo '⚡ Running App in the .env.docker...' && ENVIRONMENT=development python .env.docker.py",
-
-    "dev:cypress-open": "echo '🔍 Opening Cypress in interactive mode...' && ENVIRONMENT=development npx cypress open",
-    "dev:cypress-headed": "echo '🚀 Running Cypress tests (headed)...' && ENVIRONMENT=development npx cypress run --headed --browser chrome",
-    "dev:cypress-headless": "echo '⚡ Running Cypress tests (headless)...' && ENVIRONMENT=development npx cypress run --headless --browser chrome",
-    "dev:cypress-presentation": "echo '⚡ Running Cypress tests for presentation (headed)...' && ENVIRONMENT=development npx cypress run --headed --browser chrome --config video=true && npm run post-process-videos",
-    "dev:select-presentation": "echo '🎬 Select a Cypress test from the list and run it for presentation (headed)...' && ENVIRONMENT=development node scripts/create-presentation.js",
-    "dev:post-process-videos": "echo '⚡ Running Post-Process Videos...' && ENVIRONMENT=development node scripts/post-process-videos.js",
-    "dev:cypress-presentation-spec": "echo '⚡ Running Cypress tests for presentation spec (headed)...' && ENVIRONMENT=development npx cypress run --headed --browser chrome --config video=true --spec && npm run post-process-videos",
-    
+    "dev": "echo '🚀 Starting local development environment...' && cross-env ENVIRONMENT=development python manage.py runserver 0.0.0.0:8000",
+    "dev:detached": "echo '🚀 Starting local development environment in detached mode...' && cross-env ENVIRONMENT=development node scripts/run-detached.js",
+    "dev:stop": "echo '🛑 Stopping local dev server development...' && cross-env ENVIRONMENT=development node scripts/stop-server.js",
+    "dev:load-data": "echo '📊 Loading local dev data...' && cross-env ENVIRONMENT=development python manage.py load_test_data",
+    "dev:.env.docker": "echo '⚡ Running App in the .env.docker...' && cross-env ENVIRONMENT=development python .env.docker.py",
+    "dev:cypress-open": "echo '🔍 Opening Cypress in interactive mode...' && cross-env ENVIRONMENT=development npx cypress open",
+    "dev:cypress-headed": "echo '🚀 Running Cypress tests (headed)...' && cross-env ENVIRONMENT=development npx cypress run --headed --browser chrome",
+    "dev:cypress-headless": "echo '⚡ Running Cypress tests (headless)...' && cross-env ENVIRONMENT=development npx cypress run --headless --browser chrome",
+    "dev:cypress-presentation": "echo '⚡ Running Cypress tests for presentation (headed)...' && cross-env ENVIRONMENT=development npx cypress run --headed --browser chrome --config video=true && npm run post-process-videos",
+    "dev:select-presentation": "echo '🎬 Select a Cypress test from the list and run it for presentation (headed)...' && cross-env ENVIRONMENT=development node scripts/create-presentation.js",
+    "dev:post-process-videos": "echo '⚡ Running Post-Process Videos...' && cross-env ENVIRONMENT=development node scripts/post-process-videos.js",
+    "dev:cypress-presentation-spec": "echo '⚡ Running Cypress tests for presentation spec (headed)...' && cross-env ENVIRONMENT=development npx cypress run --headed --browser chrome --config video=true --spec && npm run post-process-videos",
     "docker:build": "echo '🐳 Building all service images...' && docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation build  --progress=plain",
     "docker:build-nocache": "echo '🐳 Building all service images (no cache)...' && docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation build --progress=plain --no-cache",
     "docker:build-dev": "echo '🐳 Building dev service images...' && docker-compose --env-file .env.docker --profile dev build --progress=plain",
@@ -25,23 +23,19 @@
     "docker:build-cypress-nocache": "echo '🐳 Building Cypress service image (no cache)...' && docker-compose --env-file .env.docker --profile test build cypress --progress=plain --no-cache",
     "docker:build-presentation": "echo '🐳 Building presentation service images...' && docker-compose --env-file .env.docker --profile presentation build --progress=plain",
     "docker:build-presentation-nocache": "echo '🐳 Building presentation service images (no cache)...' && docker-compose --env-file .env.docker --profile presentation build --progress=plain --no-cache",
-    
     "docker:rebuild": "echo '🐳 Completely rebuilding all services...' && docker-compose --env-file .env.docker --profile dev down -v --rmi all && docker-compose --env-file .env.docker --profile test down -v --rmi all && docker-compose --env-file .env.docker --profile staging down -v --rmi all && docker-compose --env-file .env.docker --profile presentation down -v --rmi all && npm run docker:build",
     "docker:rebuild-dev": "echo '🐳 Rebuilding dev services...' && docker-compose --env-file .env.docker --profile dev down -v --rmi all && docker-compose --env-file .env.docker --profile dev build",
     "docker:rebuild-test": "echo '🐳 Rebuilding test services...' && docker-compose --env-file .env.docker --profile test down -v --rmi all && docker-compose --env-file .env.docker --profile test build",
     "docker:rebuild-presentation": "echo '🐳 Rebuilding presentation services...' && docker-compose --env-file .env.docker --profile presentation down -v --rmi all && docker-compose --env-file .env.docker --profile presentation build",
-    
     "docker:dev": "echo '🚀 Starting development environment...' && docker-compose --env-file .env.docker --profile dev up",
     "docker:dev-detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --env-file .env.docker --profile dev up -d",
     "docker:dev-stop": "echo '🛑 Stopping development services...' && docker-compose --env-file .env.docker --profile dev down",
     "docker:dev-logs": "echo '📋 Showing development logs...' && docker-compose --env-file .env.docker --profile dev logs -f",
-    
     "docker:test": "echo '🧪 Starting test environment...' && docker-compose --env-file .env.docker --profile test up",
     "docker:test-detached": "echo '🧪 Starting test environment (detached)...' && docker-compose --env-file .env.docker --profile test up -d",
     "docker:test-stop": "echo '🛑 Stopping test services...' && docker-compose --env-file .env.docker --profile test down",
     "docker:test-logs": "echo '📋 Showing test logs...' && docker-compose --env-file .env.docker --profile test logs -f",
     "docker:test-setup": "echo '🔧 Setting up test data...' && docker-compose --env-file .env.docker --profile test run --rm test-setup",
-    
     "docker:cypress-start": "echo '🚀 Starting Cypress container...' && docker-compose --env-file .env.docker --profile test up -d cypress",
     "docker:cypress-open": "echo '🔍 Opening Cypress in existing container...' && docker-compose --env-file .env.docker --profile test exec cypress open",
     "docker:cypress-run": "echo '⚡ Running Cypress tests in existing container...' && docker-compose --env-file .env.docker --profile test exec cypress run",
@@ -51,14 +45,12 @@
     "docker:select-presentation": "echo '🎬 Select a Cypress test from the list and run it for presentation (headed) in Docker...' && docker-compose --env-file .env.docker --profile presentation run --rm presentation node scripts/create-presentation-docker.js",
     "docker:post-process-videos": "echo '⚡ Running Post-Process Videos in Docker...' && docker-compose --env-file .env.docker --profile presentation run --rm presentation node scripts/post-process-videos-docker.js",
     "docker:cypress-presentation-spec": "echo '🚀 Running Docker Cypress tests for presentation spec...' && docker-compose --env-file .env.docker --profile test exec cypress run --headed --browser chrome --config video=true --spec && npm run docker:post-process-videos",
-   
     "docker:logs": "echo '📋 Showing service logs...' && docker-compose logs -f",
     "docker:shell": "echo '🖥️  Opening shell in service container...' && docker-compose exec",
     "docker:down-volumes": "echo '🗑️  Stopping all services and removing volumes...' && docker-compose down -v",
     "docker:prune": "echo '🧹 Cleaning up unused Docker resources...' && docker system prune -f",
     "docker:reset": "echo '🔄 Resetting environment...' && docker-compose --env-file .env.docker --profile dev down -v --rmi all && docker system prune -f",
     "docker:reset-keep-images": "echo '🔄 Resetting environment (keeping base images)...' && docker-compose --env-file .env.docker --profile dev down -v && docker-compose --env-file .env.docker --profile test down -v && docker-compose --env-file .env.docker --profile staging down -v && docker-compose --env-file .env.docker --profile presentation down -v && docker system prune -f --filter 'until=24h'",
-    
     "status": "echo '📊 Showing service status...' && docker-compose ps",
     "shell": "echo '🖥️  Opening shell in service container...' && docker-compose --profile dev exec",
     "pfs": "echo 'Print the Project Folder Structure..' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\"",
@@ -68,6 +60,7 @@
     "decryptenvfiles": "echo 'Decrypting .env files...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\decryptenvfiles.ps1\""
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "cypress": "^15.3.0",
     "dotenv": "^17.2.3"
   },
