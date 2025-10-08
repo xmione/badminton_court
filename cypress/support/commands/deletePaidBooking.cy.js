@@ -8,14 +8,14 @@ export const deletePaidBooking = () => {
     cy.wait(1000);
     
     // Verify the booking is marked as paid
-    cy.contains('John Doe')
+    cy.contains('Jane Smith')
       .parent('tr') // Get the parent row
       .find('.badge.bg-success') // Find the paid badge
       .contains('paid')
       .should('be.visible');
     
     // Now try to delete the paid booking
-    cy.contains('John Doe')
+    cy.contains('Jane Smith')
       .parent('tr') // Get the parent row
       .find('a[href$="/delete/"]') // Find link ending with /delete/
       .first() // Get the first match

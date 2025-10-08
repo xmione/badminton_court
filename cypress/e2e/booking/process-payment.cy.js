@@ -1,7 +1,7 @@
 // cypress/e2e/booking/process-payment.cy.js 
 describe('Booking Management', () => {
     
-  it('should view booking details', () => {
+  it('should process payment', () => {
     cy.processPayment();
   });
 });

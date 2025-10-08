@@ -36,20 +36,38 @@ describe('Booking Management', { testIsolation: false }, () => {
 
   });
 
-  it('should pass booking happy path test', () => {
+  it('should create a new booking', () => {
+    cy.createNewBooking();
+  });
 
+  it('should view booking details', () => {
     cy.createNewBooking();
     cy.viewBookingDetails();
+  });
+
+  it('should process payment', () => {
     cy.processPayment();
+  });
+
+  it('should allow the editing of an existing booking', () => {
+    cy.createBookingTestData(); 
     cy.editBooking();
+  });
+
+  it('should allow the deletion of an unpaid booking', () => {
+    cy.createDeleteBookingData();     
     cy.deleteBooking();
-    cy.processPayment();
-    cy.deletePaidBooking(); 
+  });
+
+  it('should not allow deletion of a paid booking', () => {
+    
+    cy.processPayment();     
+    cy.deletePaidBooking();
+    
     cy.showStatusMessage('Aeropace Badminton Court Management System', {
       showSpinner: false,
       subText: 'The Happy Path Test for the Booking Process has ended!'
     });
   });
-
 });
 

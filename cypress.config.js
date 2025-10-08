@@ -11,7 +11,7 @@ if (!process.env.APP_PROTOCOL) {
 module.exports = defineConfig({
   projectId: 'zr2raz',
   e2e: {
-   baseUrl: process.env.CYPRESS_INTERNAL_baseUrl || process.env.CYPRESS_baseUrl || "http://web:8000",
+   baseUrl: process.env.CYPRESS_INTERNAL_baseUrl || process.env.CYPRESS_baseUrl || "http://localhost:8000",
    supportFile: "cypress/support/e2e.js",
     specPattern: "cypress/e2e/**/*.cy.{js,jsx,ts,tsx}",
     viewportWidth: 1280,

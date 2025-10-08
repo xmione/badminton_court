@@ -35,7 +35,7 @@ describe('Booking Management', () => {
 
   });
 
-  it('should delete an unpaid booking', () => {
+  it('should allow the deletion of an unpaid booking', () => {
     cy.createDeleteBookingData();     
     cy.deleteBooking();
   });

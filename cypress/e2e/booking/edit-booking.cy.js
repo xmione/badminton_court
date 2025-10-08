@@ -34,7 +34,7 @@ describe('Booking Management', () => {
 
   });
 
-  it('should edit an existing booking', () => {
+  it('should allow the editing of an existing booking', () => {
     cy.createBookingTestData(); 
     cy.editBooking();
   });
