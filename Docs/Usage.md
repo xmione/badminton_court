@@ -356,6 +356,38 @@ npm run docker:reset-keep-images
 npm run docker:reset-and-restart
 ```
 
+## Docker Image Backup and Restore
+
+### Backup all Docker images
+```powershell
+npm run docker:backup-images
+```
+This command creates a single tarball containing all Docker images and saves it to the `./backups` directory.
+
+### Restore all Docker images
+```powershell
+npm run docker:restore-images
+```
+This command restores all Docker images from the backup tarball.
+
+### Backup individual Docker images
+```powershell
+npm run docker:backup-individual
+```
+This command creates separate tarballs for each Docker image and saves them to the `./backups` directory.
+
+### Restore a specific Docker image
+```powershell
+npm run docker:restore-image <image-name>
+```
+Replace `<image-name>` with the name of the image you want to restore (e.g., `web`, `postal`, `celery`, etc.).
+
+### List available backups
+```powershell
+npm run docker:list-backups
+```
+This command lists all available image backups in the `./backups` directory.
+
 ## Utility Commands
 
 ### Show service status
@@ -483,6 +515,19 @@ jobs:
    ```powershell
    # Make sure all required variables are set in .env.docker
    # Check for typos in variable names
+   ```
+
+6. **Docker image backup/restore issues**
+   ```powershell
+   # Check if images exist
+   docker images | findstr "badminton_court"
+   
+   # List available backups
+   npm run docker:list-backups
+   
+   # Try individual backup/restore
+   npm run docker:backup-individual
+   npm run docker:restore-image web
    ```
 
 ### Getting Help
