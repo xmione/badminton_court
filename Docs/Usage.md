@@ -222,6 +222,11 @@ TWITTER_CLIENT_SECRET=[FILL UP]
 PROFILE_EDIT_URL=http:/localhost:3000/profile-setup
 ```
 
+### Create .env.dev and .env.dev file automatically using a script
+#### You can create the env files automatically if you want using this command:
+```powershell
+  scripts/decryptenvfiles.ps1
+```
 ## Dependencies
 
 ### Python Dependencies

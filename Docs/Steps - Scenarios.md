@@ -18,98 +18,228 @@
    ```
 
 2. **Create environment files**
-   ```bash
-   # Create .env.dev file
-   cat > .env.dev << EOF
-   DEBUG=true
-   DATABASE_URL=postgres://postgres:postgres@db:5432/badminton_court
-   REDIS_URL=redis://redis:6379/0
-   ALLOWED_HOSTS=localhost,127.0.0.1,web
-   TUNNEL_ENABLED=false
-   SECRET_KEY=django-insecure-your-secret-key-here
-   CYPRESS_baseUrl=http://web:8000
-   CYPRESS_headed=true
-   EOF
+   
+   Create a `.env.dev` file in the project root:
+   ```env
+   # .env.dev
 
-   # Create .env.docker file
-   cat > .env.docker << EOF
-   # Application Configuration
    DEBUG=true
-   DOCKER=true
+   ENVIRONMENT=development
+   SITE_HEADER=Aeropace Badminton Court
+   SITE_TITLE=Aeropace Badminton Court Administration Portal
+   SITE_INDEX_TITLE=Welcome to Aeropace Badminton Court Adminstration Portal
 
-   # Application base URL settings
+   # Application base url
    APP_PROTOCOL=http
-   APP_DOMAIN=localhost
+   APP_BASE_URL=localhost
    APP_PORT=8000
 
-   # Django Configuration
-   SECRET_KEY=your-secret-key-here
-   DATABASE_URL=postgres://dbuser:yourpassword@db:5432/badminton_court
-   REDIS_URL=redis://redis:6379/0
-   ALLOWED_HOSTS=localhost,127.0.0.1,web
+   # Django SECRET_KEY (same as in .env.dev)
+   SECRET_KEY=[FILL UP]
 
-   # Tunnel Configuration
-   NGR_AUTHTOKEN=your-ngrok-auth-token-here
-   TUNNEL_ENABLED=false
-   TUNNEL_URL=
-   CYPRESS_baseUrl=http://localhost:8000
-   CYPRESS_headed=true
+   # Rails/Postal SECRET_KEY (generated with openssl rand -base64 32)
+   RAILS_SECRET_KEY=[FILL UP]
 
-   # PostgreSQL Configuration
-   POSTGRES_DB=badminton_court
-   POSTGRES_USER=dbuser
-   POSTGRES_PASSWORD=yourpassword
-   POSTGRES_HOST=db
+   # POSTGRES Database settings  
+   DATABASE_URL=postgres://dbuser:[FILL UP]  @localhost:5432/badminton_court
+   POSTGRES_PRISMA_URL=postgres://dbuser:[FILL UP]  @localhost:5432/badminton_court  
+   POSTGRES_URL_NO_SSL=postgres://dbuser:[FILL UP]  @localhost:5432/badminton_court?sslmode=disable  
+   POSTGRES_URL_NON_POOLING=postgres://dbuser:[FILL UP]  @localhost:5432/badminton_court?pool=false  
+   POSTGRES_USER=dbuser  
+   POSTGRES_HOST=localhost  
+   POSTGRES_PASSWORD=[FILL UP]    
+   POSTGRES_DB=badminton_court  
    POSTGRES_PORT=5432
 
-   # MariaDB Configuration (for Postal)
-   MYSQL_ROOT_PASSWORD=yourpassword
+   REDIS_URL=redis://localhost:6379/0
+   REDIS_URL=redis://redis:6379/0   
+   TUNNEL_SUBDOMAIN=aeropace-portal
+   TUNNEL_ENABLED=true
+   TUNNEL_URL=https://aeropace-portal.loca.lt # this will be replaced dynamically on runtime
+   ALLOWED_HOSTS=localhost,127.0.0.1,web
+   CYPRESS_baseUrl=https://aeropace-portal.loca.lt # this will be replaced dynamically on runtime
+   CYPRESS_INTERNAL_baseUrl=http://localhost:8000
+   CYPRESS_headed=true
+
+   PYTHONDONTWRITEBYTECODE=1
+   PYTHONUNBUFFERED=1
+
+   # py-ngrok settings
+   NGR_AUTHTOKEN=[FILL UP]  
+
+   # Postal SMTP settings (for Django to send emails)  
+   SMTP_HOST=smtp.gmail.com  
+   SMTP_PORT=587  
+   SMTP_USER=paysol.postal@gmail.com  
+   SMTP_PASS=[FILL UP]
+   SMTP_FROM_NAME=Badminton Court Management  
+   SMTP_FROM_EMAIL=paysol.postal@gmail.com  
+   SMTP_CERT_PATH=/postal/config/tls/cert.pem  
+   SMTP_KEY_PATH=/postal/config/tls/key.pem  
+   SIGNING_KEY_PATH=/postal/config/postal/signing.key
+
+   # Admin user settings for Postal
+   ADMIN_EMAIL=admin@aeropace.com
+   ADMIN_FIRST_NAME=Admin
+   ADMIN_LAST_NAME=User
+   ADMIN_PASSWORD=[FILL UP]
+
+   SUPPORT_EMAIL=support@aeropace.com
+
+   # MariaDB settings
+   MYSQL_ROOT_PASSWORD=[FILL UP]  
+   MYSQL_DATABASE=badminton_court
+   MYSQL_USER=badminton_user
+   MYSQL_PASSWORD=[FILL UP]  
+
+   # Postal DB settings  
+   POSTAL_HOST=localhost  
+   POSTAL_PORT=5000  
+   POSTAL_USER=postal  
+   POSTAL_DB_HOST=mariadb  
+   POSTAL_DB_PORT=3306  
+   POSTAL_DB_USER=badminton_user  
+   POSTAL_DB_PASS=[FILL UP]    
+   POSTAL_DB_NAME=badminton_court  
+
+   # Postal MSG_DB settings  
+   MSG_DB_PASSWORD=[FILL UP]    
+   MSG_DB_HOST=mariadb  
+   MSG_DB_PORT=3306  
+   MSG_DB_USER=badminton_user  
+   MSG_DB_PASS=[FILL UP]    
+   MSG_DB_NAME=badminton_court_msg_db  
+
+   # Social Media settings
+   GOOGLE_CLIENT_ID=[FILL UP]
+   GOOGLE_CLIENT_SECRET=[FILL UP]
+   FACEBOOK_CLIENT_ID=your_facebook_client_id  
+   FACEBOOK_CLIENT_SECRET=your_facebook_client_secret  
+   TWITTER_CLIENT_ID=[FILL UP]
+   TWITTER_CLIENT_SECRET=[FILL UP]
+   PROFILE_EDIT_URL=http:/localhost:3000/profile-setup
+   ```
+
+   Create a `.env.docker` file for Docker configuration:
+   ```env
+   # .env.docker
+
+   DEBUG=true
+   ENVIRONMENT=docker
+
+   # Application base URL
+   APP_PROTOCOL=http
+   APP_BASE_URL=localhost
+   APP_PORT=8000
+
+   # Django SECRET_KEY (same as in .env.dev)
+   SECRET_KEY=[FILL UP]  
+
+   # Rails/Postal SECRET_KEY (generated with openssl rand -base64 32)
+   RAILS_SECRET_KEY=[FILL UP]  
+
+   # POSTGRES Database settings  
+   DATABASE_URL=postgres://dbuser:[FILL UP]  @db:5432/badminton_court
+   POSTGRES_PRISMA_URL=postgres://dbuser:[FILL UP]  @db:5432/badminton_court  
+   POSTGRES_URL_NO_SSL=postgres://dbuser:[FILL UP]  @db:5432/badminton_court?sslmode=disable  
+   POSTGRES_URL_NON_POOLING=postgres://dbuser:[FILL UP]  @db:5432/badminton_court?pool=false  
+   POSTGRES_USER=dbuser  
+   POSTGRES_HOST=db 
+   POSTGRES_PASSWORD=[FILL UP]    
+   POSTGRES_DB=badminton_court  
+   POSTGRES_PORT=5432
+
+   REDIS_URL=redis://redis:6379/0   
+   TUNNEL_SUBDOMAIN=aeropace-portal
+   TUNNEL_ENABLED=true
+   TUNNEL_URL=https://aeropace-portal.loca.lt # this will be replaced dynamically on runtime
+   ALLOWED_HOSTS=localhost,127.0.0.1,web
+   CYPRESS_baseUrl=https://aeropace-portal.loca.lt # this will be replaced dynamically on runtime
+   CYPRESS_INTERNAL_baseUrl=http://web:8000
+   CYPRESS_headed=true
+
+   PYTHONDONTWRITEBYTECODE=1
+   PYTHONUNBUFFERED=1
+
+   # py-ngrok settings
+   NGR_AUTHTOKEN=[FILL UP]  
+
+   # MariaDB settings (for Postal)
+   MYSQL_ROOT_PASSWORD=[FILL UP]  
    MYSQL_DATABASE=postal
    MYSQL_USER=postal
-   MYSQL_PASSWORD=yourpassword
+   MYSQL_PASSWORD=[FILL UP]  
 
-   # Postal Configuration
+   # Postal DB settings  
    POSTAL_HOST=localhost
    POSTAL_PORT=5000
-   POSTRAL_DB_HOST=mariadb
+   POSTAL_DB_HOST=mariadb
    POSTAL_DB_PORT=3306
    POSTAL_DB_USER=postal
-   POSTAL_DB_PASS=yourpassword
+   POSTRAL_DB_PASS=[FILL UP]  
    POSTAL_DB_NAME=postal
+
+   # Postal MSG_DB settings  
    MSG_DB_HOST=mariadb
    MSG_DB_PORT=3306
    MSG_DB_USER=postal
-   MSG_DB_PASS=yourpassword
+   MSG_DB_PASS=[FILL UP]  
    MSG_DB_NAME=postal
 
-   # SMTP Configuration
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USER=your-email@gmail.com
-   SMTP_PASS=your-app-password
-   SMTP_FROM_EMAIL=your-email@gmail.com
-   SMTP_FROM_NAME=Badminton Court Management
+   # Postal SMTP settings (for Postal itself to send emails)  
+   SMTP_HOST=smtp.gmail.com  
+   SMTP_PORT=587  
+   SMTP_USER=paysol.postal@gmail.com  
+   SMTP_PASS=[FILL UP]   
+   SMTP_FROM_NAME=Badminton Court Management  
+   SMTP_FROM_EMAIL=paysol.postal@gmail.com  
+   SMTP_CERT_PATH=/postal/config/tls/cert.pem  
+   SMTP_KEY_PATH=/postal/config/tls/key.pem  
+   SIGNING_KEY_PATH=/postal/config/postal/signing.key  
 
-   # Admin Configuration
-   ADMIN_EMAIL=admin@example.com
+   # Admin user settings for Postal
+   ADMIN_EMAIL=admin@aeropace.com
    ADMIN_FIRST_NAME=Admin
    ADMIN_LAST_NAME=User
-   ADMIN_PASSWORD=yourpassword
+   ADMIN_PASSWORD=[FILL UP]  
 
-   # Support Configuration
-   SUPPORT_EMAIL=support@example.com
+   SUPPORT_EMAIL=support@aeropace.com
 
-   # Social Media Configuration
-   GOOGLE_CLIENT_ID=your-google-client-id
-   GOOGLE_CLIENT_SECRET=your-google-client-secret
-   FACEBOOK_CLIENT_ID=your-facebook-client-id
-   FACEBOOK_CLIENT_SECRET=your-facebook-client-secret
-   TWITTER_CLIENT_ID=your-twitter-client-id
-   TWITTER_CLIENT_SECRET=your-twitter-client-secret
-   EOF
+   # Social Media settings
+   GOOGLE_CLIENT_ID=[FILL UP]    
+   GOOGLE_CLIENT_SECRET=[FILL UP]  
+   FACEBOOK_CLIENT_ID=[FILL UP]  
+   FACEBOOK_CLIENT_SECRET=[FILL UP]    
+   TWITTER_CLIENT_ID=[FILL UP]  
+   TWITTER_CLIENT_SECRET=[FILL UP]  
+   PROFILE_EDIT_URL=http:/localhost:3000/profile-setup
+   ```
+
+   Alternatively, create the env files automatically using a script:
+   ```powershell
+   scripts/decryptenvfiles.ps1
    ```
 
 3. **Install dependencies**
+   
+   Python Dependencies (add to requirements.txt):
+   ```
+   python-dotenv==16.0.3
+   dj-database-url==2.0.0
+   pyngrok=7.1.6
+   ```
+   
+   Node.js Dependencies (already included in package.json):
+   ```json
+   {
+     "devDependencies": {
+       "cypress": "^15.3.0",
+       "dotenv": "^17.2.3"
+     }
+   }
+   ```
+   
+   Install dependencies:
    ```bash
    # Install Node.js dependencies
    npm install
@@ -406,7 +536,177 @@
 
 ---
 
-## Scenario 6: Performance and Load Testing
+## Scenario 6: Docker Testing Environment
+
+### Objective: Set up and run tests in Docker containers
+
+#### Prerequisites
+- Local Development Setup completed
+- All services running
+
+#### Steps
+
+1. **Start test environment**
+   ```bash
+   npm run docker:test
+   ```
+
+2. **Start test environment in detached mode**
+   ```bash
+   npm run docker:test-detached
+   ```
+
+3. **Set up test data**
+   ```bash
+   npm run docker:test-setup
+   ```
+
+4. **Start Cypress container**
+   ```bash
+   npm run docker:cypress-start
+   ```
+
+5. **Run Cypress tests in existing container**
+   ```bash
+   npm run docker:cypress-run
+   ```
+
+6. **Run Cypress tests in new container (headed)**
+   ```bash
+   npm run docker:cypress-run-headed
+   ```
+
+7. **Run Cypress tests in new container (headless)**
+   ```bash
+   npm run docker:cypress-run-headless
+   ```
+
+8. **Stop test services**
+   ```bash
+   npm run docker:test-stop
+   ```
+
+9. **Show test logs**
+   ```bash
+   npm run docker:test-logs
+   ```
+
+---
+
+## Scenario 7: Docker Management and Maintenance
+
+### Objective: Manage Docker containers and images
+
+#### Prerequisites
+- Local Development Setup completed
+
+#### Steps
+
+1. **Build all Docker images**
+   ```bash
+   npm run docker:build
+   ```
+
+2. **Build all Docker images without cache**
+   ```bash
+   npm run docker:build-nocache
+   ```
+
+3. **Build specific profile images**
+   ```bash
+   npm run docker:build-dev
+   npm run docker:build-test
+   npm run docker:build-tunnel
+   npm run docker:build-presentation
+   ```
+
+4. **Rebuild all services**
+   ```bash
+   npm run docker:rebuild
+   ```
+
+5. **Rebuild specific profile services**
+   ```bash
+   npm run docker:rebuild-dev
+   npm run docker:rebuild-test
+   npm run docker:rebuild-tunnel
+   npm run docker:rebuild-presentation
+   ```
+
+6. **Stop all services and remove volumes**
+   ```bash
+   npm run docker:down-volumes
+   ```
+
+7. **Clean up unused Docker resources**
+   ```bash
+   npm run docker:prune
+   ```
+
+8. **Reset environment**
+   ```bash
+   npm run docker:reset
+   ```
+
+9. **Reset environment (keeping images)**
+   ```bash
+   npm run docker:reset-keep-images
+   ```
+
+10. **Show service status**
+    ```bash
+    npm run status
+    ```
+
+11. **Show all logs**
+    ```bash
+    npm run docker:logs
+    ```
+
+---
+
+## Scenario 8: Docker Image Backup and Restore
+
+### Objective: Backup and restore Docker images
+
+#### Prerequisites
+- Local Development Setup completed
+
+#### Steps
+
+1. **Backup all Docker images**
+   ```bash
+   npm run docker:backup-images
+   ```
+   This command creates a single tarball containing all Docker images and saves it to the `./backups` directory.
+
+2. **Restore all Docker images**
+   ```bash
+   npm run docker:restore-images
+   ```
+   This command restores all Docker images from the backup tarball.
+
+3. **Backup individual Docker images**
+   ```bash
+   npm run docker:backup-individual
+   ```
+   This command creates separate tarballs for each Docker image and saves them to the `./backups` directory.
+
+4. **Restore a specific Docker image**
+   ```bash
+   npm run docker:restore-image <image-name>
+   ```
+   Replace `<image-name>` with the name of the image you want to restore (e.g., `web`, `postal`, `celery`, etc.).
+
+5. **List available backups**
+   ```bash
+   npm run docker:list-backups
+   ```
+   This command lists all available image backups in the `./backups` directory.
+
+---
+
+## Scenario 9: Performance and Load Testing
 
 ### Objective: Test application performance under load
 
@@ -472,7 +772,7 @@
 
 ---
 
-## Scenario 7: Security Testing
+## Scenario 10: Security Testing
 
 ### Objective: Test application security vulnerabilities
 
@@ -526,7 +826,7 @@
 
 ---
 
-## Scenario 8: Creating Presentation Videos
+## Scenario 11: Creating Presentation Videos
 
 ### Objective: Create professional presentation videos from Cypress tests
 
@@ -666,4 +966,38 @@ ls -la cypress/videos/
 
 # Run post-processing with verbose output
 npm run dev:post-process-videos
+```
+
+### Issue: Environment variable warnings
+**Solution:**
+```bash
+# Make sure all required variables are set in .env.docker
+# Check for typos in variable names
+# Verify .env.docker file exists and is properly formatted
+```
+
+### Issue: Cypress container exits with code 0
+**Solution:**
+```bash
+# Start Cypress container first
+npm run docker:cypress-start
+
+# Then run tests
+npm run docker:cypress-run
+
+# Or use all-in-one command
+npm run docker:cypress-run-headless
+```
+
+### Issue: Cypress cannot connect to web service
+**Solution:**
+```bash
+# Check if web-test container is running
+npm run status
+
+# Check if Django server is accessible
+docker-compose --env-file .env.docker --profile test exec web-test curl -I http://localhost:8000
+
+# Check web-test container logs
+npm run docker:test-logs
 ```
