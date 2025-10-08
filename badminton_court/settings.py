@@ -22,14 +22,10 @@ from django.core.exceptions import ValidationError
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Determine which .env file to load based on environment
-# First, check if we're in a Docker container
-DOCKER = os.environ.get('DOCKER', 'false').lower() == 'true'
+ENVIRONMENT = os.environ.get('ENVIRONMENT', 'development').lower()
 
-# Then, check if tunnel is enabled
-TUNNEL_ENABLED = os.environ.get('TUNNEL_ENABLED', 'false').lower() == 'true'
-
-# Load the appropriate .env file
-if DOCKER:
+# Load the appropriate .env file based on ENVIRONMENT
+if ENVIRONMENT == 'docker':
     env_file = '.env.docker'
 else:
     env_file = '.env.dev'
@@ -71,7 +67,9 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000',
 ]
 
-# Combined tunnel configuration for both ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS
+# Tunnel configuration
+TUNNEL_ENABLED = os.environ.get('TUNNEL_ENABLED', 'false').lower() == 'true'
+
 if TUNNEL_ENABLED:
     tunnel_url = os.getenv('TUNNEL_URL')
     if tunnel_url:
@@ -146,14 +144,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'badminton_court.wsgi.application'
 
-
 # Database configuration
 def get_database_url():
     """
     Returns the appropriate DATABASE_URL based on the environment
     """
-    # Check if we're in a test environment
-    if os.environ.get('PYTEST_CURRENT_TEST') or os.environ.get('CYPRESS'):
+    # Check if we're actually running tests (Cypress or docker-compose test profile)
+    is_running_tests = (
+        os.environ.get('CYPRESS')
+    )
+    
+    if is_running_tests:
         # For test environment, construct URL with db-test
         db_name = os.getenv('POSTGRES_DB', 'badminton_court_test')
         db_user = os.getenv('POSTGRES_USER', 'dbuser')
@@ -168,10 +169,7 @@ def get_database_url():
             # Default PostgreSQL configuration for dev
             db_name = os.getenv('POSTGRES_DB', 'badminton_court')
             db_user = os.getenv('POSTGRES_USER', 'dbuser')
-            db_password = os.getenv('POSTGRES_PASSWORD', 'dbpass')
-            return f'postgresql://{db_user}:{db_password}@db:5432/{db_name}'
-        else:
-            return database_url
+            db_password = os
 
 DATABASE_URL = get_database_url()
 
