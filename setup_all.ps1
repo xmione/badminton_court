@@ -273,6 +273,68 @@ function Show-Summary {
     }
 }
 
+function Set-GitConfiguration {
+    Write-Log "Configuring Git user information..." -Level "INFO"
+    
+    # Check if Git is already configured
+    try {
+        $gitUserName = git config --global user.name 2>$null
+        $gitUserEmail = git config --global user.email 2>$null
+        
+        if ($gitUserName -and $gitUserEmail) {
+            Write-Log "Git is already configured:" -Level "INFO"
+            Write-Log "  Name: $gitUserName" -Level "INFO"
+            Write-Log "  Email: $gitUserEmail" -Level "INFO"
+            
+            $response = Read-Host "Do you want to reconfigure Git? (y/N)"
+            if ($response -ne 'y' -and $response -ne 'Y') {
+                return $true
+            }
+        }
+    }
+    catch {
+        Write-Log "Git configuration check failed, proceeding with setup." -Level "WARNING"
+    }
+    
+    # Prompt for user name
+    $userName = Read-Host "Enter your Git user name"
+    if ([string]::IsNullOrWhiteSpace($userName)) {
+        Write-Log "No user name provided. Skipping Git configuration." -Level "WARNING"
+        return $false
+    }
+    
+    # Prompt for user email
+    $userEmail = Read-Host "Enter your Git user email"
+    if ([string]::IsNullOrWhiteSpace($userEmail)) {
+        Write-Log "No user email provided. Skipping Git configuration." -Level "WARNING"
+        return $false
+    }
+    
+    try {
+        # Set Git configuration
+        git config --global user.name "$userName"
+        git config --global user.email "$userEmail"
+        
+        # Verify configuration
+        $configuredName = git config --global user.name
+        $configuredEmail = git config --global user.email
+        
+        if ($configuredName -eq $userName -and $configuredEmail -eq $userEmail) {
+            Write-Log "Git configuration set successfully:" -Level "SUCCESS"
+            Write-Log "  Name: $configuredName" -Level "SUCCESS"
+            Write-Log "  Email: $configuredEmail" -Level "SUCCESS"
+            return $true
+        } else {
+            Write-Log "Failed to verify Git configuration." -Level "ERROR"
+            return $false
+        }
+    }
+    catch {
+        Write-Log "Failed to set Git configuration: $($_.Exception.Message)" -Level "ERROR"
+        return $false
+    }
+}
+
 # Main execution
 if (RelaunchAsAdmin) {
     try {
@@ -324,6 +386,12 @@ if (RelaunchAsAdmin) {
         # Setup VCVars environment
         Write-Progress-Step "Setting up VCVars environment" ($totalTools + 1) ($totalTools + 1)
         $results["VCVars Environment"] = SetupVCVars
+        
+        # Configure Git if it was installed
+        if ($results["git"] -eq $true) {
+            Write-Progress-Step "Configuring Git" ($totalTools + 2) ($totalTools + 2)
+            $results["Git Configuration"] = Set-GitConfiguration
+        }
         
         # Final verification
         Write-Progress-Step "Final verification" ($totalTools + 2) ($totalTools + 2)

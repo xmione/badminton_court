@@ -200,7 +200,7 @@ if (RelaunchAsAdmin) {
             
             # Special case for Chocolatey: warn user heavily
             if ($tool.appName -eq "Chocolatey") {
-                $isChocoInstalled = & $checkCommand -ErrorAction SilentlyContinue
+                $isChocoInstalled = & ([scriptblock]::Create($tool.checkCommand)) -ErrorAction SilentlyContinue
                 if ($isChocoInstalled -and -not $Force) {
                     Write-Log "Chocolatey is installed but uninstallation skipped as it may break other applications." -Level "WARNING"
                     Write-Log "Use -Force to attempt uninstalling Chocolatey." -Level "WARNING"
