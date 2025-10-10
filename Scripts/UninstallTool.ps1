@@ -13,6 +13,21 @@
     Copyright      : c(2025)
 #>
 
+# Function to check if a command exists
+function Test-CommandExists {
+    param (
+        [string]$command
+    )
+    $commandExists = $false
+    try {
+        $output = & $command --version 2>$null
+        if ($output) { $commandExists = $true }
+    } catch {
+        $commandExists = $false
+    }
+    return $commandExists
+}
+
 # Function to log messages
 function Write-Message {
     param (
@@ -67,15 +82,16 @@ function Remove-FromPath {
 function Uninstall-Tool {
     param (
         [string]$appName,
-        [scriptblock]$checkCommand,
+        [string]$checkCommand,
         [string]$envPath,
-        [scriptblock]$uninstallCommand = $null,
+        [string]$uninstallCommand = $null,
         [switch]$Force
     ) 
 
     Write-Message "Processing uninstall for: $appName" -Level "INFO"
 
-    $isInstalled = & $checkCommand -ErrorAction SilentlyContinue
+    # Execute the check command
+    $isInstalled = & ([scriptblock]::Create($checkCommand)) -ErrorAction SilentlyContinue
 
     if (-not $isInstalled -and -not $Force) {
         Write-Message "$appName is not installed. Skipping." -Level "INFO"
@@ -90,9 +106,9 @@ function Uninstall-Tool {
         if ($uninstallCommand) {
             Write-Message "Running custom uninstall command for $appName..." -Level "INFO"
             try {
-                & $uninstallCommand
-                # Add a delay for the uninstaller to finish and clean up
-                Start-Sleep -Seconds 5
+                & ([scriptblock]::Create($uninstallCommand))
+                # Brief pause to let the uninstaller start
+                Start-Sleep -Seconds 2
                 $uninstallSucceeded = $true
             }
             catch {
@@ -103,9 +119,8 @@ function Uninstall-Tool {
         if (-not $uninstallSucceeded) {
             Write-Message "Attempting to uninstall $appName via winget..." -Level "INFO"
             try {
-                # winget can often find the package by name or ID
                 winget uninstall $appName --accept-source-agreements --accept-package-agreements --force
-                Start-Sleep -Seconds 5
+                Start-Sleep -Seconds 2
                 $uninstallSucceeded = $true
             }
             catch {
@@ -117,7 +132,7 @@ function Uninstall-Tool {
             Write-Message "Attempting to uninstall $appName via Chocolatey..." -Level "INFO"
             try {
                 Start-Process -NoNewWindow -Wait "choco" -ArgumentList "uninstall $appName -y --confirm"
-                Start-Sleep -Seconds 5
+                Start-Sleep -Seconds 2
                 $uninstallSucceeded = $true
             }
             catch {
@@ -125,11 +140,18 @@ function Uninstall-Tool {
             }
         }
 
+        # Brief wait before verification
+        $verificationDelay = 15
+        Write-Message "Waiting $verificationDelay seconds before verification..." -Level "INFO"
+        Start-Sleep -Seconds $verificationDelay
+
         # Final verification
-        $isStillInstalled = & $checkCommand -ErrorAction SilentlyContinue
+        $isStillInstalled = & ([scriptblock]::Create($checkCommand)) -ErrorAction SilentlyContinue
         if ($isStillInstalled) {
             Write-Message "$appName uninstall failed verification. It may still be installed." -Level "ERROR"
-            return $false
+            # Clean up PATH even if verification failed
+            Remove-FromPath -PathToRemove $envPath
+            return $false  # Return false to indicate failure
         } else {
             Write-Message "$appName uninstalled successfully." -Level "SUCCESS"
         }
@@ -140,3 +162,4 @@ function Uninstall-Tool {
 
     return $true
 }
+

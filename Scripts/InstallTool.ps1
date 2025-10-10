@@ -162,9 +162,23 @@ MaxRetries: $($MaxRetries)
                         Write-Message "Installation command returned non-zero exit code: $($LASTEXITCODE)" -Level "ERROR"
                         
                         # For Visual Studio Build Tools, check if it's already installed despite the error
-                        if ($appName -eq "Visual Studio Build Tools" -and $installOutput -match "Found an existing package already installed") {
-                            Write-Message "Visual Studio Build Tools appears to be installed despite the error code." -Level "INFO"
-                            $installFailed = $false
+                        if ($appName -eq "Visual Studio Build Tools") {
+                            # Check if the installation output indicates the tool is already installed
+                            if ($installOutput -match "Found an existing package already installed" -or 
+                                $installOutput -match "already installed" -or
+                                $installOutput -match "Installation completed successfully") {
+                                Write-Message "Visual Studio Build Tools appears to be installed despite the error code." -Level "INFO"
+                                $installFailed = $false
+                            } else {
+                                # Try to verify if the tool is actually installed by running the check command
+                                $isActuallyInstalled = & $checkCommand -ErrorAction SilentlyContinue
+                                if ($isActuallyInstalled) {
+                                    Write-Message "Visual Studio Build Tools is already installed on the system." -Level "INFO"
+                                    $installFailed = $false
+                                } else {
+                                    $installFailed = $true
+                                }
+                            }
                         } else {
                             $installFailed = $true
                         }
@@ -251,10 +265,12 @@ MaxRetries: $($MaxRetries)
         if ($installFailed -and $manualInstallUrl -and $manualInstallPath) {
             Write-Message "Attempting manual install for $($appName)..." -Level "INFO"
             try {
-                DownloadWithProgress -url $manualInstallUrl -outputFile $manualInstallPath
+                # Expand environment variables in paths using the execution context
+                $expandedInstallPath = $ExecutionContext.InvokeCommand.ExpandString($manualInstallPath)
+                DownloadWithProgress -url $manualInstallUrl -outputFile $expandedInstallPath
                 $tempOutput = "${env:TEMP}\manual_output_$($appName).txt"
                 $tempError = "${env:TEMP}\manual_error_$($appName).txt"
-                $manualOutput = Start-Process -FilePath $manualInstallPath -ArgumentList '/silent' -Wait -RedirectStandardOutput $tempOutput -RedirectStandardError $tempError -PassThru
+                $manualOutput = Start-Process -FilePath $expandedInstallPath -ArgumentList '/silent' -Wait -RedirectStandardOutput $tempOutput -RedirectStandardError $tempError -PassThru
                 
                 # Read and log the output files
                 if (Test-Path $tempOutput) {
@@ -898,4 +914,19 @@ function Get-ngrokVersion {
     } catch {
         return $null
     }
+}
+
+# Function to check if a command exists
+function Test-CommandExists {
+    param (
+        [string]$command
+    )
+    $commandExists = $false
+    try {
+        $output = & $command --version 2>$null
+        if ($output) { $commandExists = $true }
+    } catch {
+        $commandExists = $false
+    }
+    return $commandExists
 }

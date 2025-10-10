@@ -64,11 +64,11 @@ param (
 . "$PSScriptRoot\Scripts\UninstallTool.ps1"
 
 # Load version configuration
- $versions = Get-Content "$PSScriptRoot\versions.json" | ConvertFrom-Json
+$versions = Get-Content "$PSScriptRoot\versions.json" | ConvertFrom-Json
 
 # Enhanced logging and progress tracking
- $Global:UnsetupStartTime = Get-Date
- $Global:LogFile = $LogFile
+$Global:UnsetupStartTime = Get-Date
+$Global:LogFile = $LogFile
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
@@ -210,13 +210,15 @@ if (RelaunchAsAdmin) {
                 # If not installed or Force is used, proceed with normal uninstallation
             }
 
-            $results[$tool.appName] = Uninstall-Tool `
+            $uninstallResult = Uninstall-Tool `
                 -appName $tool.appName `
                 -checkCommand ([scriptblock]::Create($tool.checkCommand)) `
                 -envPath $tool.envPath `
                 -uninstallCommand ([scriptblock]::Create($tool.uninstallCommand)) `
                 -Force:$Force
             
+            $results[$tool.appName] = $uninstallResult    
+
             # Track if any tool was actually uninstalled (may need restart)
             if ($results[$tool.appName]) {
                 $needRestart = $true
