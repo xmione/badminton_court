@@ -94,6 +94,12 @@ function Write-Log {
     if ($Global:LogFile) {
         Add-Content -Path $Global:LogFile -Value $logEntry -ErrorAction SilentlyContinue
     }
+    
+    # Also write debug messages to a separate debug log file
+    if ($Level -eq "DEBUG" -and $Global:LogFile) {
+        $debugLogFile = $Global:LogFile.Replace(".txt", "_debug.txt")
+        Add-Content -Path $debugLogFile -Value $logEntry -ErrorAction SilentlyContinue
+    }
 }
 
 function Write-Progress-Step {
