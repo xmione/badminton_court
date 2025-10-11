@@ -27,7 +27,9 @@ This document specifies the exact versions of tools and packages used in this pr
 ## Python Packages (installed in the current virtual environment)
 
 | Package          | Version       | Description                                     |
-|------------------|---------------|-------------------------------------------------|| amqp             | 5.3.1         | Low-level AMQP client for Python (fork of amqplib). |
+|------------------|---------------|-------------------------------------------------|
+
+| amqp             | 5.3.1         | Low-level AMQP client for Python (fork of amqplib). |
 | annotated-types  | 0.7.0         | Reusable constraint types to use with typing.Annotated |
 | anyio            | 4.11.0        | High-level concurrency and networking framework on top of asyncio or Trio |
 | asgiref          | 3.9.2         | ASGI specs, helper code, and adapters           |

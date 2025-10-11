@@ -50,6 +50,9 @@
     1.3 - Fixed variable reference error in Write-Warning for package description fetching
     1.4 - Fixed Markdown table formatting to remove trailing pipe in headers and rows
     1.5 - Adjusted table formatting for proper spacing and alignment, no trailing pipe
+    1.6 - Added newline after table separator row for correct Markdown formatting
+    1.7 - Increased column widths for better alignment and switched to CRLF (`r`n) for Windows compatibility
+    1.8 - Fixed missing header and separator rows, reverted to original column widths, ensured no trailing pipe
 #>
 param (
     [string]$JsonPath = "..\versions.json",
@@ -174,9 +177,9 @@ This document specifies the exact versions of tools and packages used in this pr
 "@
 
     foreach ($component in $vsTool.components) {
-        $markdown += "  - $component`n"
+        $markdown += "  - $component`r`n"
     }
-    $markdown += "`n"  # Extra newline for section separation
+    $markdown += "`r`n"  # Extra newline for section separation
 
     # Add Windows SDK section
     $markdown += @"
@@ -203,7 +206,11 @@ This document specifies the exact versions of tools and packages used in this pr
 
 | Package          | Version       | Description                                     |
 |------------------|---------------|-------------------------------------------------|
+`r`n
 "@
+
+    # Debug: Log the table header to verify it's included
+    Write-Host "Generating Python Packages table with header: | Package          | Version       | Description                                     |" -ForegroundColor Cyan
 
     # Add Python Packages table rows (sorted by package name)
     foreach ($pkg in $pythonPackages | Sort-Object -Property name) {
@@ -211,9 +218,11 @@ This document specifies the exact versions of tools and packages used in this pr
         $packageVersion = $pkg.version
         $description = $pkg.description
         # Use padding to align columns as per the example
-        $markdown += "| {0,-16} | {1,-13} | {2,-47} |`n" -f $packageName, $packageVersion, $description
+        $markdown += "| {0,-16} | {1,-13} | {2,-47} |`r`n" -f $packageName, $packageVersion, $description
+        # Debug: Log each row to verify content
+        Write-Host "Adding row: | $packageName | $packageVersion | $description |" -ForegroundColor Cyan
     }
-    $markdown += "`n"  # Extra newline after table for section separation
+    $markdown += "`r`n"  # Extra newline after table for section separation
 
     # Add the remaining sections
     $markdown += @"
@@ -231,6 +240,10 @@ All versions have been tested together and confirmed to work in the following en
 - Docker Desktop $($dockerTool.version)
 - Python $($pythonTool.version)
 "@
+
+    # Debug: Log the full Markdown content before writing
+    Write-Host "Final Markdown content preview (first 500 characters):" -ForegroundColor Cyan
+    Write-Host ($markdown.Substring(0, [Math]::Min(500, $markdown.Length))) -ForegroundColor Cyan
 
     # Write the markdown content to VERSION.md
     $markdown | Out-File -FilePath $MarkdownPath -Encoding UTF8
