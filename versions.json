@@ -27,7 +27,7 @@
         {
             "appName": "Visual Studio Build Tools",
             "installCommand": "$vsOverride = $tool.components | ForEach-Object { \"--add $_\" }; $vsOverride += \"--quiet\", \"--wait\", \"--norestart\"; $vsOverrideString = $vsOverride -join \" \"; winget install --id Microsoft.VisualStudio.2022.BuildTools --override $vsOverrideString",
-            "checkCommand": "$linker = Get-Command link.exe -ErrorAction SilentlyContinue; if ($linker) { return $true } else { $commonPaths = @(\"${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\", \"${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\"); foreach ($basePath in $commonPaths) { if (Test-Path $basePath) { $msvcDirs = Get-ChildItem -Path $basePath -Directory | Sort-Object Name -Descending; foreach ($dir in $msvcDirs) { $binPath = Join-Path $dir.FullName \"bin\\Hostx64\\x64\"; $linkPath = Join-Path $binPath \"link.exe\"; if (Test-Path $linkPath) { return $true } } } }; return $false }",
+            "checkCommand": "Test-VisualStudioBuildToolsInstalled",
             "uninstallCommand": "winget uninstall --id Microsoft.VisualStudio.2022.BuildTools",
             "envPath": "${env:ProgramFiles(x86)}\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC",
             "manualInstallUrl": "https://aka.ms/vs/17/release/vs_buildtools.exe",
@@ -83,7 +83,7 @@
             "envPath": "C:\\Program Files\\nodejs",
             "manualInstallUrl": null,
             "manualInstallPath": null,
-            "isCoreTool": false,
+            "isCoreTool": true,
             "maxRetries": 1,
             "version": "v22.16.0"
         },
@@ -147,7 +147,7 @@
         {
             "appName": "OpenSSL",
             "installCommand": "choco install openssl --version=3.5.1 -y",
-            "checkCommand": "Test-Path \"C:\\Program Files\\OpenSSL-Win64\\bin\\openssl.exe\"",
+            "checkCommand": "(choco list --exact openssl) -match \"openssl\"",
             "uninstallCommand": "choco uninstall openssl -y",
             "envPath": "C:\\Program Files\\OpenSSL-Win64\\bin",
             "manualInstallUrl": "https://slproweb.com/download/Win64OpenSSL-3_5_1.exe",

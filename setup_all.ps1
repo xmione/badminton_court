@@ -80,11 +80,11 @@ param (
 . "$PSScriptRoot\Scripts\InstallTool.ps1"
 
 # Load version configuration
- $versions = Get-Content "$PSScriptRoot\versions.json" | ConvertFrom-Json
+$versions = Get-Content "$PSScriptRoot\versions.json" | ConvertFrom-Json
 
 # Enhanced logging and progress tracking
- $Global:SetupStartTime = Get-Date
- $Global:LogFile = $LogFile
+$Global:SetupStartTime = Get-Date
+$Global:LogFile = $LogFile
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
@@ -324,7 +324,8 @@ function Set-GitConfiguration {
             Write-Log "  Name: $configuredName" -Level "SUCCESS"
             Write-Log "  Email: $configuredEmail" -Level "SUCCESS"
             return $true
-        } else {
+        }
+        else {
             Write-Log "Failed to verify Git configuration." -Level "ERROR"
             return $false
         }
@@ -430,6 +431,9 @@ if (RelaunchAsAdmin) {
     catch {
         Write-Log "Fatal error during setup: $($_.Exception.Message)" -Level "ERROR"
         Write-Log "Stack trace: $($_.ScriptStackTrace)" -Level "ERROR"
+        Write-Host ""
+        Write-Host "Press Enter to exit..." -ForegroundColor Red
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
         exit 1
     }
     finally {

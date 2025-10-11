@@ -73,14 +73,6 @@ if (-not $pythonTool) {
  $venvActivateScript = ".\$venvDir\Scripts\Activate.ps1"
  $pythonExe = ".\$venvDir\Scripts\python.exe"
 
-function Get-VcvarsPathFromEnv {
-    $vcvarsCandidates = ($env:PATH -split ';') |
-        Where-Object { $_ -match "VC\\Auxiliary\\Build" -and (Test-Path (Join-Path $_ 'vcvars64.bat')) } |
-        ForEach-Object { Join-Path $_ 'vcvars64.bat' }
-
-    return $vcvarsCandidates | Select-Object -First 1
-}
-
 function Test-RealPython {
     param([string]$PythonCommand)
 
@@ -193,48 +185,7 @@ function Install-Python {
         exit 1
     }
 }
-
-function Install-BuildTools {
-    Write-Host "[INFO] Checking for Visual Studio Build Tools..."
-
-    $vcvarsPath = Get-VcvarsPathFromEnv
-    if ($vcvarsPath -and (Test-Path $vcvarsPath)) {
-        Write-Host "[OK] Visual Studio Build Tools already installed."
-        return
-    }
-
-    Write-Host "[INFO] Visual Studio Build Tools not found. Installing..."
-    $buildToolsInstallerUrl = "https://aka.ms/vs/17/release/vs_BuildTools.exe"
-    $buildToolsInstaller = "vs_BuildTools.exe"
-
-    try {
-        Write-Host "[INFO] Downloading Visual Studio Build Tools..."
-        Invoke-WebRequest -Uri $buildToolsInstallerUrl -OutFile $buildToolsInstaller -UseBasicParsing
-
-        Write-Host "[INFO] Installing C++ build tools and Windows SDK silently..."
-        Start-Process -FilePath ".\vs_BuildTools.exe" -ArgumentList `
-            "--quiet", "--wait", "--norestart", `
-            "--add", "Microsoft.VisualStudio.Workload.VCTools", `
-            "--add", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64", `
-            "--add", "Microsoft.VisualStudio.Component.Windows10SDK.19041", `
-            "--includeRecommended" `
-            -Wait -NoNewWindow
-
-        Remove-Item $buildToolsInstaller -Force
-        Write-Host "[OK] Visual Studio Build Tools installed."
-
-        $vcvarsPath = Get-VcvarsPathFromEnv
-        if ($vcvarsPath -and (Test-Path $vcvarsPath)) {
-            & $vcvarsPath | Out-Null
-            Write-Host "[OK] vcvars64.bat executed to set up environment."
-        }
-    }
-    catch {
-        Write-Error "[ERROR] Failed to install Visual Studio Build Tools: $($_.Exception.Message)"
-        exit 1
-    }
-}
-
+ 
 function New-VirtualEnvironment {
     param([string]$PythonCommand)
 
@@ -335,9 +286,6 @@ if ($null -eq $pythonCmd) {
 else {
     Write-Host "[OK] Using Python command: $pythonCmd"
 }
-
-# Step 1.5: Install MSVC and Windows SDK (required for compiling some Python packages)
-Install-BuildTools
 
 # Step 2: Create virtual environment
 New-VirtualEnvironment -PythonCommand $pythonCmd

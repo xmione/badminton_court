@@ -930,3 +930,35 @@ function Test-CommandExists {
     }
     return $commandExists
 }
+
+function Test-VisualStudioBuildToolsInstalled {
+    # Check for link.exe and cl.exe
+    $linker = Get-Command link.exe -ErrorAction SilentlyContinue
+    $compiler = Get-Command cl.exe -ErrorAction SilentlyContinue
+    
+    if ($linker -and $compiler) {
+        return $true
+    }
+    
+    # Check common MSVC paths
+    $commonPaths = @(
+        "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC",
+        "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC"
+    )
+    
+    foreach ($basePath in $commonPaths) {
+        if (Test-Path $basePath) {
+            $msvcDirs = Get-ChildItem -Path $basePath -Directory | Sort-Object Name -Descending
+            foreach ($dir in $msvcDirs) {
+                $binPath = Join-Path $dir.FullName "bin\Hostx64\x64"
+                $linkPath = Join-Path $binPath "link.exe"
+                $clPath = Join-Path $binPath "cl.exe"
+                if ((Test-Path $linkPath) -and (Test-Path $clPath)) {
+                    return $true
+                }
+            }
+        }
+    }
+    
+    return $false
+}
