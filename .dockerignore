@@ -44,26 +44,21 @@ docker-compose*.yml
 
 # Project specific
 README.md
-cypress/
 scripts/
 backups/
 *.log
 
-# --- KEY FIX ---
-# Instead of ignoring the whole badminton_court directory,
-# we ignore the large/unwanted items *inside* it.
+# --- KEY FIX FOR CYPRESS ---
+# Instead of ignoring the whole cypress directory, we only ignore the
+# large generated artifacts inside it. The tests themselves are still copied.
+cypress/videos/
+cypress/screenshots/
+cypress/presentation-videos/
+
+# --- FIX FOR DJANGO APP ---
+# Ignore the large/unwanted items *inside* the badminton_court directory.
 badminton_court/__pycache__/
 badminton_court/*/__pycache__/
 badminton_court/*.pyc
 badminton_court/*/*.pyc
-# If you have a local media or staticfiles folder, add it here:
-# badminton_court/media/
-# badminton_court/staticfiles/
-
-# Ignore other large files
-*.mp4
-*.avi
-*.mov
-*.mkv
-*.zip
-*.tar*
+# If you have a local media or staticfiles folder
