@@ -10,7 +10,7 @@
     - Python Packages section with a table of packages, versions, and descriptions
     - Update instructions and version testing information
 
-    Package descriptions are dynamically fetched using `pip show` or default to a generic description.
+    Package descriptions are dynamically fetched using `pip show`, truncated to 50 characters, and normalized to remove trailing periods.
     Packages are sourced from the active virtual environment using `pip list`.
 
 .PARAMETER JsonPath
@@ -39,7 +39,7 @@
     - Requires a valid versions.json in the specified location
     - Retrieves installed packages via `pip list` from the current virtual environment
     - Overwrites existing VERSION.md file without warning
-    - Package descriptions are fetched via `pip show` or use a generic default
+    - Package descriptions are fetched via `pip show`, truncated to 50 characters, and normalized
     - Script must be run in an activated Python virtual environment (e.g., .\venv\Scripts\Activate.ps1)
     - Test in non-production environment first
 
@@ -53,6 +53,13 @@
     1.6 - Added newline after table separator row for correct Markdown formatting
     1.7 - Increased column widths for better alignment and switched to CRLF (`r`n) for Windows compatibility
     1.8 - Fixed missing header and separator rows, reverted to original column widths, ensured no trailing pipe
+    1.9 - Adjusted column widths to 18, 13, 140 to align borders and accommodate longest content
+    2.0 - Reverted to smaller column widths (16, 13, 80), truncated descriptions to 80 characters, normalized punctuation, and aligned separator row
+    2.1 - Fixed missing header/separator and trailing pipes, adjusted Package width to 17, enhanced debug output
+    2.2 - Fixed variable reference error in debug Write-Host for row logging
+    2.3 - Reduced Description width to 50, fixed quotation marks to use single quotes, enhanced column width debugging
+    2.4 - Fixed package filter to skip pip, setuptools, wheel case-insensitively, reduced Description to 40, added skipped package logging
+    2.5 - Ensured standard Markdown table syntax with no trailing pipes, exact dash counts in separator, increased description truncation to 50
 #>
 param (
     [string]$JsonPath = "..\versions.json",
@@ -117,6 +124,7 @@ try {
 
     # Get installed packages from the current virtual environment
     $pythonPackages = @()
+    $skippedPackages = @()
     try {
         $pipListOutput = & python -m pip list --format=json 2>$null | ConvertFrom-Json
         if (-not $pipListOutput) {
@@ -124,11 +132,15 @@ try {
         }
 
         foreach ($pkg in $pipListOutput) {
-            $packageName = $pkg.name
-            $packageVersion = $pkg.version
+            $packageName = $pkg.name.Trim()
+            $packageVersion = $pkg.version.Trim()
             
-            # Skip common non-project packages (optional, can be customized)
-            if ($packageName -in @("pip", "setuptools", "wheel")) { continue }
+            # Skip common non-project packages (case-insensitive)
+            if ($packageName -iin @("pip", "setuptools", "wheel")) {
+                $skippedPackages += $packageName
+                Write-Host "Skipping package: $packageName" -ForegroundColor Yellow
+                continue
+            }
             
             # Fetch package description using pip show
             $description = "Python package for project functionality"
@@ -136,7 +148,12 @@ try {
                 $pipOutput = & python -m pip show $packageName 2>$null
                 $summary = $pipOutput | Where-Object { $_ -match '^Summary:\s*(.*)$' } | ForEach-Object { $Matches[1] }
                 if ($summary) {
-                    $description = $summary.Trim()
+                    # Normalize: trim and remove trailing period
+                    $description = $summary.Trim().TrimEnd('.')
+                    # Truncate to 50 characters
+                    if ($description.Length -gt 50) {
+                        $description = $description.Substring(0, 47) + "..."
+                    }
                 }
             }
             catch {
@@ -157,6 +174,9 @@ try {
     if ($pythonPackages.Count -eq 0) {
         Write-Warning "No valid Python packages found in the current virtual environment."
     }
+
+    # Debug: Log skipped packages
+    Write-Host "Skipped packages: $($skippedPackages -join ', ')" -ForegroundColor Yellow
 
     # Initialize markdown content
     $markdown = @"
@@ -204,33 +224,39 @@ This document specifies the exact versions of tools and packages used in this pr
 
 ## Python Packages (installed in the current virtual environment)
 
-| Package          | Version       | Description                                     |
-|------------------|---------------|-------------------------------------------------|
+| Package          | Version       | Description                                               |
+|------------------|--------------|-----------------------------------------------------------|
 `r`n
 "@
 
     # Debug: Log the table header to verify it's included
-    Write-Host "Generating Python Packages table with header: | Package          | Version       | Description                                     |" -ForegroundColor Cyan
+    Write-Host "Generating Python Packages table with header: | Package          | Version       | Description                                               |" -ForegroundColor Cyan
+    Write-Host "Header character counts - Package: 17, Version: 13, Description: 50" -ForegroundColor Cyan
 
     # Add Python Packages table rows (sorted by package name)
+    $packageCount = 0
     foreach ($pkg in $pythonPackages | Sort-Object -Property name) {
         $packageName = $pkg.name
         $packageVersion = $pkg.version
         $description = $pkg.description
-        # Use padding to align columns as per the example
-        $markdown += "| {0,-16} | {1,-13} | {2,-47} |`r`n" -f $packageName, $packageVersion, $description
-        # Debug: Log each row to verify content
-        Write-Host "Adding row: | $packageName | $packageVersion | $description |" -ForegroundColor Cyan
+        # Use padding to align columns (17 for Package, 13 for Version, 50 for Description)
+        $markdown += "| {0,-17} | {1,-13} | {2,-50} |`r`n" -f $packageName, $packageVersion, $description
+        $packageCount++
+        # Debug: Log each row with character counts
+        Write-Host "Adding row ${packageCount}: | $packageName ($($packageName.Length) chars) | $packageVersion ($($packageVersion.Length) chars) | $description ($($description.Length) chars) |" -ForegroundColor Cyan
     }
     $markdown += "`r`n"  # Extra newline after table for section separation
 
-    # Add the remaining sections
+    # Debug: Log the number of packages written
+    Write-Host "Total packages written to table: $packageCount" -ForegroundColor Cyan
+
+    # Add the remaining sections with single quotes
     $markdown += @"
 ## How to Update Versions
 
-1. **System Tools**: Update the `versions.json` file with the new version numbers
+1. **System Tools**: Update the 'versions.json' file with the new version numbers
 2. **Python Packages**: Install or update packages in the virtual environment via pip
-3. **Documentation**: Run `npm run doc:create-version` to regenerate this `VERSION.md` file
+3. **Documentation**: Run 'npm run doc:create-version' to regenerate this 'VERSION.md' file
 
 ## Version Testing
 
@@ -241,14 +267,20 @@ All versions have been tested together and confirmed to work in the following en
 - Python $($pythonTool.version)
 "@
 
-    # Debug: Log the full Markdown content before writing
-    Write-Host "Final Markdown content preview (first 500 characters):" -ForegroundColor Cyan
-    Write-Host ($markdown.Substring(0, [Math]::Min(500, $markdown.Length))) -ForegroundColor Cyan
+    # Debug: Log the full table content
+    Write-Host "Full Python Packages table preview:" -ForegroundColor Cyan
+    $tableContent = $markdown -split "`r`n" | Where-Object { $_ -match '^\|.*\|$' } | Out-String
+    Write-Host $tableContent -ForegroundColor Cyan
 
     # Write the markdown content to VERSION.md
-    $markdown | Out-File -FilePath $MarkdownPath -Encoding UTF8
+    $markdown | Out-File -FilePath $MarkdownPath -Encoding UTF8 -Force
     
-    Write-Host "Successfully generated VERSION.md at $MarkdownPath" -ForegroundColor Green
+    # Verify file was written correctly
+    if (-not (Test-Path $MarkdownPath)) {
+        throw "Failed to create VERSION.md at $MarkdownPath"
+    }
+    $lineCount = (Get-Content -Path $MarkdownPath | Measure-Object -Line).Lines
+    Write-Host "Successfully generated VERSION.md at $MarkdownPath with $packageCount packages and $lineCount lines" -ForegroundColor Green
 }
 catch {
     Write-Host "Error generating VERSION.md: $_" -ForegroundColor Red
