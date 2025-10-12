@@ -17,7 +17,7 @@ from urllib.parse import urlparse
 import os
 import re
 from django.contrib import admin
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -35,66 +35,90 @@ else:
 from dotenv import load_dotenv
 load_dotenv(env_file)
 
-SITE_HEADER = os.getenv('SITE_HEADER', 'Badminton Court')
-SITE_TITLE = os.getenv('SITE_TITLE', 'Badminton Court Administration Portal')
-SITE_INDEX_TITLE = os.getenv('SITE_INDEX_TITLE', 'Welcome to Badminton Court Administration Portal')
+# Validate critical environment variables
+def get_required_env_var(var_name):
+    value = os.getenv(var_name)
+    if value is None:
+        raise ImproperlyConfigured(f"Required environment variable {var_name} is not set in {env_file}.")
+    return value
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
+# Critical settings
+SECRET_KEY = get_required_env_var('SECRET_KEY')
+REDIS_URL = get_required_env_var('REDIS_URL')
+SITE_HEADER = get_required_env_var('SITE_HEADER')
+SITE_TITLE = get_required_env_var('SITE_TITLE')
+SITE_INDEX_TITLE = get_required_env_var('SITE_INDEX_TITLE')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+# Application URL settings
+APP_PROTOCOL = get_required_env_var('APP_PROTOCOL')
+APP_DOMAIN = get_required_env_var('APP_DOMAIN')
+APP_PORT = get_required_env_var('APP_PORT')
+APP_BASE_URL = get_required_env_var('APP_BASE_URL')
+APP_FULL_URL = get_required_env_var('APP_FULL_URL')
 
-# Get the base components
-APP_PROTOCOL = os.getenv('APP_PROTOCOL', 'http')
-APP_DOMAIN = os.getenv('APP_DOMAIN', 'localhost')
-APP_PORT = os.getenv('APP_PORT', '8000')
+# Tunnel configuration
+TUNNEL_ENABLED = get_required_env_var('TUNNEL_ENABLED').lower() == 'true'
+TUNNEL_URL = os.getenv('TUNNEL_URL', '')  # Optional, set by tunnel.py
 
-# Build derived values
-APP_BASE_URL = f"{APP_PROTOCOL}://{APP_DOMAIN}"
-APP_FULL_URL = f"{APP_BASE_URL}:{APP_PORT}"
+# Debug environment variables
+print(f"TUNNEL_ENABLED: {TUNNEL_ENABLED}")
+print(f"TUNNEL_URL: {TUNNEL_URL}")
+print(f"APP_PROTOCOL: {APP_PROTOCOL}")
+print(f"APP_DOMAIN: {APP_DOMAIN}")
+print(f"APP_PORT: {APP_PORT}")
+print(f"APP_BASE_URL: {APP_BASE_URL}")
+print(f"APP_FULL_URL: {APP_FULL_URL}")
+print(f"REDIS_URL: {REDIS_URL}")
 
 # Hosts configuration
-# Base ALLOWED_HOSTS with valid default values
-allowed_hosts_str = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,web')
-ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
-
-# Add ngrok domain patterns as a fallback for free tier
+ALLOWED_HOSTS = [host.strip() for host in get_required_env_var('ALLOWED_HOSTS').split(',')]
+# Add ngrok domain patterns
 ngrok_domains = ['.ngrok-free.dev', '.ngrok-free.app', '.ngrok.io']
 for domain in ngrok_domains:
     if domain not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(domain)
 
 # CSRF Trusted Origins configuration
-# Base CSRF_TRUSTED_ORIGINS with default values
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-]
+CSRF_TRUSTED_ORIGINS = []
 
-# Tunnel configuration
-TUNNEL_ENABLED = os.environ.get('TUNNEL_ENABLED', 'false').lower() == 'true'
+# Add local development URLs if not tunneling
+if not TUNNEL_ENABLED:
+    CSRF_TRUSTED_ORIGINS.extend([
+        f"{APP_PROTOCOL}://{APP_DOMAIN}:{APP_PORT}",
+        f"{APP_PROTOCOL}://127.0.0.1:{APP_PORT}",
+    ])
 
-if TUNNEL_ENABLED:
-    tunnel_url = os.getenv('TUNNEL_URL')
-    if tunnel_url:
-        parsed = urlparse(tunnel_url)
-        tunnel_host = parsed.netloc
-        origin = f"{parsed.scheme}://{parsed.netloc}"
-        
-        # Add to ALLOWED_HOSTS if not already there
-        if tunnel_host and tunnel_host not in ALLOWED_HOSTS:
-            ALLOWED_HOSTS.append(tunnel_host)
-            print(f"Added {tunnel_host} to ALLOWED_HOSTS")
-        
-        # Add to CSRF_TRUSTED_ORIGINS if not already there
-        if origin not in CSRF_TRUSTED_ORIGINS:
-            CSRF_TRUSTED_ORIGINS.append(origin)
-            print(f"Added {origin} to CSRF_TRUSTED_ORIGINS")
+# Add tunnel URL if enabled
+if TUNNEL_ENABLED and TUNNEL_URL:
+    parsed = urlparse(TUNNEL_URL)
+    tunnel_host = parsed.netloc
+    origin = f"{parsed.scheme}://{parsed.netloc}"
+    if tunnel_host and tunnel_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(tunnel_host)
+        print(f"Added {tunnel_host} to ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
+        print(f"Added {origin} to CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
+elif TUNNEL_ENABLED:
+    # Fallback for ngrok free tier: add wildcard origins
+    for domain in ngrok_domains:
+        https_origin = f'https://*{domain}'
+        if https_origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(https_origin)
+            print(f"Added {https_origin} to CSRF_TRUSTED_ORIGINS (fallback)")
+
+# Ensure APP_FULL_URL is in CSRF_TRUSTED_ORIGINS
+if APP_FULL_URL not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(APP_FULL_URL)
+    print(f"Added {APP_FULL_URL} to CSRF_TRUSTED_ORIGINS")
+
+# To address potential CSRF cookie issues with wildcards in development
+DEBUG = get_required_env_var('DEBUG').lower() == 'true'
+if DEBUG:
+    CSRF_COOKIE_DOMAIN = None
 
 # Application definition
 INSTALLED_APPS = [
-    # Django core apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -102,9 +126,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
-    
-    # Third-party apps
-    'django_bootstrap5',  # Use the correct module name (with underscore)
+    'django_bootstrap5',
     'django_celery_beat',
     'allauth',
     'allauth.account',
@@ -112,8 +134,6 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.facebook',
     'allauth.socialaccount.providers.twitter',
-    
-    # Local apps
     'court_management',
 ]
 
@@ -125,7 +145,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',  
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'badminton_court.urls'
@@ -133,7 +153,7 @@ ROOT_URLCONF = 'badminton_court.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # Add global templates directory
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -141,7 +161,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'badminton_court.context_processors.app_settings', 
+                'badminton_court.context_processors.app_settings',
             ],
         },
     },
@@ -152,58 +172,51 @@ WSGI_APPLICATION = 'badminton_court.wsgi.application'
 # Database configuration
 def get_database_url():
     """
-    Returns the appropriate DATABASE_URL based on the environment
+    Returns the DATABASE_URL from the environment, with construction for PostgreSQL from components.
     """
-    # Check if we're running in Docker environment
-    is_docker = os.environ.get('ENVIRONMENT') == 'docker'
-    
-    # Check if we're running tests (Cypress or docker-compose test profile)
+    is_docker = ENVIRONMENT == 'docker'
     is_running_tests = (
-        os.environ.get('CYPRESS') == 'true' or 
+        os.environ.get('CYPRESS') == 'true' or
         (is_docker and os.environ.get('CYPRESS'))
     )
     
     if is_running_tests:
-        # For test environment, construct URL with db-test (Docker) or localhost (local)
-        db_host = 'db-test' if is_docker else 'localhost'
-        db_port = '5432' if not is_docker else '5432'
-        db_name = os.getenv('POSTGRES_DB', 'badminton_court_test')
-        db_user = os.getenv('POSTGRES_USER', 'dbuser')
-        db_password = os.getenv('POSTGRES_PASSWORD', 'dbpass')
+        # Use test database settings from .env file
+        db_name = get_required_env_var('POSTGRES_DB_TEST')
+        db_user = get_required_env_var('POSTGRES_USER')
+        db_password = get_required_env_var('POSTGRES_PASSWORD')
+        db_host = get_required_env_var('POSTGRES_HOST_TEST')
+        db_port = get_required_env_var('POSTGRES_PORT_TEST')
         return f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
     else:
-        # For development environment, use the standard DATABASE_URL or construct with db
-        database_url = os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3')
+        database_url = get_required_env_var('DATABASE_URL')
         if database_url.startswith('postgres'):
             return database_url
         elif database_url == 'sqlite:///db.sqlite3':
-            # Default PostgreSQL configuration for dev
-            db_name = os.getenv('POSTGRES_DB', 'badminton_court')
-            db_user = os.getenv('POSTGRES_USER', 'dbuser')
-            db_password = os.getenv('POSTGRES_PASSWORD', 'dbpass')
-            db_host = os.getenv('POSTGRES_HOST', 'localhost')
-            db_port = os.getenv('POSTGRES_PORT', '5432')
+            db_name = get_required_env_var('POSTGRES_DB')
+            db_user = get_required_env_var('POSTGRES_USER')
+            db_password = get_required_env_var('POSTGRES_PASSWORD')
+            db_host = get_required_env_var('POSTGRES_HOST')
+            db_port = get_required_env_var('POSTGRES_PORT')
             return f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
         else:
             return database_url
-        
+
 DATABASE_URL = get_database_url()
 
 if DATABASE_URL.startswith('postgres'):
-    # PostgreSQL configuration
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL)
     }
 else:
-    # SQLite configuration
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-    
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -226,7 +239,7 @@ AUTH_PASSWORD_VALIDATORS = [
     }
 ]
 
-# Custom password validators to match test expectations
+# Custom password validators
 class CustomPasswordValidator:
     def validate(self, password, user=None):
         if len(password) < 8:
@@ -256,7 +269,7 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
-# Media files (uploads)
+# Media files (Uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -269,13 +282,13 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-# Django Allauth Configuration - Updated to remove deprecation warnings
-ACCOUNT_LOGIN_METHODS = {'email'}  # Allow login with email only
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Required fields for signup
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # or 'optional' or 'none'
+# Django Allauth Configuration
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_USERNAME_BLACKLIST = ['admin', 'staff', 'root']
-LOGIN_REDIRECT_URL = '/'  # Redirect to dashboard after login
-LOGOUT_REDIRECT_URL = '/accounts/login/'  # Redirect to login after logout
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = True
 SOCIALACCOUNT_EMAIL_REQUIRED = True
@@ -284,19 +297,14 @@ SOCIALACCOUNT_STORE_TOKENS = False
 # Site Configuration
 SITE_ID = 1
 
-# Social Media Provider Configuration (single definition)
+# Social Media Provider Configuration
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
-        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
         'APP': {
-            'client_id': os.getenv('GOOGLE_CLIENT_ID', 'YOUR_GOOGLE_CLIENT_ID'),
-            'secret': os.getenv('GOOGLE_CLIENT_SECRET', 'YOUR_GOOGLE_CLIENT_SECRET'),
+            'client_id': get_required_env_var('GOOGLE_CLIENT_ID'),
+            'secret': get_required_env_var('GOOGLE_CLIENT_SECRET'),
             'key': ''
         }
     },
@@ -306,30 +314,21 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
         'INITIAL_PARAMS': {'cookie': True},
         'FIELDS': [
-            'id',
-            'email',
-            'name',
-            'first_name',
-            'last_name',
-            'verified',
-            'locale',
-            'timezone',
-            'link',
-            'gender',
-            'updated_time',
+            'id', 'email', 'name', 'first_name', 'last_name',
+            'verified', 'locale', 'timezone', 'link', 'gender', 'updated_time',
         ],
         'VERIFIED_EMAIL': False,
         'APP': {
-            'client_id': os.getenv('FACEBOOK_CLIENT_ID', 'YOUR_FACEBOOK_CLIENT_ID'),
-            'secret': os.getenv('FACEBOOK_CLIENT_SECRET', 'YOUR_FACEBOOK_APP_SECRET'),
+            'client_id': get_required_env_var('FACEBOOK_CLIENT_ID'),
+            'secret': get_required_env_var('FACEBOOK_CLIENT_SECRET'),
             'key': ''
         }
     },
     'twitter': {
         'SCOPE': ['tweet.read', 'users.read'],
         'APP': {
-            'client_id': os.getenv('TWITTER_CLIENT_ID', 'YOUR_TWITTER_API_KEY'),
-            'secret': os.getenv('TWITTER_CLIENT_SECRET', 'YOUR_TWITTER_API_SECRET'),
+            'client_id': get_required_env_var('TWITTER_CLIENT_ID'),
+            'secret': get_required_env_var('TWITTER_CLIENT_SECRET'),
             'key': ''
         }
     }
@@ -340,7 +339,7 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
-# If in production and DEBUG is False, add these security settings:
+# Production security settings
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -348,25 +347,23 @@ if not DEBUG:
 
 # Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('SMTP_HOST', 'localhost')  # Postal server
-EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))  # Postal SMTP port
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('SMTP_USER', 'postal')  # Or your SMTP username
-EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASS', 'postal')  # Or your SMTP password
-DEFAULT_FROM_EMAIL = os.getenv('SMTP_FROM_EMAIL', 'noreply@aeropace.com')
+EMAIL_HOST = get_required_env_var('SMTP_HOST')
+EMAIL_PORT = int(get_required_env_var('SMTP_PORT'))
+EMAIL_USE_TLS = get_required_env_var('EMAIL_USE_TLS').lower() == 'true'
+EMAIL_HOST_USER = get_required_env_var('SMTP_USER')
+EMAIL_HOST_PASSWORD = get_required_env_var('SMTP_PASS')
+DEFAULT_FROM_EMAIL = get_required_env_var('SMTP_FROM_EMAIL')
 
 # Admin user settings
-ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@aeropace.com')
-ADMIN_FIRST_NAME = os.getenv('ADMIN_FIRST_NAME', 'Admin')
-ADMIN_LAST_NAME = os.getenv('ADMIN_LAST_NAME', 'User')
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'Admin123!')
+ADMIN_EMAIL = get_required_env_var('ADMIN_EMAIL')
+ADMIN_FIRST_NAME = get_required_env_var('ADMIN_FIRST_NAME')
+ADMIN_LAST_NAME = get_required_env_var('ADMIN_LAST_NAME')
+ADMIN_PASSWORD = get_required_env_var('ADMIN_PASSWORD')
 
 # Support email
-SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', 'support@aeropace.com')
+SUPPORT_EMAIL = get_required_env_var('SUPPORT_EMAIL')
 
 # Celery Configuration
-REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['application/json']
@@ -404,12 +401,12 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'level': get_required_env_var('DJANGO_LOG_LEVEL'),
             'propagate': False,
         },
         'court_management': {
             'handlers': ['console', 'file'],
-            'level': 'INFO',
+            'level': get_required_env_var('DJANGO_LOG_LEVEL'),
             'propagate': False,
         },
     },
