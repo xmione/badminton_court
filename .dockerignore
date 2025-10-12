@@ -1,0 +1,23 @@
+# .dockerignore
+node_modules
+venv
+.git
+*.pyc
+__pycache__
+# Ignore test artifacts
+cypress/videos/
+cypress/screenshots/
+cypress/presentation-videos/
+backup/
+*.log
+ 
+# Ignore node_modules (shouldn't be in the build context anyway)
+node_modules/
+
+# Ignore other large files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.zip
+*.tar*
