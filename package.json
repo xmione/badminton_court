@@ -22,6 +22,8 @@
     "docker:build-nocache": "echo '🐳 Building all service images (no cache)...' && docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation build --progress=plain --no-cache",
     "docker:build-dev": "echo '🐳 Building dev service images...' && docker-compose --env-file .env.docker --profile dev build --progress=plain",
     "docker:build-dev-nocache": "echo '🐳 Building dev service images (no cache)...' && docker-compose --env-file .env.docker --profile dev build --progress=plain --no-cache",
+    "docker:build-postal": "echo '🐳 Building Postal service image...' && docker-compose --env-file .env.docker --profile test build postal --progress=plain",
+    "docker:build-postal-nocache": "echo '🐳 Building Postal service image (no cache)...' && docker-compose --env-file .env.docker --profile test build postal --progress=plain --no-cache",
     "docker:build-cypress": "echo '🐳 Building Cypress service image...' && docker-compose --env-file .env.docker --profile test build cypress --progress=plain",
     "docker:build-cypress-nocache": "echo '🐳 Building Cypress service image (no cache)...' && docker-compose --env-file .env.docker --profile test build cypress --progress=plain --no-cache",
     "docker:build-presentation": "echo '🐳 Building presentation service images...' && docker-compose --env-file .env.docker --profile presentation build --progress=plain",
