@@ -57,12 +57,10 @@ APP_BASE_URL = get_required_env_var('APP_BASE_URL')
 APP_FULL_URL = get_required_env_var('APP_FULL_URL')
 
 # Tunnel configuration
-TUNNEL_ENABLED = get_required_env_var('TUNNEL_ENABLED').lower() == 'true'
-TUNNEL_URL = os.getenv('TUNNEL_URL', '')  # Optional, set by tunnel.py
+TUNNEL_ENABLED = os.getenv('TUNNEL_ENABLED', 'false').lower() == 'true'
 
 # Debug environment variables
 print(f"TUNNEL_ENABLED: {TUNNEL_ENABLED}")
-print(f"TUNNEL_URL: {TUNNEL_URL}")
 print(f"APP_PROTOCOL: {APP_PROTOCOL}")
 print(f"APP_DOMAIN: {APP_DOMAIN}")
 print(f"APP_PORT: {APP_PORT}")
@@ -89,23 +87,33 @@ if not TUNNEL_ENABLED:
     ])
 
 # Add tunnel URL if enabled
-if TUNNEL_ENABLED and TUNNEL_URL:
-    parsed = urlparse(TUNNEL_URL)
-    tunnel_host = parsed.netloc
-    origin = f"{parsed.scheme}://{parsed.netloc}"
-    if tunnel_host and tunnel_host not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(tunnel_host)
-        print(f"Added {tunnel_host} to ALLOWED_HOSTS: {ALLOWED_HOSTS}")
-    if origin not in CSRF_TRUSTED_ORIGINS:
-        CSRF_TRUSTED_ORIGINS.append(origin)
-        print(f"Added {origin} to CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
-elif TUNNEL_ENABLED:
-    # Fallback for ngrok free tier: add wildcard origins
-    for domain in ngrok_domains:
-        https_origin = f'https://*{domain}'
-        if https_origin not in CSRF_TRUSTED_ORIGINS:
-            CSRF_TRUSTED_ORIGINS.append(https_origin)
-            print(f"Added {https_origin} to CSRF_TRUSTED_ORIGINS (fallback)")
+if TUNNEL_ENABLED:
+    tunnel_url = os.getenv('TUNNEL_URL', '')  # For local dev
+    if ENVIRONMENT == 'docker':
+        try:
+            with open('/app/shared/tunnel_url.txt', 'r') as f:
+                tunnel_url = f.read().strip()
+            print(f"✓ Read TUNNEL_URL from shared file: {tunnel_url}")
+        except FileNotFoundError:
+            print("⚠️ Tunnel URL file not found. The tunnel service may not be ready yet.")
+    
+    if tunnel_url:
+        parsed = urlparse(tunnel_url)
+        tunnel_host = parsed.netloc
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+        if tunnel_host and tunnel_host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(tunnel_host)
+            print(f"Added {tunnel_host} to ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
+            print(f"Added {origin} to CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
+    else:
+        # Fallback for ngrok free tier if no specific URL is found
+        for domain in ngrok_domains:
+            https_origin = f'https://*{domain}'
+            if https_origin not in CSRF_TRUSTED_ORIGINS:
+                CSRF_TRUSTED_ORIGINS.append(https_origin)
+                print(f"Added {https_origin} to CSRF_TRUSTED_ORIGINS (fallback)")
 
 # Ensure APP_FULL_URL is in CSRF_TRUSTED_ORIGINS
 if APP_FULL_URL not in CSRF_TRUSTED_ORIGINS:
@@ -350,9 +358,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = get_required_env_var('SMTP_HOST')
 EMAIL_PORT = int(get_required_env_var('SMTP_PORT'))
 EMAIL_USE_TLS = get_required_env_var('EMAIL_USE_TLS').lower() == 'true'
-EMAIL_HOST_USER = get_required_env_var('SMTP_USER')
-EMAIL_HOST_PASSWORD = get_required_env_var('SMTP_PASS')
-DEFAULT_FROM_EMAIL = get_required_env_var('SMTP_FROM_EMAIL')
+EMAIL_HOST_USER = get_required_env_var('ADMIN_EMAIL')
+EMAIL_HOST_PASSWORD = get_required_env_var('ADMIN_PASSWORD')
+DEFAULT_FROM_EMAIL = get_required_env_var('NOREPLY_EMAIL')
 
 # Admin user settings
 ADMIN_EMAIL = get_required_env_var('ADMIN_EMAIL')
@@ -362,6 +370,12 @@ ADMIN_PASSWORD = get_required_env_var('ADMIN_PASSWORD')
 
 # Support email
 SUPPORT_EMAIL = get_required_env_var('SUPPORT_EMAIL')
+
+# Test user settings for Cypress tests
+TEST_USER_EMAIL = get_required_env_var('TEST_USER_EMAIL')
+TEST_USER_PASSWORD = get_required_env_var('TEST_USER_PASSWORD')
+TEST_USER_FIRST_NAME = get_required_env_var('TEST_USER_FIRST_NAME')
+TEST_USER_LAST_NAME = get_required_env_var('TEST_USER_LAST_NAME')
 
 # Celery Configuration
 CELERY_BROKER_URL = REDIS_URL

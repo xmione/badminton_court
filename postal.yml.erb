@@ -63,14 +63,14 @@ smtp:
   # Outbound SMTP settings for sending application-level emails
   host: <%= ENV['SMTP_HOST'] %>
   port: <%= ENV['SMTP_PORT'] %>
-  username: <%= ENV['SMTP_USER'] %>
-  password: <%= ENV['SMTP_PASS'] %>
+  username: <%= ENV['ADMIN_EMAIL'] %> 
+  password: <%= ENV['ADMIN_PASSWORD'] %> 
   authentication_type: login
   enable_starttls: true
   enable_starttls_auto: true
   openssl_verify_mode: peer
   from_name: <%= ENV['SMTP_FROM_NAME'] %>
-  from_address: <%= ENV['SMTP_FROM_EMAIL'] %>
+  from_address: <%= ENV['NOREPLY_EMAIL'] %> 
 
 rails:
   environment: production

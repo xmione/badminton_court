@@ -10,6 +10,8 @@ volumes:
   postgres_test_data:
   postal_data:
   mariadb_data:
+  tunnel_info:
+  roundcube_data:
 
 networks:
   app-network:
@@ -71,7 +73,11 @@ services:
       context: .
       target: web
     command: python manage.py runserver 0.0.0.0:8000
-    volumes: *app-volumes
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/venv
+      - tunnel_info:/app/shared  
     ports:
       - "8000:8000"
     env_file:
@@ -185,8 +191,8 @@ services:
     - MSG_DB_NAME=${MSG_DB_NAME}
     - SMTP_HOST=${SMTP_HOST}
     - SMTP_PORT=${SMTP_PORT}
-    - SMTP_USER=${SMTP_USER}
-    - SMTP_PASS=${SMTP_PASS}
+    - SMTP_USER=${ADMIN_EMAIL}
+    - SMTP_PASS=${ADMIN_PASSWORD}
     - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
     - SMTP_FROM_NAME=${SMTP_FROM_NAME}
     - SMTP_CERT_PATH=${SMTP_CERT_PATH}
@@ -206,6 +212,31 @@ services:
     profiles:
       - dev
 
+  # Roundcube Webmail
+  roundcube:
+    container_name: roundcube
+    image: roundcube/roundcubemail:latest
+    ports:
+      - "8080:80"  # Using port 8080 since it's free
+    environment:
+      - ROUNDCUBEMAIL_DB_TYPE=sqlite
+      - ROUNDCUBEMAIL_DEFAULT_HOST=postal
+      - ROUNDCUBEMAIL_DEFAULT_PORT=143
+      - ROUNDCUBEMAIL_SMTP_SERVER=postal
+      - ROUNDCUBEMAIL_SMTP_PORT=587
+      - ROUNDCUBEMAIL_SMTP_USER=%u
+      - ROUNDCUBEMAIL_SMTP_PASS=%p
+      - ROUNDCUBEMAIL_SKIN=elastic
+      - ROUNDCUBEMAIL_PLUGINS=archive,zipdownload,markasjunk,newmail_notifier
+    volumes:
+      - roundcube_data:/var/www/html
+    networks:
+      - app-network
+    profiles:
+      - dev
+    depends_on:
+      - postal
+
   # Ngrok Tunnel Service (depends on dev web service)
   tunnel:
     container_name: ngrok_tunnel
@@ -213,9 +244,13 @@ services:
       context: .
       target: tunnel
     command: python tunnel.py
-    volumes: *app-volumes
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/venv
+      - tunnel_info:/app/shared  
     depends_on:
-      - web-dev  # Changed from web to web-dev
+      - web-dev   
     environment:
       - NGR_AUTHTOKEN=${NGR_AUTHTOKEN}
       - APP_PORT=${APP_PORT}

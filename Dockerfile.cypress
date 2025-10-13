@@ -1,36 +1,24 @@
 # Dockerfile.cypress
 FROM cypress/included:15.3.0
 
-# Install FFmpeg for video recording
-RUN apt-get update && apt-get install -y ffmpeg
+# Install dependencies and clean up in the same RUN layer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg xvfb && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install xvfb for virtual display (needed for headed mode)
-RUN apt-get update && apt-get install -y xvfb
-
-# Set working directory to /e2e (where Cypress expects to be)
 WORKDIR /e2e
-
-# Remove any existing cypress.json to avoid conflicts
 RUN rm -f cypress.json
 
-# Copy package.json and package-lock.json for dependencies
 COPY package*.json ./
+# Install and clean up npm cache in the same step
+RUN npm ci && npm cache clean --force
 
-# Install Node.js dependencies
-RUN npm ci
-
-# Copy Cypress configuration and tests to the correct location
 COPY cypress/ ./cypress/
 COPY cypress.config.js ./
 
-# Create a script to start virtual display and run commands
 RUN echo '#!/bin/bash\n\
 Xvfb :99 -screen 0 1920x1080x24 &\n\
 exec "$@"' > /start-xvfb.sh && \
 chmod +x /start-xvfb.sh
 
-# Set the entrypoint to start virtual display
 ENTRYPOINT ["/start-xvfb.sh"]
-
-# Default command
-# CMD ["cypress", "run", "--headless"]

@@ -8,7 +8,7 @@
     "dev:stop": "echo '🛑 Stopping local dev server development...' && cross-env ENVIRONMENT=development node scripts/stop-server.js",
     "dev:load-data": "echo '📊 Loading local dev data...' && cross-env ENVIRONMENT=development python manage.py load_test_data",
 
-    "dev:tunnel": "echo '🚀 Starting dev tunnel...' && cross-env ENVIRONMENT=development python tunnel.py",
+    "dev:tunnel": "echo '🚀 Starting dev tunnel...' && cross-env ENVIRONMENT=development TUNNEL_ENABLED=TRUE python tunnel.py",
     
     "dev:cypress-open": "echo '🔍 Opening Cypress in interactive mode...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress open",
     "dev:cypress-headed": "echo '🚀 Running Cypress tests (headed)...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress run --headed --browser chrome",

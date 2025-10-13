@@ -1,38 +1,25 @@
 # Dockerfile.presentation
 FROM cypress/included:12.17.4
 
-# Set the working directory
 WORKDIR /e2e
 
-# Copy package.json and package-lock.json
 COPY package*.json ./
-
-# Install Node.js dependencies
 RUN npm ci && npm cache clean --force
 
-# Copy the rest of the application
 COPY . .
 
-# --- NEW FIX ATTEMPT ---
-# Ensure apt-get update can run without GPG key issues for other packages.
-# First, remove any potentially problematic source files.
-# The `ls /etc/apt/sources.list.d/*google*` part is to dynamically find
-# any google-related source files and remove them.
-# The `|| true` makes sure the build doesn't fail if the files don't exist.
+# --- FIX IS HERE ---
+# Remove problematic repository sources before updating, then install xvfb
 RUN rm -f /etc/apt/sources.list.d/google-chrome.list \
            /etc/apt/sources.list.d/microsoft-edge-stable.list \
-           $(ls /etc/apt/sources.list.d/*google* 2>/dev/null) \
-           $(ls /etc/apt/sources.list.d/*microsoft* 2>/dev/null) || true && \
-    # Now, try to update and install xvfb.
-    apt-get update && apt-get install -y xvfb
+           /etc/apt/sources.list.d/microsoft-edge.list && \
+    apt-get update && \
+    apt-get install -y xvfb && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# --- END NEW FIX ATTEMPT ---
-
-# Create a script to start virtual display and run commands
 RUN echo '#!/bin/bash\n\
 Xvfb :99 -screen 0 1920x1080x24 &\n\
 exec "$@"' > /start-xvfb.sh && \
 chmod +x /start-xvfb.sh
 
-# Set the entrypoint to start virtual display
 ENTRYPOINT ["/start-xvfb.sh"]
