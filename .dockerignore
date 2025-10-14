@@ -62,3 +62,4 @@ badminton_court/*/__pycache__/
 badminton_court/*.pyc
 badminton_court/*/*.pyc
 # If you have a local media or staticfiles folder
+mailcow/
