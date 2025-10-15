@@ -146,15 +146,15 @@
         },
         {
             "appName": "OpenSSL",
-            "installCommand": "choco install openssl --version=3.5.1 -y",
+            "installCommand": "choco install openssl --version=3.6.0 -y",
             "checkCommand": "(choco list --exact openssl) -match \"openssl\"",
             "uninstallCommand": "choco uninstall openssl -y",
             "envPath": "C:\\Program Files\\OpenSSL-Win64\\bin",
-            "manualInstallUrl": "https://slproweb.com/download/Win64OpenSSL-3_5_1.exe",
-            "manualInstallPath": "C:\\Temp\\Win64OpenSSL-3_5_1.exe",
+            "manualInstallUrl": "https://slproweb.com/download/Win64OpenSSL-3_6_0.exe",
+            "manualInstallPath": "C:\\Temp\\Win64OpenSSL-3_6_0.exe",
             "isCoreTool": true,
             "maxRetries": 1,
-            "version": "3.5.1"
+            "version": "3.6.0"
         },
         {
             "appName": "Vercel CLI",
