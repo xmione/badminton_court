@@ -432,6 +432,185 @@ npm run docker:post-process-videos
 npm run docker:cypress-presentation-spec
 ```
 
+## Mailcow Email Server Setup
+
+Mailcow is a complete email server suite that provides SMTP, IMAP/POP3, and webmail capabilities. It allows you to manage email domains, create user accounts, and access emails through a Gmail-like interface.
+
+### Initial Setup
+
+#### 1. Install Mailcow
+```powershell
+# Clone Mailcow into your project
+git clone https://github.com/mailcow/mailcow-dockerized.git mailcow
+
+# Move Mailcow to your project directory
+Move-Item mailcow .\mailcow
+
+# Remove Git history to avoid conflicts
+Remove-Item -Recurse -Force .\mailcow\.git
+Remove-Item -Recurse -Force .\mailcow\.github
+```
+
+#### 2. Configure Mailcow
+```powershell
+# Navigate to Mailcow directory
+cd mailcow
+
+# Generate configuration
+bash generate_config.sh
+
+# Edit mailcow.conf
+# Set these values:
+MAILCOW_HOSTNAME=mail.aeropace.com
+DBROOT=P@ssw0rd123
+DBNAME=mailcow
+DBUSER=mailcow
+DBPASS=P@ssw0rd123
+HTTP_PORT=8080
+HTTPS_PORT=8443
+SKIP_LETS_ENCRYPT=y
+```
+
+#### 3. Start Mailcow
+```powershell
+cd mailcow
+docker-compose up -d
+```
+
+### Management Scripts
+
+#### Setup Mailcow
+```powershell
+# Creates SSL certificates, fixes Redis configuration, and starts Mailcow
+npm run mailcow:setup
+```
+
+#### Reset Mailcow
+```powershell
+# Stops containers and removes all data (WARNING: This deletes all email data)
+npm run mailcow:reset
+```
+
+#### Start Mailcow
+```powershell
+# Starts Mailcow services
+npm run mailcow:start
+```
+
+#### Stop Mailcow
+```powershell
+# Stops Mailcow services
+npm run mailcow:stop
+```
+
+#### View Mailcow Logs
+```powershell
+# Shows Mailcow service logs
+npm run mailcow:logs
+```
+
+### Access Mailcow
+
+- **Webmail (SOGo)**: http://localhost:8080/SOGo
+- **Admin Interface**: https://localhost:8443 (admin/moohoo)
+
+### Email Configuration
+
+#### Add Domain
+1. Go to https://localhost:8433
+2. Login with admin/moohoo
+3. Navigate to Configuration → Mail Setup
+4. Add your domain: aeropace.com
+
+#### Create Email Accounts
+1. Go to Configuration → Mailboxes
+2. Click "Add mailbox"
+3. Create email accounts (e.g., admin@aeropace.com)
+
+#### Configure Email Client
+- **IMAP Server**: localhost
+- **IMAP Port**: 143
+- **SMTP Server**: localhost
+- **SMTP Port**: 587
+- **Username**: Your full email address
+- **Password**: Your mailbox password
+
+### Integration with Your Application
+
+#### Django Settings
+Update your .env.docker file:
+```env
+# Email settings for Django
+EMAIL_HOST=mailcow_postfix
+EMAIL_PORT=587
+EMAIL_HOST_USER=%u
+EMAIL_HOST_PASS=%p
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=noreply@aeropace.com
+```
+
+#### Python IMAP Configuration
+```python
+# Example Python IMAP configuration
+import imaplib
+import email
+
+# Connect to Mailcow IMAP server
+imap = imaplib.IMAP4_SSL("localhost")
+imap.login("admin@aeropace.com", "your_password")
+
+# Select inbox
+imap.select("INBOX")
+
+# List emails
+status, messages = imap.search(None, "ALL")
+for msg_id in messages[0].split():
+    status, msg = imap.fetch(msg_id, "(RFC822)")
+    print(f"From: {email.utils.parseaddr(msg['From'])}")
+    print(f"Subject: {msg['Subject']}")
+```
+
+### Troubleshooting
+
+#### SSL Certificate Issues
+```powershell
+# Regenerate SSL certificates
+npm run mailcow:setup -Reset
+```
+
+#### Redis Connection Issues
+```powershell
+# Check Redis container logs
+docker logs redis
+
+# Restart Redis container
+docker restart redis
+```
+
+#### Container Won't Start
+```powershell
+# Check container logs
+docker-compose logs
+
+# Reset and restart
+npm run mailcow:reset
+npm run mailcow:start
+```
+
+#### Webmail Access Issues
+```powershell
+# Check nginx container logs
+docker logs nginx
+
+# Ensure ports are not blocked by firewall
+netstat -an | findstr ":8080"
+```
+```
+
+# Sol's Methodical Steps: Step 3
+
+I've only added the Mailcow documentation section without touching any of your existing content. This preserves all your existing documentation while adding the new Mailcow setup instructions.
+
 ## Docker Management
 
 ### Build all Docker images
