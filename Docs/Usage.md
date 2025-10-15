@@ -25,10 +25,10 @@ SECRET_KEY=[FILL UP]
 RAILS_SECRET_KEY=[FILL UP]
 
 # POSTGRES Database settings  
-DATABASE_URL=postgres://dbuser:[FILL UP]  @localhost:5432/badminton_court
-POSTGRES_PRISMA_URL=postgres://dbuser:[FILL UP]  @localhost:5432/badminton_court  
-POSTGRES_URL_NO_SSL=postgres://dbuser:[FILL UP]  @localhost:5432/badminton_court?sslmode=disable  
-POSTGRES_URL_NON_POOLING=postgres://dbuser:[FILL UP]  @localhost:5432/badminton_court?pool=false  
+DATABASE_URL=postgres://dbuser:[FILL UP] @localhost:5432/badminton_court
+POSTGRES_PRISMA_URL=postgres://dbuser:[FILL UP] @localhost:5432/badminton_court  
+POSTGRES_URL_NO_SSL=postgres://dbuser:[FILL UP] @localhost:5432/badminton_court?sslmode=disable  
+POSTGRES_URL_NON_POOLING=postgres://dbuser:[FILL UP] @localhost:5432/badminton_court?pool=false  
 POSTGRES_USER=dbuser  
 POSTGRES_HOST=localhost  
 POSTGRES_PASSWORD=[FILL UP]    
@@ -62,57 +62,49 @@ NGR_AUTHTOKEN=[FILL UP]
 # To edit your configuration file:
 # ngrok config edit
 
-# Postal SMTP settings (for Django to send emails)  
-SMTP_HOST=smtp.gmail.com  
-SMTP_PORT=587  
-SMTP_USER=paysol.postal@gmail.com  
-SMTP_PASS=[FILL UP]
-SMTP_FROM_NAME=Badminton Court Management  
-SMTP_FROM_EMAIL=paysol.postal@gmail.com  
-SMTP_CERT_PATH=/postal/config/tls/cert.pem  
-SMTP_KEY_PATH=/postal/config/tls/key.pem  
-SIGNING_KEY_PATH=/postal/config/postal/signing.key
-
-# Admin user settings for Postal
-ADMIN_EMAIL=admin@aeropace.com
-ADMIN_FIRST_NAME=Admin
-ADMIN_LAST_NAME=User
-ADMIN_PASSWORD=[FILL UP]
-
-SUPPORT_EMAIL=support@aeropace.com
-
 # MariaDB settings
 MYSQL_ROOT_PASSWORD=[FILL UP]  
-MYSQL_DATABASE=badminton_court
-MYSQL_USER=badminton_user
+MYSQL_DATABASE=mailcow
+MYSQL_USER=mailcow
 MYSQL_PASSWORD=[FILL UP]  
 
-# Postal DB settings  
-POSTAL_HOST=localhost  
-POSTAL_PORT=5000  
-POSTAL_USER=postal  
-POSTAL_DB_HOST=mariadb  
-POSTAL_DB_PORT=3306  
-POSTAL_DB_USER=badminton_user  
-POSTAL_DB_PASS=[FILL UP]    
-POSTAL_DB_NAME=badminton_court  
+# Mailcow settings
+MAILCOW_HOSTNAME=mail.aeropace.com
+DBROOT=P@ssw0rd123
+DBNAME=mailcow
+DBUSER=mailcow
+DBPASS=P@ssw0rd123
+HTTP_PORT=8080
+HTTPS_PORT=8443
+SKIP_LETS_ENCRYPT=y
+SKIP_CLAMD=y
 
-# Postal MSG_DB settings  
-MSG_DB_PASSWORD=[FILL UP]    
-MSG_DB_HOST=mariadb  
-MSG_DB_PORT=3306  
-MSG_DB_USER=badminton_user  
-MSG_DB_PASS=[FILL UP]    
-MSG_DB_NAME=badminton_court_msg_db  
+# IMAP configuration for receiving emails
+IMAP_HOST=mailcow_dovecot
+IMAP_PORT=993
+IMAP_USE_SSL=true
+
+# SMTP settings for sending emails
+SMTP_HOST=mailcow_postfix
+SMTP_PORT=587
+SMTP_FROM_NAME=Badminton Court Management
+DEFAULT_FROM_EMAIL=noreply@aeropace.com
+EMAIL_USE_TLS=true
+
+# Admin user settings
+ADMIN_EMAIL=admin@aeropace.com
+ADMIN_PASSWORD=Admin123!
+ADMIN_FIRST_NAME=Admin
+ADMIN_LAST_NAME=User
 
 # Social Media settings
 GOOGLE_CLIENT_ID=[FILL UP]
 GOOGLE_CLIENT_SECRET=[FILL UP]
-FACEBOOK_CLIENT_ID=your_facebook_client_id  
-FACEBOOK_CLIENT_SECRET=your_facebook_client_secret  
+FACEBOOK_CLIENT_ID=[FILL UP]
+FACEBOOK_CLIENT_SECRET=[FILL UP]
 TWITTER_CLIENT_ID=[FILL UP]
 TWITTER_CLIENT_SECRET=[FILL UP]
-PROFILE_EDIT_URL=http:/localhost:3000/profile-setup
+PROFILE_EDIT_URL=http://localhost:3000/profile-setup
 ```
 
 ### Create .env.docker file
@@ -125,7 +117,7 @@ ENVIRONMENT=docker
 
 # Application base URL
 APP_PROTOCOL=http
-APP_BASE_URL=localhost
+APP_BASE_URL=web
 APP_PORT=8000
 
 # Django SECRET_KEY (same as in .env.dev)
@@ -135,22 +127,22 @@ SECRET_KEY=[FILL UP]
 RAILS_SECRET_KEY=[FILL UP]  
 
 # POSTGRES Database settings  
-DATABASE_URL=postgres://dbuser:[FILL UP]  @db:5432/badminton_court
-POSTGRES_PRISMA_URL=postgres://dbuser:[FILL UP]  @db:5432/badminton_court  
-POSTGRES_URL_NO_SSL=postgres://dbuser:[FILL UP]  @db:5432/badminton_court?sslmode=disable  
-POSTGRES_URL_NON_POOLING=postgres://dbuser:[FILL UP]  @db:5432/badminton_court?pool=false  
+DATABASE_URL=postgres://dbuser:[FILL UP] @db:5432/badminton_court
+POSTGRES_PRISMA_URL=postgres://dbuser:[FILL UP] @db:5432/badminton_court  
+POSTGRES_URL_NO_SSL=postgres://dbuser:[FILL UP] @db:5432/badminton_court?sslmode=disable  
+POSTGRES_URL_NON_POOLING=postgres://dbuser:[FILL UP] @db:5432/badminton_court?pool=false  
 POSTGRES_USER=dbuser  
 POSTGRES_HOST=db 
 POSTGRES_PASSWORD=[FILL UP]    
 POSTGRES_DB=badminton_court  
 POSTGRES_PORT=5432
 
-REDIS_URL=redis://redis:6379/0   
+REDIS_URL=redis:6379/0   
 TUNNEL_SUBDOMAIN=aeropace-portal
 TUNNEL_ENABLED=true
-TUNNEL_URL=https://aeropace-portal.loca.lt # this will be replaced dynamically on runtime
+TUNNEL_URL=https://aeropace-portal.loca.lt # this will be updated dynamically by tunnel service
 ALLOWED_HOSTS=localhost,127.0.0.1,web
-CYPRESS_baseUrl=https://aeropace-portal.loca.lt # this will be replaced dynamically on runtime
+CYPRESS_baseUrl=https://aeropace-portal.loca.lt # this will be updated dynamically by tunnel service
 CYPRESS_INTERNAL_baseUrl=http://web:8000
 CYPRESS_headed=true
 
@@ -170,63 +162,52 @@ NGR_AUTHTOKEN=[FILL UP]
 
 # To edit your configuration file:
 # ngrok config edit
- 
-# MariaDB settings (for Postal)
-MYSQL_ROOT_PASSWORD=[FILL UP]  
-MYSQL_DATABASE=postal
-MYSQL_USER=postal
-MYSQL_PASSWORD=[FILL UP]  
 
-# Postal DB settings  
-POSTAL_HOST=localhost
-POSTAL_PORT=5000
-POSTAL_DB_HOST=mariadb
-POSTAL_DB_PORT=3306
-POSTAL_DB_USER=postal
-POSTAL_DB_PASS=[FILL UP]  
-POSTAL_DB_NAME=postal
+# MariaDB settings (for Mailcow)
+MYSQL_ROOT_PASSWORD=P@ssw0rd123
+MYSQL_DATABASE=mailcow
+MYSQL_USER=mailcow
+MYSQL_PASSWORD=P@ssw0rd123
 
-# Postal MSG_DB settings  
-MSG_DB_HOST=mariadb
-MSG_DB_PORT=3306
-MSG_DB_USER=postal
-MSG_DB_PASS=[FILL UP]  
-MSG_DB_NAME=postal
+# Mailcow settings
+MAILCOW_HOSTNAME=mail.aeropace.com
+DBROOT=P@ssw0rd123
+DBNAME=mailcow
+DBUSER=mailcow
+DBPASS=P@ssw0rd123
+HTTP_PORT=8080
+HTTPS_PORT=8443
+SKIP_LETS_ENCRYPT=y
+SKIP_CLAMD=y
 
-# Postal SMTP settings (for Postal itself to send emails)  
-SMTP_HOST=smtp.gmail.com  
-SMTP_PORT=587  
-SMTP_USER=paysol.postal@gmail.com  
-SMTP_PASS=[FILL UP]   
-SMTP_FROM_NAME=Badminton Court Management  
-SMTP_FROM_EMAIL=paysol.postal@gmail.com  
-SMTP_CERT_PATH=/postal/config/tls/cert.pem  
-SMTP_KEY_PATH=/postal/config/tls/key.pem  
-SIGNING_KEY_PATH=/postal/config/tls/signing.key  
+# IMAP configuration for receiving emails
+IMAP_HOST=mailcow_dovecot
+IMAP_PORT=993
+IMAP_USE_SSL=true
 
-# Admin user settings for Postal
+# SMTP settings for sending emails
+SMTP_HOST=mailcow_postfix
+SMTP_PORT=587
+SMTP_FROM_NAME=Badminton Court Management
+DEFAULT_FROM_EMAIL=noreply@aeropace.com
+EMAIL_USE_TLS=true
+
+# Admin user settings
 ADMIN_EMAIL=admin@aeropace.com
+ADMIN_PASSWORD=Admin123!
 ADMIN_FIRST_NAME=Admin
 ADMIN_LAST_NAME=User
-ADMIN_PASSWORD=[FILL UP]  
-
-SUPPORT_EMAIL=support@aeropace.com
 
 # Social Media settings
-GOOGLE_CLIENT_ID=[FILL UP]    
-GOOGLE_CLIENT_SECRET=[FILL UP]  
-FACEBOOK_CLIENT_ID=[FILL UP]  
-FACEBOOK_CLIENT_SECRET=[FILL UP]    
-TWITTER_CLIENT_ID=[FILL UP]  
-TWITTER_CLIENT_SECRET=[FILL UP]  
-PROFILE_EDIT_URL=http:/localhost:3000/profile-setup
+GOOGLE_CLIENT_ID=[FILL UP]
+GOOGLE_CLIENT_SECRET=[FILL UP]
+FACEBOOK_CLIENT_ID=[FILL UP]
+FACEBOOK_CLIENT_SECRET=[FILL UP]
+TWITTER_CLIENT_ID=[FILL UP]
+TWITTER_CLIENT_SECRET=[FILL UP]
+PROFILE_EDIT_URL=http://localhost:3000/profile-setup
 ```
 
-### Create .env.dev and .env.dev file automatically using a script
-#### You can create the env files automatically if you want using this command:
-```powershell
-  scripts/decryptenvfiles.ps1
-```
 ## Dependencies
 
 ### Python Dependencies
@@ -276,6 +257,16 @@ npm run dev:tunnel
 ```
 
 ## Docker Development Environment
+
+### Build all Docker images
+```powershell
+npm run docker:build
+```
+
+### Build all Docker images without cache
+```powershell
+npm run docker:build-nocache
+```
 
 ### Start development environment
 ```powershell
@@ -346,7 +337,206 @@ npm run docker:tunnel-stop
 npm run docker:tunnel-logs
 ```
 
-## Cypress Testing
+## Docker Mailcow Email Server
+
+Mailcow is a complete email server suite that provides SMTP, IMAP/POP3, and webmail capabilities. It allows you to manage email domains, create user accounts, and access emails through a Gmail-like interface.
+
+### Initial Setup
+
+#### 1. Build Mailcow Images
+```powershell
+npm run docker:build-mailcow
+```
+
+#### 2. Start Mailcow Services
+```powershell
+npm run docker:mailcow-start
+```
+
+#### 3. Access Mailcow
+- **Webmail (SOGo)**: http://localhost:8080/SOGo
+- **Admin Interface**: https://localhost:8443 (admin/moohoo)
+
+### Mailcow Management Scripts
+
+#### Setup Mailcow
+```powershell
+# Creates SSL certificates, fixes Redis configuration, and starts Mailcow
+npm run mailcow:setup
+```
+
+#### Reset Mailcow
+```powershell
+# Stops containers and removes all data (WARNING: This deletes all email data)
+npm run mailcow:reset
+```
+
+#### Start Mailcow
+```powershell
+# Starts Mailcow services
+npm run mailcow:start
+```
+
+#### Stop Mailcow
+```powershell
+# Stops Mailcow services
+npm run mailcow:stop
+```
+
+#### View Mailcow Logs
+```powershell
+# Shows Mailcow service logs
+npm run mailcow:logs
+```
+
+#### Rebuild Mailcow
+```powershell
+# Rebuilds Mailcow images
+npm run docker:build-mailcow-nocache
+```
+
+### Email Configuration
+
+#### Add Domain
+1. Go to https://localhost:8443
+2. Login with admin/moohoo
+3. Navigate to Configuration → Mail Setup
+4. Add your domain: aeropace.com
+
+#### Create Email Accounts
+1. Go to Configuration → Mailboxes
+2. Click "Add mailbox"
+3. Create email accounts (e.g., admin@aeropace.com)
+
+#### Configure Email Client
+- **IMAP Server**: mailcow_dovecot
+- **IMAP Port**: 993
+- **SMTP Server**: mailcow_postfix
+- **SMTP Port**: 587
+- **Username**: Your full email address
+- **Password**: Your mailbox password
+
+### Integration with Your Application
+
+#### Django Settings
+Update your .env.docker file (already configured above):
+```env
+# Email settings for Django
+EMAIL_HOST=mailcow_postfix
+EMAIL_PORT=587
+EMAIL_HOST_USER=%u
+EMAIL_HOST_PASS=%p
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=noreply@aeropace.com
+```
+
+## Docker Management
+
+### Build all Docker images
+```powershell
+npm run docker:build
+```
+
+### Build all Docker images without cache
+```powershell
+npm run docker:build-nocache
+```
+
+### Reset environment
+```powershell
+npm run docker:reset
+```
+
+### Reset environment (keeping images)
+```powershell
+npm run docker:reset-keep-images
+```
+
+### Stop all services and remove volumes
+```powershell
+npm run docker:down-volumes
+```
+
+### Clean up unused Docker resources
+```powershell
+npm run docker:prune
+```
+
+## Docker Image Backup and Restore
+
+### Backup all Docker images
+```powershell
+npm run docker:backup-images
+```
+This command creates a single tarball containing all Docker images and saves it to the `./backups` directory.
+
+### Restore all Docker images
+```powershell
+npm run docker:restore-images
+```
+This command restores all Docker images from the backup tarball.
+
+### Backup individual Docker images
+```powershell
+npm run docker:backup-individual
+```
+This command creates separate tarballs for each Docker image and saves them to the `./backups` directory.
+
+### Restore a specific Docker image
+```powershell
+npm run docker:restore-image <image-name>
+```
+Replace `<image-name>` with the name of the image you want to restore (e.g., `web`, `postal`, `celery`, etc.).
+
+### List available backups
+```powershell
+npm run docker:list-backups
+```
+This command lists all available image backups in the `./backups` directory.
+
+## Utility Commands
+
+### Show service status
+```powershell
+npm run status
+```
+
+### Show all logs
+```powershell
+npm run docker:logs
+```
+
+### Open shell in container
+```powershell
+npm run shell
+```
+
+### Access PostgreSQL
+```powershell
+npm run psql
+```
+
+### Print project folder structure
+```powershell
+npm run pfs
+```
+
+### Create SSL certificates
+```powershell
+npm run certs:create
+```
+
+### Encrypt environment files
+```powershell
+npm run encryptenvfiles
+```
+
+### Decrypt environment files
+```powershell
+npm run decryptenvfiles
+```
+
+## Docker Testing
 
 ### Local Cypress Testing
 
@@ -427,246 +617,31 @@ npm run docker:create-presentation
 npm run docker:post-process-videos
 ```
 
-#### Run Cypress tests for presentation spec in Docker
+#### Run Docker Cypress tests for presentation spec
 ```powershell
 npm run docker:cypress-presentation-spec
 ```
 
-## Mailcow Email Server Setup
-
-Mailcow is a complete email server suite that provides SMTP, IMAP/POP3, and webmail capabilities. It allows you to manage email domains, create user accounts, and access emails through a Gmail-like interface.
-
-### Initial Setup
-
-#### 1. Install Mailcow
+### Run connectivity tests (headless) in new container
 ```powershell
-# Clone Mailcow into your project
-git clone https://github.com/mailcow/mailcow-dockerized.git mailcow
-
-# Move Mailcow to your project directory
-Move-Item mailcow .\mailcow
-
-# Remove Git history to avoid conflicts
-Remove-Item -Recurse -Force .\mailcow\.git
-Remove-Item -Recurse -Force .\mailcow\.github
+npm run docker:cypress-run-connectivity
 ```
 
-#### 2. Configure Mailcow
+### Post-process videos in Docker
 ```powershell
-# Navigate to Mailcow directory
-cd mailcow
-
-# Generate configuration
-bash generate_config.sh
-
-# Edit mailcow.conf
-# Set these values:
-MAILCOW_HOSTNAME=mail.aeropace.com
-DBROOT=P@ssw0rd123
-DBNAME=mailcow
-DBUSER=mailcow
-DBPASS=P@ssw0rd123
-HTTP_PORT=8080
-HTTPS_PORT=8443
-SKIP_LETS_ENCRYPT=y
+npm run docker:post-process-videos
 ```
 
-#### 3. Start Mailcow
+## Docker Presentation
+
+### Create presentation videos
 ```powershell
-cd mailcow
-docker-compose up -d
+npm run docker:create-presentation
 ```
 
-### Management Scripts
-
-#### Setup Mailcow
+### Post-process existing videos
 ```powershell
-# Creates SSL certificates, fixes Redis configuration, and starts Mailcow
-npm run mailcow:setup
-```
-
-#### Reset Mailcow
-```powershell
-# Stops containers and removes all data (WARNING: This deletes all email data)
-npm run mailcow:reset
-```
-
-#### Start Mailcow
-```powershell
-# Starts Mailcow services
-npm run mailcow:start
-```
-
-#### Stop Mailcow
-```powershell
-# Stops Mailcow services
-npm run mailcow:stop
-```
-
-#### View Mailcow Logs
-```powershell
-# Shows Mailcow service logs
-npm run mailcow:logs
-```
-
-### Access Mailcow
-
-- **Webmail (SOGo)**: http://localhost:8080/SOGo
-- **Admin Interface**: https://localhost:8443 (admin/moohoo)
-
-### Email Configuration
-
-#### Add Domain
-1. Go to https://localhost:8433
-2. Login with admin/moohoo
-3. Navigate to Configuration → Mail Setup
-4. Add your domain: aeropace.com
-
-#### Create Email Accounts
-1. Go to Configuration → Mailboxes
-2. Click "Add mailbox"
-3. Create email accounts (e.g., admin@aeropace.com)
-
-#### Configure Email Client
-- **IMAP Server**: localhost
-- **IMAP Port**: 143
-- **SMTP Server**: localhost
-- **SMTP Port**: 587
-- **Username**: Your full email address
-- **Password**: Your mailbox password
-
-### Integration with Your Application
-
-#### Django Settings
-Update your .env.docker file:
-```env
-# Email settings for Django
-EMAIL_HOST=mailcow_postfix
-EMAIL_PORT=587
-EMAIL_HOST_USER=%u
-EMAIL_HOST_PASS=%p
-EMAIL_USE_TLS=True
-DEFAULT_FROM_EMAIL=noreply@aeropace.com
-```
-
-#### Python IMAP Configuration
-```python
-# Example Python IMAP configuration
-import imaplib
-import email
-
-# Connect to Mailcow IMAP server
-imap = imaplib.IMAP4_SSL("localhost")
-imap.login("admin@aeropace.com", "your_password")
-
-# Select inbox
-imap.select("INBOX")
-
-# List emails
-status, messages = imap.search(None, "ALL")
-for msg_id in messages[0].split():
-    status, msg = imap.fetch(msg_id, "(RFC822)")
-    print(f"From: {email.utils.parseaddr(msg['From'])}")
-    print(f"Subject: {msg['Subject']}")
-```
-
-### Troubleshooting
-
-#### SSL Certificate Issues
-```powershell
-# Regenerate SSL certificates
-npm run mailcow:setup -Reset
-```
-
-#### Redis Connection Issues
-```powershell
-# Check Redis container logs
-docker logs redis
-
-# Restart Redis container
-docker restart redis
-```
-
-#### Container Won't Start
-```powershell
-# Check container logs
-docker-compose logs
-
-# Reset and restart
-npm run mailcow:reset
-npm run mailcow:start
-```
-
-#### Webmail Access Issues
-```powershell
-# Check nginx container logs
-docker logs nginx
-
-# Ensure ports are not blocked by firewall
-netstat -an | findstr ":8080"
-```
-```
-
-# Sol's Methodical Steps: Step 3
-
-I've only added the Mailcow documentation section without touching any of your existing content. This preserves all your existing documentation while adding the new Mailcow setup instructions.
-
-## Docker Management
-
-### Build all Docker images
-```powershell
-npm run docker:build
-```
-
-### Build all Docker images without cache
-```powershell
-npm run docker:build-nocache
-```
-
-### Build specific profile images
-```powershell
-npm run docker:build-dev
-npm run docker:build-test
-npm run docker:build-tunnel
-npm run docker:build-presentation
-```
-
-### Rebuild all services
-```powershell
-npm run docker:rebuild
-```
-
-### Rebuild specific profile services
-```powershell
-npm run docker:rebuild-dev
-npm run docker:rebuild-test
-npm run docker:rebuild-tunnel
-npm run docker:rebuild-presentation
-```
-
-### Stop all services and remove volumes
-```powershell
-npm run docker:down-volumes
-```
-
-### Clean up unused Docker resources
-```powershell
-npm run docker:prune
-```
-
-### Reset environment
-```powershell
-npm run docker:reset
-```
-
-### Reset environment (keeping images)
-```powershell
-npm run docker:reset-keep-images
-```
-
-### Reset and restart all services
-```powershell
-npm run docker:reset-and-restart
+npm run docker:post-process-videos
 ```
 
 ## Docker Image Backup and Restore
@@ -675,19 +650,16 @@ npm run docker:reset-and-restart
 ```powershell
 npm run docker:backup-images
 ```
-This command creates a single tarball containing all Docker images and saves it to the `./backups` directory.
 
 ### Restore all Docker images
 ```powershell
 npm run docker:restore-images
 ```
-This command restores all Docker images from the backup tarball.
 
 ### Backup individual Docker images
 ```powershell
 npm run docker:backup-individual
 ```
-This command creates separate tarballs for each Docker image and saves them to the `./backups` directory.
 
 ### Restore a specific Docker image
 ```powershell
@@ -699,7 +671,6 @@ Replace `<image-name>` with the name of the image you want to restore (e.g., `we
 ```powershell
 npm run docker:list-backups
 ```
-This command lists all available image backups in the `./backups` directory.
 
 ## Utility Commands
 
@@ -743,17 +714,6 @@ npm run encryptenvfiles
 npm run decryptenvfiles
 ```
 
-## Application Access
-
-### Access the application
-- Local development: http://localhost:8000
-- Docker development: http://localhost:8000
-- Through tunnel: https://your-ngrok-subdomain.ngrok-free.dev (when tunnel is running)
-
-### Admin Login
-- Username: admin
-- Password: password
-
 ## CI/CD Integration
 
 ### GitHub Actions Example
@@ -792,7 +752,13 @@ jobs:
       with:
         name: cypress-videos
         path: cypress/videos/
-```
+        
+    - name: Upload presentation videos
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: cypress/presentation-videos
+        path: cypress/presentation-videos
 
 ## Troubleshooting
 
@@ -801,7 +767,7 @@ jobs:
 1. **Port already in use**
    ```powershell
    npm run docker:down-volumes
-   npm run dev
+   npm run docker:dev
    ```
 
 2. **Cypress tests failing**
@@ -849,4 +815,75 @@ jobs:
 - Check service status: `npm run status`
 - Reset environment: `npm run docker:reset`
 - Open shell in container: `npm run shell web`
+```
+
+## Docker Image Backup and Restore
+
+### Backup all Docker images
+```powershell
+npm run docker:backup-images
+```
+
+### Restore all Docker images
+```powershell
+npm run docker:restore-images
+```
+
+### Backup individual Docker images
+```powershell
+npm run docker:backup-individual
+```
+
+### Restore a specific Docker image
+```powershell
+npm run docker:restore-image <image-name>
+```
+Replace `<image-name>` with the name of the image you want to restore (e.g., `web`, `postal`, `celery`, etc.).
+
+### List available backups
+```powershell
+npm run docker:list-backups
+```
+
+### Display Docker resource usage
+```powershell
+npm run docker:display-resources
+```
+
+### Reset Docker environment
+```powershell
+npm run docker:reset
+```
+
+### Reset Docker environment (keeping images)
+```powershell
+npm run docker:reset-keep-images
+```
+
+### Stop all services and remove volumes
+```powershell
+npm run docker:down-volumes
+```
+
+### Clean up unused Docker resources
+```powershell
+npm run docker:prune
+```
+
+### Reset and restart all services
+```powershell
+npm run docker:reset-and-restart
+```
+
+### Reset and restart all services (keeping base images)
+```powershell
+npm run docker:reset-keep-images
+```
+
+### Display Docker resource usage
+```powershell
+npm run docker:display-resources
+```
+```
+
 ------------------------------------- NOTHING FOLLOWS ---------------------------------
