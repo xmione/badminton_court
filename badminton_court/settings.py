@@ -143,7 +143,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.facebook',
     'allauth.socialaccount.providers.twitter',
     'court_management',
-    'email_management',
+    'email_management',  # Add email management app
 ]
 
 # Debug toolbar (development only)
@@ -334,6 +334,129 @@ LOG_LEVEL = get_required_env_var('LOGGING_LEVEL', 'INFO')
 LOG_DIR = get_required_env_var('LOG_DIR', BASE_DIR / 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
 
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
+# Media files (Uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication Configuration
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# Django Allauth Configuration
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_USERNAME_BLACKLIST = ['admin', 'staff', 'root']
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = True
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_STORE_TOKENS = False
+
+# Site Configuration
+SITE_ID = 1
+
+# Social Media Provider Configuration
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+        'APP': {
+            'client_id': get_required_env_var('GOOGLE_CLIENT_ID'),
+            'secret': get_required_env_var('GOOGLE_CLIENT_SECRET'),
+            'key': ''
+        }
+    },
+    'facebook': {
+        'METHOD': 'oauth2',
+        'SCOPE': ['email', 'public_profile'],
+        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'INITIAL_PARAMS': {'cookie': True},
+        'FIELDS': [
+            'id', 'email', 'name', 'first_name', 'last_name',
+            'verified', 'locale', 'timezone', 'link', 'gender', 'updated_time',
+        ],
+        'VERIFIED_EMAIL': False,
+        'APP': {
+            'client_id': get_required_env_var('FACEBOOK_CLIENT_ID'),
+            'secret': get_required_env_var('FACEBOOK_CLIENT_SECRET'),
+            'key': ''
+        }
+    },
+    'twitter': {
+        'SCOPE': ['tweet.read', 'users.read'],
+        'APP': {
+            'client_id': get_required_env_var('TWITTER_CLIENT_ID'),
+            'secret': get_required_env_var('TWITTER_CLIENT_SECRET'),
+            'key': ''
+        }
+    }
+}
+
+# Security settings
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+# Production security settings
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+
+# Email configuration for Mailcow - now using environment variables
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = get_required_env_var('SMTP_HOST')  # Changed from hardcoded 'postfix-mailcow'
+EMAIL_PORT = int(get_required_env_var('SMTP_PORT'))  # Changed from hardcoded 587
+EMAIL_USE_TLS = get_required_env_var('EMAIL_USE_TLS').lower() == 'true'
+EMAIL_HOST_USER = get_required_env_var('ADMIN_EMAIL')
+EMAIL_HOST_PASSWORD = get_required_env_var('ADMIN_PASSWORD')
+DEFAULT_FROM_EMAIL = get_required_env_var('NOREPLY_EMAIL')
+
+# IMAP configuration for receiving emails - now using environment variables
+IMAP_HOST = get_required_env_var('IMAP_HOST')  # Changed from hardcoded 'dovecot-mailcow'
+IMAP_PORT = int(get_required_env_var('IMAP_PORT'))  # Changed from hardcoded 993
+IMAP_USE_SSL = get_required_env_var('IMAP_USE_SSL').lower() == 'true'  # Changed from hardcoded True
+IMAP_USER = get_required_env_var('ADMIN_EMAIL')
+IMAP_PASSWORD = get_required_env_var('ADMIN_PASSWORD')
+
+# Admin user settings
+ADMIN_EMAIL = get_required_env_var('ADMIN_EMAIL')
+ADMIN_FIRST_NAME = get_required_env_var('ADMIN_FIRST_NAME')
+ADMIN_LAST_NAME = get_required_env_var('ADMIN_LAST_NAME')
+ADMIN_PASSWORD = get_required_env_var('ADMIN_PASSWORD')
+
+# Support email
+SUPPORT_EMAIL = get_required_env_var('SUPPORT_EMAIL')
+
+# Test user settings for Cypress tests
+TEST_USER_EMAIL = get_required_env_var('TEST_USER_EMAIL')
+TEST_USER_PASSWORD = get_required_env_var('TEST_USER_PASSWORD')
+TEST_USER_FIRST_NAME = get_required_env_var('TEST_USER_FIRST_NAME')
+TEST_USER_LAST_NAME = get_required_env_var('TEST_USER_LAST_NAME')
+
+# Celery Configuration
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+# Logging configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -374,6 +497,11 @@ LOGGING = {
         'email_management': {
             'handlers': ['console', 'file'],
             'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'email_management': {
+            'handlers': ['console', 'file'],
+            'level': get_required_env_var('DJANGO_LOG_LEVEL'),
             'propagate': False,
         },
     },
