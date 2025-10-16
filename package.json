@@ -18,8 +18,8 @@
     "dev:post-process-videos": "echo '⚡ Running Post-Process Videos...' && cross-env ENVIRONMENT=development CYPRESS=false node scripts/post-process-videos.js",
     "dev:cypress-presentation-spec": "echo '⚡ Running Cypress tests for presentation spec (headed)...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress run --headed --browser chrome --config video=true --spec && npm run post-process-videos",
 
-    "docker:build": "echo '🐳 Building all service images...' && docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation build  --progress=plain",
-    "docker:build-nocache": "echo '🐳 Building all service images (no cache)...' && docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation build --progress=plain --no-cache",
+    "docker:build": "echo '🐳 Building all service images...' && docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation --progress plain build",
+    "docker:build-nocache": "echo '🐳 Building all service images (no cache)...' && docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation --progress plain build --no-cache",
     "docker:build-dev": "echo '🐳 Building dev service images...' && docker-compose --env-file .env.docker --profile dev build --progress=plain",
     "docker:build-dev-nocache": "echo '🐳 Building dev service images (no cache)...' && docker-compose --env-file .env.docker --profile dev build --progress=plain --no-cache",
     "docker:build-postal": "echo '🐳 Building Postal service image...' && docker-compose --env-file .env.docker --profile test build postal --progress=plain",
@@ -80,8 +80,26 @@
     "certs:create": "echo 'Creating openssl certificates for localhost...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\createcert.ps1\"",
     "encryptenvfiles": "echo 'Encrypting .env files...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\encryptenvfiles.ps1\"",
     "decryptenvfiles": "echo 'Decrypting .env files...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\decryptenvfiles.ps1\"",
-    "doc:create-version": "echo 'Creating VERSION.md file...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\Generate-VersionDocumentation.ps1\""
+    "doc:create-version": "echo 'Creating VERSION.md file...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\Generate-VersionDocumentation.ps1\"",
     
+    "mailcow:setup": "powershell -ExecutionPolicy Bypass -File scripts\\setup-mailcow.ps1",
+    "mailcow:reset": "powershell -ExecutionPolicy Bypass -File scripts\\reset-mailcow.ps1",
+    "mailcow:start": "cd mailcow && docker-compose up -d",
+    "mailcow:stop": "cd mailcow && docker-compose down",
+    "mailcow:logs": "cd mailcow && docker-compose logs -f",
+    "mailcow:status": "cd mailcow && docker-compose ps",
+    
+    "docker:menu": "powershell -ExecutionPolicy Bypass -File scripts\\docker-menu.ps1",
+    "docker:continue": "echo '🔄 Continuing from where it left off...' && docker-compose --env-file .env.docker --profile dev down && docker-compose --env-file .env.docker --profile dev up -d",
+    "setup:dev": "powershell -ExecutionPolicy Bypass -File scripts\\setup-dev.ps1",
+    "start:dev": "echo '🚀 Starting full development environment...' && npm run mailcow:start && sleep 30 && npm run docker:dev-detached",
+    "start:dev-detached": "echo '🚀 Starting full development environment (detached)...' && npm run mailcow:start && sleep 30 && npm run docker:dev-detached",
+    "stop:dev": "echo '🛑 Stopping full development environment...' && npm run docker:dev-stop && npm run mailcow:stop",
+    "restart:dev": "echo '🔄 Restarting full development environment...' && npm run stop:dev && sleep 10 && npm run start:dev-detached",
+    
+    "start:full": "echo '🚀 Starting complete environment...' && npm run mailcow:start && sleep 30 && npm run docker:dev-detached && npm run docker:tunnel-detached",
+    "stop:full": "echo '🛑 Stopping complete environment...' && npm run docker:tunnel-stop && npm run docker:dev-stop && npm run mailcow:stop",
+    "restart:full": "echo '🔄 Restarting complete environment...' && npm run stop:full && sleep 10 && npm run start:full"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

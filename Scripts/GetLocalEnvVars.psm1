@@ -25,17 +25,17 @@
 
 .EXAMPLE
     Loads environment variables from the .env.dev file into the current process and displays them.
-    Import-Module "Scripts\LoadLocalEnvVars.psm1"
+    Import-Module "Scripts\GetLocalEnvVars.psm1"
     GetLocalEnvVars -EnvFilePath ".env.dev" -Level "Process"
 
 .EXAMPLE
     Displays Process level environment variables.
-    Import-Module "Scripts\LoadLocalEnvVars.psm1"
+    Import-Module "Scripts\GetLocalEnvVars.psm1"
     GetLocalEnvVars -Level "Process" -DisplayOnly
 
 .EXAMPLE
     Loads environment variables into User level and restarts the computer.
-    Import-Module "Scripts\LoadLocalEnvVars.psm1"
+    Import-Module "Scripts\GetLocalEnvVars.psm1"
     GetLocalEnvVars -EnvFilePath ".env.dev" -Level "User"
 
 .NOTES

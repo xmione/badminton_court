@@ -1,0 +1,5 @@
+driver = mysql
+connect = host=mysql-mailcow dbname=mailcow user=mailcow password=P@ssw0rd123
+default_pass_scheme = BLF-CRYPT
+password_query = SELECT username AS user, password FROM mailbox WHERE username = "\"%u\"" AND active = "\"1\""
+user_query = SELECT CONCAT(SUBSTRING_INDEX(username, "\"@\"", 1), "\"@\"", SUBSTRING_INDEX(username, "\"@\"", -1)) AS email, CONCAT(SUBSTRING_INDEX(username, "\"@\"", 1), "\"@\"", SUBSTRING_INDEX(username, "\"@\"", -1)) AS user, 5000 AS uid, 5000 AS gid, "\"/var/vmail/%d/%n\"" AS home, "\"/var/vmail/%d/%n\"" AS mail FROM mailbox WHERE username = "\"%u\"" AND active = "\"1\""

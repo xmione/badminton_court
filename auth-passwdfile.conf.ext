@@ -1,0 +1,10 @@
+# auth-passwdfile.conf.ext
+passdb {
+  driver = passwd-file
+  args = scheme=SHA512-CRYPT username_format=%u /etc/dovecot/users
+}
+
+userdb {
+  driver = static
+  args = uid=vmail gid=vmail home=/var/mail/%n
+}

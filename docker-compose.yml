@@ -8,19 +8,23 @@ x-app-volumes: &app-volumes
 volumes:
   postgres_data:
   postgres_test_data:
-  postal_data:
-  mariadb_data:
+  maildata:
+  mailstate:
+  maillogs:
+  roundcube_data: 
   tunnel_info:
-  roundcube_data:
 
 networks:
   app-network:
     driver: bridge
+  # Remove external network declaration
+  # mailcow-network:
+  #   external: true
 
 services:
   # Development Database (only for dev profile)
-  db:
-    container_name: db
+  badminton_db:
+    container_name: badminton_db
     image: postgres:14
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -53,8 +57,8 @@ services:
       - test
   
   # Redis (shared by all profiles including tunnel)
-  redis:
-    container_name: redis
+  badminton_redis:
+    container_name: badminton_redis
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -71,6 +75,7 @@ services:
     container_name: web-dev
     build: 
       context: .
+      dockerfile: Dockerfile
       target: web
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
@@ -88,13 +93,14 @@ services:
       - dev
       - tunnel  
     depends_on:
-      - redis
+      - badminton_redis
       
   # Test Web Service (only for test profile)
   web-test:
     container_name: web-test
     build: 
       context: .
+      dockerfile: Dockerfile
       target: web
     command: python manage.py runserver 0.0.0.0:8000
     volumes: *app-volumes
@@ -109,18 +115,19 @@ services:
     profiles:
       - test
     depends_on:
-      - redis
+      - badminton_redis
   
   # Celery Worker (dev profile only)
   celery:
     container_name: celery
     build: 
       context: .
+      dockerfile: Dockerfile
       target: web
     command: celery -A badminton_court worker --loglevel=info
     volumes: *app-volumes
     depends_on:
-      - redis
+      - badminton_redis
     env_file:
       - .env.docker
     networks:
@@ -133,11 +140,12 @@ services:
     container_name: celery-beat
     build: 
       context: .
+      dockerfile: Dockerfile
       target: web
     command: celery -A badminton_court beat --loglevel=info
     volumes: *app-volumes
     depends_on:
-      - redis
+      - badminton_redis
     env_file:
       - .env.docker
     networks:
@@ -145,105 +153,14 @@ services:
     profiles:
       - dev
   
-  # MariaDB for Postal
-  mariadb:
-    container_name: mariadb
-    image: mariadb:10.5
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    volumes:
-      - mariadb_data:/var/lib/mysql
-      - ./init-mariadb.sql:/docker-entrypoint-initdb.d/init-mariadb.sql
-    networks:
-      - app-network
-    command: --default-authentication-plugin=mysql_native_password
-    profiles:
-      - dev
-  
-  # Postal SMTP Service
-  postal:
-    container_name: postal
-    build:
-      context: .
-      dockerfile: Dockerfile.postal
-    ports:
-      - "5000:5000"
-      - "465:465"    
-      - "25:25"
-      - "587:587"
-    environment:
-    - RAILS_ENV=production
-    - POSTAL_HOST=${POSTAL_HOST}
-    - POSTAL_PORT=${POSTAL_PORT}
-    - POSTAL_DB_HOST=${POSTAL_DB_HOST}
-    - POSTAL_DB_PORT=${POSTAL_DB_PORT}
-    - POSTAL_DB_USER=${POSTAL_DB_USER}
-    - POSTAL_DB_PASS=${POSTAL_DB_PASS}
-    - POSTAL_DB_NAME=${POSTAL_DB_NAME}
-    - MSG_DB_HOST=${MSG_DB_HOST}
-    - MSG_DB_PORT=${MSG_DB_PORT}
-    - MSG_DB_USER=${MSG_DB_USER}
-    - MSG_DB_PASS=${MSG_DB_PASS}
-    - MSG_DB_NAME=${MSG_DB_NAME}
-    - SMTP_HOST=${SMTP_HOST}
-    - SMTP_PORT=${SMTP_PORT}
-    - SMTP_USER=${ADMIN_EMAIL}
-    - SMTP_PASS=${ADMIN_PASSWORD}
-    - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
-    - SMTP_FROM_NAME=${SMTP_FROM_NAME}
-    - SMTP_CERT_PATH=${SMTP_CERT_PATH}
-    - SMTP_KEY_PATH=${SMTP_KEY_PATH}
-    - SIGNING_KEY_PATH=${SIGNING_KEY_PATH}
-    - RAILS_SECRET_KEY=${RAILS_SECRET_KEY}
-    - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - mariadb
-      - redis
-    volumes:
-      - postal_data:/postal/data
-      - ./config/postal.yml:/opt/postal/config/postal.yml
-      - ./certs:/postal/config/tls 
-    networks:
-      - app-network
-    profiles:
-      - dev
-
-  # Roundcube Webmail
-  roundcube:
-    container_name: roundcube
-    image: roundcube/roundcubemail:latest
-    ports:
-      - "8080:80"  # Using port 8080 since it's free
-    environment:
-      - ROUNDCUBEMAIL_DB_TYPE=sqlite
-      - ROUNDCUBEMAIL_DEFAULT_HOST=postal
-      - ROUNDCUBEMAIL_DEFAULT_PORT=143
-      - ROUNDCUBEMAIL_SMTP_SERVER=postal
-      - ROUNDCUBEMAIL_SMTP_PORT=587
-      - ROUNDCUBEMAIL_SMTP_USER=%u
-      - ROUNDCUBEMAIL_SMTP_PASS=%p
-      - ROUNDCUBEMAIL_SKIN=elastic
-      - ROUNDCUBEMAIL_PLUGINS=archive,zipdownload,markasjunk,newmail_notifier
-    volumes:
-      - roundcube_data:/var/www/html
-    networks:
-      - app-network
-    profiles:
-      - dev
-    depends_on:
-      - postal
-
-  # Ngrok Tunnel Service (depends on dev web service)
-  tunnel:
-    container_name: ngrok_tunnel
+  # Ngrok Tunnel Service for web-dev
+  tunnel-dev:
+    container_name: ngrok_tunnel_dev
     build: 
       context: .
+      dockerfile: Dockerfile
       target: tunnel
-    command: python tunnel.py
+    command: python tunnel.py --service web-dev --port 8000
     volumes:
       - .:/app
       - /app/node_modules
@@ -253,7 +170,34 @@ services:
       - web-dev   
     environment:
       - NGR_AUTHTOKEN=${NGR_AUTHTOKEN}
-      - APP_PORT=${APP_PORT}
+      - APP_PORT=8000
+      - SERVICE_NAME=web-dev
+    env_file:
+      - .env.docker
+    networks:
+      - app-network
+    profiles:
+      - tunnel
+
+  # Ngrok Tunnel Service for web-test
+  tunnel-test:
+    container_name: ngrok_tunnel_test
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      target: tunnel
+    command: python tunnel.py --service web-test --port 8001
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/venv
+      - tunnel_info:/app/shared  
+    depends_on:
+      - web-test   
+    environment:
+      - NGR_AUTHTOKEN=${NGR_AUTHTOKEN}
+      - APP_PORT=8001
+      - SERVICE_NAME=web-test
     env_file:
       - .env.docker
     networks:
@@ -275,12 +219,12 @@ services:
       - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
       - ./scripts:/e2e/scripts
     environment:
-      - CYPRESS_baseUrl=http://web-test:8000  # Updated to use web-test
+      - CYPRESS_baseUrl=http://web-test:8000
       - CYPRESS_headed=${CYPRESS_headed}
     env_file:
       - .env.docker
     depends_on:
-      - web-test  # Changed from web to web-test
+      - web-test
     profiles:
       - test
     networks:
@@ -291,13 +235,14 @@ services:
     container_name: test-setup
     build: 
       context: .
+      dockerfile: Dockerfile
       target: web
     command: python manage.py load_test_data
     volumes: *app-volumes
     depends_on:
       - db-test
-      - redis
-      - web-test  # Changed from web to web-test
+      - badminton_redis
+      - web-test
     environment:
       - DEBUG=${DEBUG}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-test:5432/${POSTGRES_DB}
@@ -328,7 +273,7 @@ services:
     env_file:
       - .env.docker
     depends_on:
-      - web-dev  # Default to dev web service
+      - web-dev
     profiles:
       - presentation
     networks:

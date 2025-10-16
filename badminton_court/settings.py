@@ -143,6 +143,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.facebook',
     'allauth.socialaccount.providers.twitter',
     'court_management',
+    'email_management',  # Add email management app
 ]
 
 MIDDLEWARE = [
@@ -353,14 +354,21 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = True
 
-# Email configuration
+# Email configuration for Mailcow - now using environment variables
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = get_required_env_var('SMTP_HOST')
-EMAIL_PORT = int(get_required_env_var('SMTP_PORT'))
+EMAIL_HOST = get_required_env_var('SMTP_HOST')  # Changed from hardcoded 'postfix-mailcow'
+EMAIL_PORT = int(get_required_env_var('SMTP_PORT'))  # Changed from hardcoded 587
 EMAIL_USE_TLS = get_required_env_var('EMAIL_USE_TLS').lower() == 'true'
 EMAIL_HOST_USER = get_required_env_var('ADMIN_EMAIL')
 EMAIL_HOST_PASSWORD = get_required_env_var('ADMIN_PASSWORD')
 DEFAULT_FROM_EMAIL = get_required_env_var('NOREPLY_EMAIL')
+
+# IMAP configuration for receiving emails - now using environment variables
+IMAP_HOST = get_required_env_var('IMAP_HOST')  # Changed from hardcoded 'dovecot-mailcow'
+IMAP_PORT = int(get_required_env_var('IMAP_PORT'))  # Changed from hardcoded 993
+IMAP_USE_SSL = get_required_env_var('IMAP_USE_SSL').lower() == 'true'  # Changed from hardcoded True
+IMAP_USER = get_required_env_var('ADMIN_EMAIL')
+IMAP_PASSWORD = get_required_env_var('ADMIN_PASSWORD')
 
 # Admin user settings
 ADMIN_EMAIL = get_required_env_var('ADMIN_EMAIL')
@@ -419,6 +427,11 @@ LOGGING = {
             'propagate': False,
         },
         'court_management': {
+            'handlers': ['console', 'file'],
+            'level': get_required_env_var('DJANGO_LOG_LEVEL'),
+            'propagate': False,
+        },
+        'email_management': {
             'handlers': ['console', 'file'],
             'level': get_required_env_var('DJANGO_LOG_LEVEL'),
             'propagate': False,

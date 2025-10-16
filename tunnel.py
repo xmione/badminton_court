@@ -2,18 +2,18 @@
 
 import os
 import sys
-import time  # Re-import time for the delay
+import time
+import argparse
 import subprocess
 from pyngrok import ngrok, exception
 from dotenv import load_dotenv
 
-def start_tunnel():
+def start_tunnel(service_name, app_port):
     # Load environment variables from .env.dev for local development
     dotenv_path = os.path.join(os.path.dirname(__file__), '.env.dev')
     load_dotenv(dotenv_path=dotenv_path)
 
     # Get configuration from environment variables
-    app_port = os.getenv("APP_PORT", "8000")
     ngrok_auth_token = os.getenv("NGR_AUTHTOKEN")
     
     if not ngrok_auth_token:
@@ -28,7 +28,7 @@ def start_tunnel():
     time.sleep(3)  # Wait for 3 seconds to ensure the endpoint is fully released
     print("✓ Ready to start a new tunnel.")
 
-    print("Starting ngrok tunnel...")
+    print(f"Starting ngrok tunnel for {service_name} on port {app_port}...")
     try:
         if ngrok_auth_token:
             ngrok.set_auth_token(ngrok_auth_token)
@@ -42,26 +42,24 @@ def start_tunnel():
         os.environ['TUNNEL_URL'] = public_url
         os.environ['CYPRESS_baseUrl'] = public_url
         
+        # Save tunnel info to shared volume for other containers to use
+        tunnel_info_path = os.getenv('TUNNEL_INFO_PATH', '/app/shared/tunnel_info.txt')
+        with open(tunnel_info_path, 'w') as f:
+            f.write(f"{public_url}\n")
+        
         print(f"\n✓ Tunnel is running. Press Ctrl+C to stop.")
         print(f"Set TUNNEL_URL environment variable to: {public_url}")
         print(f"Set CYPRESS_baseUrl environment variable to: {public_url}")
 
-        # Start the Django development server as a subprocess
-        print("\n🚀 Starting Django development server...")
-        django_command = [sys.executable, "manage.py", "runserver", "0.0.0.0:8000"]
-        
-        # Use the current environment, which now includes TUNNEL_URL
-        process = subprocess.Popen(django_command, env=os.environ.copy())
-        
-        # Wait for the user to stop the process
+        # Keep the tunnel alive
         try:
-            process.wait()
+            while True:
+                time.sleep(1)
         except KeyboardInterrupt:
-            print("\n\n🛑 Stopping tunnel and server...")
-            process.terminate()
+            print("\n\n🛑 Stopping tunnel...")
             ngrok.disconnect(public_url)
             ngrok.kill() # Clean up on exit as well
-            print("✓ Server and tunnel stopped.")
+            print("✓ Tunnel stopped.")
             sys.exit(0)
 
     except exception.PyngrokNgrokError as e:
@@ -69,4 +67,14 @@ def start_tunnel():
         sys.exit(1)
 
 if __name__ == "__main__":
-    start_tunnel()
+    parser = argparse.ArgumentParser(description='Start ngrok tunnel for a specific service')
+    parser.add_argument('--service', type=str, help='Service name to tunnel (web-dev or web-test)')
+    parser.add_argument('--port', type=int, help='Port to tunnel')
+    
+    args = parser.parse_args()
+    
+    if not args.service or not args.port:
+        print("Error: Both --service and --port must be specified")
+        sys.exit(1)
+    
+    start_tunnel(args.service, args.port)

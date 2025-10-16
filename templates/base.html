@@ -5,66 +5,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Badminton Court Management{% endblock %}</title>
+    <title>{% block title %}{{ SITE_HEADER|default:"Badminton Court Management" }}{% endblock %}</title>
     {% bootstrap_css %}
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .nav-link i {
+            margin-right: 5px;
+        }
+        .footer {
+            margin-top: auto;
+        }
+        .badge {
+            margin-left: 5px;
+        }
+    </style>
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'index' %}">Badminton Court Management</a>
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="bi bi-trophy"></i> {{ SITE_HEADER|default:"Badminton Court Management" }}
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'index' %}">Dashboard</a>
+                        <a class="nav-link" href="{% url 'home' %}">
+                            <i class="bi bi-house"></i> Dashboard
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'booking-list' %}">Bookings</a>
+                        <a class="nav-link" href="{% url 'booking-list' %}">
+                            <i class="bi bi-calendar-check"></i> Bookings
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'customer-list' %}">Customers</a>
+                        <a class="nav-link" href="{% url 'customer-list' %}">
+                            <i class="bi bi-people"></i> Customers
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'court-list' %}">Courts</a>
+                        <a class="nav-link" href="{% url 'court-list' %}">
+                            <i class="bi bi-grid-3x3"></i> Courts
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'employee-list' %}">Employees</a>
+                        <a class="nav-link" href="{% url 'employee-list' %}">
+                            <i class="bi bi-person-badge"></i> Employees
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'sales-report' %}">Reports</a>
+                        <a class="nav-link" href="{% url 'sales-report' %}">
+                            <i class="bi bi-graph-up"></i> Reports
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="emailDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-envelope"></i> Email
+                            <span class="badge bg-primary">New</span>
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="emailDropdown">
+                            <li><a class="dropdown-item" href="{% url 'inbox' %}">
+                                <i class="bi bi-inbox"></i> Inbox
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'compose_email' %}">
+                                <i class="bi bi-pencil-square"></i> Compose
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'organization_list' %}">
+                                <i class="bi bi-building"></i> Organizations
+                            </a></li>
+                        </ul>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                {{ user.get_full_name|default:user.username }}
+                                <i class="bi bi-person-circle"></i> {{ user.get_full_name|default:user.username }}
                             </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
-                                <li><a class="dropdown-item" href="{% url 'account_change_password' %}">Change Password</a></li>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'profile' %}">
+                                    <i class="bi bi-person"></i> Profile
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'account_change_password' %}">
+                                    <i class="bi bi-key"></i> Change Password
+                                </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'account_logout' %}">Logout</a></li>
+                                <li><a class="dropdown-item" href="{% url 'account_logout' %}">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </a></li>
                             </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'account_login' %}">Login</a>
+                            <a class="nav-link" href="{% url 'account_login' %}">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'signup' %}">Sign Up</a></li>
+                            <a class="nav-link" href="{% url 'account_signup' %}">
+                                <i class="bi bi-person-plus"></i> Sign Up
+                            </a></li>
                     {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
+    <main class="container mt-4 flex-grow-1">
         {% if messages %}
             {% for message in messages %}
                 <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    <i class="bi bi-{% if message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -72,11 +131,22 @@
         {% endif %}
 
         {% block content %}{% endblock %}
-    </div>
+    </main>
 
-    <footer class="bg-dark text-white mt-5 py-3">
+    <footer class="bg-dark text-white mt-5 py-3 footer">
         <div class="container">
-            <p class="text-center mb-0">Badminton Court Management System &copy; {% now "Y" %}</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">
+                        <i class="bi bi-trophy"></i> {{ SITE_HEADER|default:"Badminton Court Management System" }} &copy; {% now "Y" %}
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">
+                        <i class="bi bi-envelope"></i> Contact: {{ SUPPORT_EMAIL|default:"support@example.com" }}
+                    </p>
+                </div>
+            </div>
         </div>
     </footer>
 
