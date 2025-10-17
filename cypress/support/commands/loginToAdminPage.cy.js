@@ -10,7 +10,7 @@ export const loginToAdminPage = () => {
         // or create a separate command for invalid login.
         // For now, let's assume this command is for *successful* login flow.
         cy.url().should('include', '/admin/');
-        cy.contains('Site administration').should('be.visible');
+        cy.contains('Aeropace Badminton Court').should('be.visible');
         cy.contains('Welcome, admin').should('be.visible');
         cy.showWaitMessage('Admins with valid credentials can view and manage the site...', 10000);
         

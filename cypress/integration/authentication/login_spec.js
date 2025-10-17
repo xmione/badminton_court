@@ -6,7 +6,7 @@ describe('Authentication', () => {
     cy.get('input[type="submit"]').click()
     
     cy.url().should('include', '/admin/')
-    cy.contains('Site administration').should('be.visible')
+    cy.contains('Aeropace Badminton Court').should('be.visible')
   })
   
   it('should show error with invalid credentials', () => {
