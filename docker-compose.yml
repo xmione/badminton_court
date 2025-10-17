@@ -8,8 +8,9 @@ x-app-volumes: &app-volumes
 volumes:
   postgres_data:
   postgres_test_data:
-  postal_data:
+  # postal_data: # This is no longer needed with poste.io
   mariadb_data:
+  poste_data: # New volume for the simple mail server
 
 networks:
   app-network:
@@ -139,72 +140,99 @@ services:
     profiles:
       - dev
   
-  # MariaDB for Postal
-  mariadb:
-    container_name: mariadb
-    image: mariadb:10.5
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    volumes:
-      - mariadb_data:/var/lib/mysql
-      - ./init-mariadb.sql:/docker-entrypoint-initdb.d/init-mariadb.sql
-    networks:
-      - app-network
-    command: --default-authentication-plugin=mysql_native_password
-    profiles:
-      - dev
-  
-  # Postal SMTP Service
-  postal:
-    container_name: postal
-    build:
-      context: .
-      dockerfile: Dockerfile.postal
+  # --- START: NEW SIMPLE MAIL SERVER ---
+  # This replaces the complex Postal/MariaDB setup
+  mail-test:
+    container_name: mail-test
+    image: analogic/poste.io
+    restart: unless-stopped
     ports:
-      - "5000:5000"
-      - "465:465"    
-      - "25:25"
-      - "587:587"
+      - "8080:80" # Web UI
+      # The following mail ports are now free since Postal is commented out
+      - "25:25"   # SMTP
+      - "587:587"  # Submission
+      - "465:465"  # SMTPS
     environment:
-    - RAILS_ENV=production
-    - POSTAL_HOST=${POSTAL_HOST}
-    - POSTAL_PORT=${POSTAL_PORT}
-    - POSTAL_DB_HOST=${POSTAL_DB_HOST}
-    - POSTAL_DB_PORT=${POSTAL_DB_PORT}
-    - POSTAL_DB_USER=${POSTAL_DB_USER}
-    - POSTAL_DB_PASS=${POSTAL_DB_PASS}
-    - POSTAL_DB_NAME=${POSTAL_DB_NAME}
-    - MSG_DB_HOST=${MSG_DB_HOST}
-    - MSG_DB_PORT=${MSG_DB_PORT}
-    - MSG_DB_USER=${MSG_DB_USER}
-    - MSG_DB_PASS=${MSG_DB_PASS}
-    - MSG_DB_NAME=${MSG_DB_NAME}
-    - SMTP_HOST=${SMTP_HOST}
-    - SMTP_PORT=${SMTP_PORT}
-    - SMTP_USER=${SMTP_USER}
-    - SMTP_PASS=${SMTP_PASS}
-    - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
-    - SMTP_FROM_NAME=${SMTP_FROM_NAME}
-    - SMTP_CERT_PATH=${SMTP_CERT_PATH}
-    - SMTP_KEY_PATH=${SMTP_KEY_PATH}
-    - SIGNING_KEY_PATH=${SIGNING_KEY_PATH}
-    - RAILS_SECRET_KEY=${RAILS_SECRET_KEY}
-    - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      - mariadb
-      - redis
+      - HTTPS=OFF # Disables SSL for simple local testing
     volumes:
-      - postal_data:/postal/data
-      - ./config/postal.yml:/opt/postal/config/postal.yml
-      - ./certs:/postal/config/tls 
+      - poste_data:/data # Persist mail data
     networks:
       - app-network
     profiles:
       - dev
+      - test
+  # --- END: NEW SIMPLE MAIL SERVER ---
+
+
+  # --- START: OLD COMPLEX MAIL SETUP (COMMENTED OUT) ---
+  # MariaDB for Postal
+  # mariadb:
+  #   container_name: mariadb
+  #   image: mariadb:10.5
+  #   restart: always
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+  #     MYSQL_DATABASE: ${MYSQL_DATABASE}
+  #     MYSQL_USER: ${MYSQL_USER}
+  #     MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+  #   volumes:
+  #     - mariadb_data:/var/lib/mysql
+  #     - ./init-mariadb.sql:/docker-entrypoint-initdb.d/init-mariadb.sql
+  #   networks:
+  #     - app-network
+  #   command: --default-authentication-plugin=mysql_native_password
+  #   profiles:
+  #     - dev
+  
+  # # Postal SMTP Service
+  # postal:
+  #   container_name: postal
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.postal
+  #   ports:
+  #     - "5000:5000"
+  #     - "465:465"    
+  #     - "25:25"
+  #     - "587:587"
+  #   environment:
+  #   - RAILS_ENV=production
+  #   - POSTAL_HOST=${POSTAL_HOST}
+  #   - POSTAL_PORT=${POSTAL_PORT}
+  #   - POSTAL_DB_HOST=${POSTAL_DB_HOST}
+  #   - POSTAL_DB_PORT=${POSTAL_DB_PORT}
+  #   - POSTAL_DB_USER=${POSTAL_DB_USER}
+  #   - POSTAL_DB_PASS=${POSTAL_DB_PASS}
+  #   - POSTAL_DB_NAME=${POSTAL_DB_NAME}
+  #   - MSG_DB_HOST=${MSG_DB_HOST}
+  #   - MSG_DB_PORT=${MSG_DB_PORT}
+  #   - MSG_DB_USER=${MSG_DB_USER}
+  #   - MSG_DB_PASS=${MSG_DB_PASS}
+  #   - MSG_DB_NAME=${MSG_DB_NAME}
+  #   - SMTP_HOST=${SMTP_HOST}
+  #   - SMTP_PORT=${SMTP_PORT}
+  #   - SMTP_USER=${SMTP_USER}
+  #   - SMTP_PASS=${SMTP_PASS}
+  #   - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
+  #   - SMTP_FROM_NAME=${SMTP_FROM_NAME}
+  #   - SMTP_CERT_PATH=${SMTP_CERT_PATH}
+  #   - SMTP_KEY_PATH=${SMTP_KEY_PATH}
+  #   - SIGNING_KEY_PATH=${SIGNING_KEY_PATH}
+  #   - RAILS_SECRET_KEY=${RAILS_SECRET_KEY}
+  #   - REDIS_URL=redis://redis:6379/0
+  #   depends_on:
+  #     - mariadb
+  #     - redis
+  #   volumes:
+  #     - postal_data:/postal/data
+  #     - ./config/postal.yml:/opt/postal/config/postal.yml
+  #     - ./certs:/postal/config/tls 
+  #   networks:
+  #     - app-network
+  #   profiles:
+  #     - dev
+  # --- END: OLD COMPLEX MAIL SETUP ---
+
 
   # Ngrok Tunnel Service (depends on dev web service)
   tunnel:
