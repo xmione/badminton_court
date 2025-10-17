@@ -6,6 +6,9 @@ param(
     [switch]$OnlyStart
 )
 
+$projectName = "badminton_court"
+$envFile = ".env.docker"
+
 Write-Host "Restarting Docker environment..." -ForegroundColor Green
 
 # Function to check if a process is running
@@ -18,15 +21,15 @@ function Test-ProcessRunning {
 function Wait-ProcessTermination {
     param($ProcessName, $Timeout = 30)
     $elapsed = 0
-    while ((Test-ProcessRunning $processName) -and $elapsed -lt $Timeout) {
-        Write-Host "Waiting for $processName to terminate... ($elapsed/$Timeout seconds)" -ForegroundColor Yellow
+    while ((Test-ProcessRunning $ProcessName) -and $elapsed -lt $Timeout) {
+        Write-Host "Waiting for $ProcessName to terminate... ($elapsed/$Timeout seconds)" -ForegroundColor Yellow
         Start-Sleep -Seconds 2
         $elapsed += 2
     }
     
-    if (Test-ProcessRunning $processName) {
-        Write-Host "$processName did not terminate within $Timeout seconds, forcing termination..." -ForegroundColor Yellow
-        Get-Process $processName -ErrorAction SilentlyContinue | Stop-Process -Force
+    if (Test-ProcessRunning $ProcessName) {
+        Write-Host "$ProcessName did not terminate within $Timeout seconds, forcing termination..." -ForegroundColor Yellow
+        Get-Process $ProcessName -ErrorAction SilentlyContinue | Stop-Process -Force
         Start-Sleep -Seconds 5
     }
 }
@@ -73,7 +76,6 @@ function Wait-DockerReady {
                 } else {
                     Write-Host "WARNING: Cannot resolve Docker Hub DNS. This may cause image pull failures." -ForegroundColor Yellow
                     Write-Host "You may need to check your DNS settings or network configuration." -ForegroundColor Yellow
-                    # Continue anyway since local images might work
                     return $true
                 }
             }
@@ -95,40 +97,109 @@ function Wait-DockerReady {
     return $false
 }
 
+# Function to test docker-compose env loading
+function Test-DockerComposeEnv {
+    Write-Host "🔍 Testing docker-compose env loading..." -ForegroundColor Yellow
+    
+    try {
+        $configOutput = docker-compose --env-file $envFile --project-name $projectName config 2>$null
+        $patterns = @("POSTGRES_DB", "REDIS_URL", "ALLOWED_HOSTS")
+        $envLoaded = $false
+        
+        foreach ($pattern in $patterns) {
+            if ($configOutput -match $pattern) {
+                $envLoaded = $true
+                Write-Host "✅ Found $pattern in config" -ForegroundColor Green
+                break
+            }
+        }
+        
+        if ($envLoaded) {
+            Write-Host "✅ Docker-compose can read .env.docker vars" -ForegroundColor Green
+            return $true
+        } else {
+            Write-Host "❌ Docker-compose cannot read .env.docker vars" -ForegroundColor Red
+            return $false
+        }
+    }
+    catch {
+        Write-Host "❌ Docker-compose config test failed: $_" -ForegroundColor Red
+        return $false
+    }
+}
+
+# Function to fix line endings
+function Fix-EnvLineEndings {
+    Write-Host "🔧 Fixing .env.docker line endings..." -ForegroundColor Yellow
+    try {
+        $content = Get-Content $envFile -Raw -Encoding UTF8
+        $content = $content -replace "`r`n", "`n"  # Fix CRLF to LF
+        $content = $content -creplace "^\uFEFF", ""  # Remove BOM
+        Set-Content $envFile $content -NoNewline -Encoding UTF8
+        Write-Host "✅ Line endings fixed" -ForegroundColor Green
+        return $true
+    }
+    catch {
+        Write-Host "❌ Failed to fix line endings: $_" -ForegroundColor Red
+        return $false
+    }
+}
+
 # Function to check if .env.docker file exists and is readable
 function Test-EnvFile {
-    $envFile = ".env.docker"
-    if (-not (Test-Path $envFile)) {
-        Write-Host "ERROR: .env.docker file not found!" -ForegroundColor Red
+    $localEnvFile = ".env.docker"
+    
+    if (-not (Test-Path $localEnvFile)) {
+        Write-Host "ERROR: .env.docker missing!" -ForegroundColor Red
         return $false
     }
     
     try {
-        $content = Get-Content $envFile -ErrorAction Stop
-        if ($content.Count -eq 0) {
-            Write-Host "WARNING: .env.docker file is empty!" -ForegroundColor Yellow
+        # Read raw content
+        $rawContent = Get-Content $localEnvFile -Raw -Encoding UTF8
+        
+        # Fix format with single-line operations
+        $fixedContent = $rawContent -replace "`r`n", "`n"
+        $fixedContent = $fixedContent -creplace "^\uFEFF", ""
+        $fixedContent = $fixedContent -replace "^\s*([A-Z_]+)\s*=\s*(.*)", '$1=$2'
+        $fixedContent = $fixedContent -replace "\s+$", ""
+        $fixedContent = $fixedContent -replace "^\s+", ""
+        
+        # Write back clean UTF-8
+        [System.IO.File]::WriteAllText((Resolve-Path $localEnvFile), $fixedContent, [System.Text.UTF8Encoding]::new($false))
+        
+        # Verify docker-compose parses it
+        $configTest = docker-compose --env-file $localEnvFile config 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✅ .env.docker format fixed and docker-compose verified" -ForegroundColor Green
+            return $true
+        } else {
+            Write-Host "❌ docker-compose cannot parse .env.docker" -ForegroundColor Red
             return $false
         }
-        
-        # Check for required variables
-        $requiredVars = @("POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", "REDIS_URL", "ALLOWED_HOSTS")
-        $missingVars = @()
-        
-        foreach ($var in $requiredVars) {
-            if ($content -notmatch "^$var=") {
-                $missingVars += $var
-            }
-        }
-        
-        if ($missingVars.Count -gt 0) {
-            Write-Host "WARNING: Missing required variables in .env.docker: $($missingVars -join ', ')" -ForegroundColor Yellow
-        }
-        
-        return $true
     }
     catch {
-        Write-Host "ERROR: Cannot read .env.docker file: $_" -ForegroundColor Red
+        Write-Host "❌ Failed to process .env.docker: $_" -ForegroundColor Red
         return $false
+    }
+}
+
+# Function to stop all services with orphan cleanup
+function Stop-AllServices {
+    Write-Host "🛑 Stopping all services with orphan cleanup..." -ForegroundColor Yellow
+    
+    try {
+        # Stop main project
+        docker-compose --env-file $envFile --project-name $projectName down --remove-orphans -v 2>$null
+        # Stop mailcow separately
+        docker-compose --env-file $envFile --project-name mailcow down --remove-orphans -v 2>$null
+        # Prune networks and volumes
+        docker network prune -f 2>$null
+        docker volume prune -f 2>$null
+        Write-Host "✅ All services stopped and cleaned" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "⚠️ Cleanup had warnings, continuing..." -ForegroundColor Yellow
     }
 }
 
@@ -158,7 +229,8 @@ if (-not $OnlyStart) {
     
     # Step 3: Reset Docker environment BEFORE starting Docker Desktop
     Write-Host "Resetting Docker containers and volumes..." -ForegroundColor Yellow
-    npm run docker:reset
+    Stop-AllServices
+    npm run docker:reset 2>$null
 }
 
 # Step 4: Start Docker Desktop
@@ -204,11 +276,22 @@ if (-not $OnlyKill) {
         exit 0
     }
 
-    # Step 6: Check .env.docker file
+    # Step 6: Check .env.docker file (ENHANCED)
     Write-Host "Checking environment configuration..." -ForegroundColor Yellow
     if (-not (Test-EnvFile)) {
         Write-Host "Please fix the .env.docker file before continuing" -ForegroundColor Red
         exit 1
+    }
+
+    # Test actual docker-compose env loading
+    $envTestPassed = Test-DockerComposeEnv
+    if (-not $envTestPassed) {
+        Write-Host "⚠️ Docker-compose cannot load .env.docker - fixing line endings..." -ForegroundColor Yellow
+        Fix-EnvLineEndings
+        $envTestPassed = Test-DockerComposeEnv
+        if (-not $envTestPassed) {
+            Write-Host "⚠️ Still cannot load .env.docker after fix. Continuing anyway..." -ForegroundColor Yellow
+        }
     }
 
     # Step 7: Start Mailcow
@@ -223,7 +306,7 @@ if (-not $OnlyKill) {
     Write-Host "Verifying Mailcow services..." -ForegroundColor Yellow
     try {
         Set-Location mailcow
-        docker-compose ps | Out-Null
+        docker-compose --project-name mailcow ps | Out-Null
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Warning: Mailcow may not be fully ready" -ForegroundColor Yellow
         }
@@ -264,7 +347,7 @@ if (-not $OnlyKill) {
     Start-Sleep -Seconds 10
     
     try {
-        $appStatus = docker-compose ps
+        $appStatus = docker-compose --env-file $envFile --project-name $projectName ps
         Write-Host "Application status:" -ForegroundColor Green
         $appStatus
     }
