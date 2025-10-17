@@ -71,7 +71,8 @@ services:
     build: 
       context: .
       target: web
-    command: python manage.py runserver 0.0.0.0:8000
+    entrypoint: ["python", "manage.py"] 
+    command: ["runserver", "0.0.0.0:8000"] 
     volumes: *app-volumes
     ports:
       - "8000:8000"
@@ -106,13 +107,16 @@ services:
     depends_on:
       - redis
   
-  # Celery Worker (dev profile only)
+    # Celery Worker (dev profile only)
+  
+    # Celery Worker (dev profile only)
   celery:
     container_name: celery
     build: 
       context: .
       target: web
-    command: celery -A badminton_court worker --loglevel=info
+    entrypoint: ["celery"] # <-- SET ENTRYPOINT TO CELERY
+    command: ["-A", "badminton_court", "worker", "--loglevel=info"] 
     volumes: *app-volumes
     depends_on:
       - redis
@@ -129,7 +133,8 @@ services:
     build: 
       context: .
       target: web
-    command: celery -A badminton_court beat --loglevel=info
+    entrypoint: ["celery"] # <-- SET ENTRYPOINT TO CELERY
+    command: ["-A", "badminton_court", "beat", "--loglevel=info"]  
     volumes: *app-volumes
     depends_on:
       - redis
@@ -139,7 +144,7 @@ services:
       - app-network
     profiles:
       - dev
-  
+      
   # --- START: NEW SIMPLE MAIL SERVER ---
   # This replaces the complex Postal/MariaDB setup
   mail-test:
@@ -162,78 +167,7 @@ services:
       - dev
       - test
   # --- END: NEW SIMPLE MAIL SERVER ---
-
-
-  # --- START: OLD COMPLEX MAIL SETUP (COMMENTED OUT) ---
-  # MariaDB for Postal
-  # mariadb:
-  #   container_name: mariadb
-  #   image: mariadb:10.5
-  #   restart: always
-  #   environment:
-  #     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-  #     MYSQL_DATABASE: ${MYSQL_DATABASE}
-  #     MYSQL_USER: ${MYSQL_USER}
-  #     MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-  #   volumes:
-  #     - mariadb_data:/var/lib/mysql
-  #     - ./init-mariadb.sql:/docker-entrypoint-initdb.d/init-mariadb.sql
-  #   networks:
-  #     - app-network
-  #   command: --default-authentication-plugin=mysql_native_password
-  #   profiles:
-  #     - dev
-  
-  # # Postal SMTP Service
-  # postal:
-  #   container_name: postal
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.postal
-  #   ports:
-  #     - "5000:5000"
-  #     - "465:465"    
-  #     - "25:25"
-  #     - "587:587"
-  #   environment:
-  #   - RAILS_ENV=production
-  #   - POSTAL_HOST=${POSTAL_HOST}
-  #   - POSTAL_PORT=${POSTAL_PORT}
-  #   - POSTAL_DB_HOST=${POSTAL_DB_HOST}
-  #   - POSTAL_DB_PORT=${POSTAL_DB_PORT}
-  #   - POSTAL_DB_USER=${POSTAL_DB_USER}
-  #   - POSTAL_DB_PASS=${POSTAL_DB_PASS}
-  #   - POSTAL_DB_NAME=${POSTAL_DB_NAME}
-  #   - MSG_DB_HOST=${MSG_DB_HOST}
-  #   - MSG_DB_PORT=${MSG_DB_PORT}
-  #   - MSG_DB_USER=${MSG_DB_USER}
-  #   - MSG_DB_PASS=${MSG_DB_PASS}
-  #   - MSG_DB_NAME=${MSG_DB_NAME}
-  #   - SMTP_HOST=${SMTP_HOST}
-  #   - SMTP_PORT=${SMTP_PORT}
-  #   - SMTP_USER=${SMTP_USER}
-  #   - SMTP_PASS=${SMTP_PASS}
-  #   - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}
-  #   - SMTP_FROM_NAME=${SMTP_FROM_NAME}
-  #   - SMTP_CERT_PATH=${SMTP_CERT_PATH}
-  #   - SMTP_KEY_PATH=${SMTP_KEY_PATH}
-  #   - SIGNING_KEY_PATH=${SIGNING_KEY_PATH}
-  #   - RAILS_SECRET_KEY=${RAILS_SECRET_KEY}
-  #   - REDIS_URL=redis://redis:6379/0
-  #   depends_on:
-  #     - mariadb
-  #     - redis
-  #   volumes:
-  #     - postal_data:/postal/data
-  #     - ./config/postal.yml:/opt/postal/config/postal.yml
-  #     - ./certs:/postal/config/tls 
-  #   networks:
-  #     - app-network
-  #   profiles:
-  #     - dev
-  # --- END: OLD COMPLEX MAIL SETUP ---
-
-
+ 
   # Ngrok Tunnel Service (depends on dev web service)
   tunnel:
     container_name: ngrok_tunnel
@@ -254,12 +188,12 @@ services:
     profiles:
       - tunnel
 
-  # Cypress Testing (depends on test web service)
+    # Cypress Testing 
   cypress:
     container_name: cypress
     build:
       context: .
-      dockerfile: Dockerfile.cypress
+      dockerfile: Dockerfile.cypress # Uses the slim, modern Dockerfile
     volumes:
       - ./cypress:/e2e/cypress
       - ./cypress.config.js:/e2e/cypress.config.js
@@ -268,17 +202,41 @@ services:
       - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
       - ./scripts:/e2e/scripts
     environment:
-      - CYPRESS_baseUrl=http://web-test:8000  # Updated to use web-test
+      - CYPRESS_baseUrl=http://web-test:8000
       - CYPRESS_headed=${CYPRESS_headed}
     env_file:
       - .env.docker
     depends_on:
-      - web-test  # Changed from web to web-test
+      - web-test
     profiles:
       - test
     networks:
       - app-network
-      
+
+  # Presentation Video Creation Service 
+  presentation:
+    container_name: presentation
+    build:
+      context: .
+      dockerfile: Dockerfile.cypress # <-- CHANGE THIS LINE
+    volumes:
+      - ./cypress:/e2e/cypress
+      - ./cypress.config.js:/e2e/cypress.config.js
+      - ./scripts:/e2e/scripts
+      - ./cypress/videos:/e2e/cypress/videos
+      - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
+    environment:
+      - CYPRESS_baseUrl=${CYPRESS_baseUrl}
+      - DISPLAY=:99
+    env_file:
+      - .env.docker
+    depends_on:
+      - web-dev
+    profiles:
+      - presentation
+    networks:
+      - app-network
+
   # Test Data Setup (depends on test web service)
   test-setup:
     container_name: test-setup
@@ -300,29 +258,5 @@ services:
       - .env.docker
     profiles:
       - test
-    networks:
-      - app-network
-  
-  # Presentation Video Creation Service (can use either web service)
-  presentation:
-    container_name: presentation
-    build:
-      context: .
-      dockerfile: Dockerfile.presentation
-    volumes:
-      - ./cypress:/e2e/cypress
-      - ./cypress.config.js:/e2e/cypress.config.js
-      - ./scripts:/e2e/scripts
-      - ./cypress/videos:/e2e/cypress/videos
-      - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
-    environment:
-      - CYPRESS_baseUrl=${CYPRESS_baseUrl}
-      - DISPLAY=:99
-    env_file:
-      - .env.docker
-    depends_on:
-      - web-dev  # Default to dev web service
-    profiles:
-      - presentation
     networks:
       - app-network

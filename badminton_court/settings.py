@@ -104,8 +104,9 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     
     # Third-party apps
-    'django_bootstrap5',  # Use the correct module name (with underscore)
+    'django_bootstrap5',  
     'django_celery_beat',
+    'django_celery_results',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
