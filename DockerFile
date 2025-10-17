@@ -1,111 +1,42 @@
 # Dockerfile
-# Base stage with common dependencies
-FROM python:3.12 AS base
+# Use a slim Debian image for a good balance of size and compatibility
+FROM python:3.12-slim AS base
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 ENV DOCKER=true
 
 WORKDIR /app
 
-# Combine apt-get update and install commands to ensure fresh package lists
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install system dependencies and clean up in the same layer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
     postgresql-client \
     build-essential \
-    curl
-
-# Clean up apt cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+    curl \
+    && pip install --no-cache-dir --upgrade pip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
-RUN adduser --disabled-password --gecos '' appuser
-RUN chown -R appuser:appuser /app
-USER appuser
+RUN useradd --create-home --shell /bin/bash appuser
 
-# Upgrade pip first with improved timeout settings
-RUN pip install --upgrade pip --timeout 1000 --retries 10
-
-# Create pip configuration with timeout and retry settings
-RUN mkdir -p ~/.pip && \
-    echo "[global]" > ~/.pip/pip.conf && \
-    echo "timeout = 1000" >> ~/.pip/pip.conf && \
-    echo "retries = 10" >> ~/.pip/pip.conf && \
-    echo "index-url = https://pypi.org/simple/" >> ~/.pip/pip.conf
-
-# Copy and install Python dependencies
+# Copy and install Python dependencies FIRST to leverage Docker cache
 COPY requirements.txt /app/
-RUN pip install --user -r requirements.txt --timeout 1000 --retries 10
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Add user's local bin to PATH
-ENV PATH=/home/appuser/.local/bin:$PATH
+# Copy project files AFTER dependencies are installed
+# We will copy only the necessary app directory, not the whole project
+COPY --chown=appuser:appuser ./badminton_court /app/badminton_court
+COPY --chown=appuser:appuser manage.py /app/
+COPY --chown=appuser:appuser tunnel.py /app/
 
-# Explicitly install python-dotenv and pyngrok
-RUN pip install --user python-dotenv==1.1.1 pyngrok --timeout 1000 --retries 10
-
-# Clean up pip cache
-RUN rm -rf ~/.cache/pip
-
-# Copy project files
-COPY --chown=appuser:appuser . /app/
+USER appuser
 
 # Web service stage
 FROM base AS web
-
-# Copy the web entrypoint script
-COPY --chown=appuser:appuser web-entrypoint.sh /app/
-
-# Convert line endings from CRLF to LF
-RUN sed -i 's/\r$//' /app/web-entrypoint.sh
-
-# Make the script executable
-RUN chmod +x /app/web-entrypoint.sh
-
-# Expose port
 EXPOSE 8000
-
-# Set the entrypoint for the web service
-ENTRYPOINT ["/app/web-entrypoint.sh"]
-
-# Default command
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+ENTRYPOINT ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 # Tunnel service stage
 FROM base AS tunnel
-
-# Copy the tunnel script
-COPY --chown=appuser:appuser tunnel.py /app/
-
-# Convert line endings from CRLF to LF
-RUN sed -i 's/\r$//' /app/tunnel.py
-
-# Make the script executable
-RUN chmod +x /app/tunnel.py
-
-# Set the command for tunnel
 CMD ["python", "tunnel.py"]
-
-# Development stage (for local development)
-FROM base AS dev
-
-# Install additional development tools
-USER root
-RUN pip install --user django-debug-toolbar --timeout 1000 --retries 10
-USER appuser
-
-# Copy the web entrypoint script
-COPY --chown=appuser:appuser web-entrypoint.sh /app/
-
-# Convert line endings from CRLF to LF
-RUN sed -i 's/\r$//' /app/web-entrypoint.sh
-
-# Make the script executable
-RUN chmod +x /app/web-entrypoint.sh
-
-# Expose port
-EXPOSE 8000
-
-# Set the entrypoint for development
-ENTRYPOINT ["/app/web-entrypoint.sh"]
-
-# Default command for development
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
