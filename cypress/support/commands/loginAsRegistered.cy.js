@@ -3,7 +3,7 @@
 export const loginAsRegistered = () => {
     Cypress.Commands.add('loginAsRegistered', (options = {}) => {
         // Use the existing email for consistency
-        const email = 'paysol.postal@gmail.com';
+        const email = 'admin@aeropace.test.local';
         
         // First, ensure the user doesn't exist from previous tests
         cy.request({

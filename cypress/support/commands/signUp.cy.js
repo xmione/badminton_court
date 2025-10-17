@@ -8,7 +8,7 @@ export const signUp = () => {
         cy.visit('/accounts/signup/')
 
         // Fill in registration form with the specified email
-        const uniqueEmail = 'paysol.postal@gmail.com'
+        const uniqueEmail = 'admin@aeropace.test.local'
 
         cy.get('#id_email').type(uniqueEmail)
         cy.get('#id_password1').type('StrongPassword123!')

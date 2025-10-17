@@ -1,7 +1,7 @@
 // cypress/support/commands/loginAsRegularUser.cy.js
 
 export const loginAsRegularUser = () => {
-  Cypress.Commands.add('loginAsRegularUser', (email = 'paysol.postal@gmail.com', password = 'StrongPassword123!') => {
+  Cypress.Commands.add('loginAsRegularUser', (email = 'admin@aeropace.test.local', password = 'StrongPassword123!') => {
     // First check if the server is running
     cy.request({
         method: 'GET',

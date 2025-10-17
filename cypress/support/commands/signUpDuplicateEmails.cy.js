@@ -5,7 +5,7 @@ export const signUpDuplicateEmails = () => {
     // Now accepts a single options object
     Cypress.Commands.add('signUpDuplicateEmails', (options = {}) => {
         // Use the specified email
-        const uniqueEmail = 'paysol.postal@gmail.com'
+        const uniqueEmail = 'admin@aeropace.test.local'
 
         // First, create a user through the UI
         cy.visit('/accounts/signup/')
