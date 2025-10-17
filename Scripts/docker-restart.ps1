@@ -1,3 +1,4 @@
+# scripts/docker-restart.ps1
 param(
     [switch]$SkipBuild,
     [switch]$SkipSetup,
