@@ -4,7 +4,7 @@ version: 2
 postal:
   # Global Postal settings
   web_hostname: <%= ENV['POSTAL_HOST'] %>
-  smtp_hostname: <%= ENV['SMTP_HOST'] %>
+  EMAIL_HOSTname: <%= ENV['EMAIL_HOST'] %>
   use_ip_pools: false
   default_maximum_delivery_attempts: 5
   default_maximum_hold_expiry_days: 1
@@ -26,7 +26,7 @@ web_server:
 
 smtp_server:
   # Configure Postal's own SMTP server for incoming mail
-  default_port: <%= ENV['SMTP_PORT'] %>
+  default_port: <%= ENV['EMAIL_PORT'] %>
   default_bind_address: "::"
   default_health_server_port: 9091
   default_health_server_bind_address: 127.0.0.1
@@ -61,16 +61,16 @@ message_db:
 
 smtp:
   # Outbound SMTP settings for sending application-level emails
-  host: <%= ENV['SMTP_HOST'] %>
-  port: <%= ENV['SMTP_PORT'] %>
-  username: <%= ENV['SMTP_USER'] %>
-  password: <%= ENV['SMTP_PASS'] %>
+  host: <%= ENV['EMAIL_HOST'] %>
+  port: <%= ENV['EMAIL_PORT'] %>
+  username: <%= ENV['EMAIL_HOST_USER'] %>
+  password: <%= ENV['EMAIL_HOST_PASSWORD'] %>
   authentication_type: login
   enable_starttls: true
   enable_starttls_auto: true
   openssl_verify_mode: peer
   from_name: <%= ENV['SMTP_FROM_NAME'] %>
-  from_address: <%= ENV['SMTP_FROM_EMAIL'] %>
+  from_address: <%= ENV['DEFAULT_FROM_EMAIL'] %>
 
 rails:
   environment: production

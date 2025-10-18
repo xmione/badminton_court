@@ -349,24 +349,24 @@ if not DEBUG:
 
 # Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('SMTP_HOST', 'localhost')  # Postal server
-EMAIL_PORT = int(os.getenv('SMTP_PORT', 587))  # Postal SMTP port
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('SMTP_USER', 'postal')  # Or your SMTP username
-EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASS', 'postal')  # Or your SMTP password
-DEFAULT_FROM_EMAIL = os.getenv('SMTP_FROM_EMAIL', 'noreply@aeropace.com')
+EMAIL_HOST = os.getenv('EMAIL_HOST')  # Postal server
+EMAIL_PORT = int(os.getenv('EMAIL_PORT'))  # Postal SMTP port
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')  # Or your SMTP username
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Or your SMTP password
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 # Admin user settings
-ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@aeropace.com')
-ADMIN_FIRST_NAME = os.getenv('ADMIN_FIRST_NAME', 'Admin')
-ADMIN_LAST_NAME = os.getenv('ADMIN_LAST_NAME', 'User')
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'StrongPassword123!')
+ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
+ADMIN_FIRST_NAME = os.getenv('ADMIN_FIRST_NAME')
+ADMIN_LAST_NAME = os.getenv('ADMIN_LAST_NAME')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 
 # Support email
-SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', 'support@aeropace.com')
+SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL')
 
 # Celery Configuration
-REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+REDIS_URL = os.getenv('REDIS_URL')
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
