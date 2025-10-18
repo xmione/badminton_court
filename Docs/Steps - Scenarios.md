@@ -70,10 +70,10 @@
    # Postal SMTP settings (for Django to send emails)  
    SMTP_HOST=smtp.gmail.com  
    SMTP_PORT=587  
-   SMTP_USER=admin@aeropace.test.local  
+   SMTP_USER=admin@aeropace.com  
    SMTP_PASS=[FILL UP]
    SMTP_FROM_NAME=Badminton Court Management  
-   SMTP_FROM_EMAIL=admin@aeropace.test.local  
+   SMTP_FROM_EMAIL=admin@aeropace.com  
    SMTP_CERT_PATH=/postal/config/tls/cert.pem  
    SMTP_KEY_PATH=/postal/config/tls/key.pem  
    SIGNING_KEY_PATH=/postal/config/postal/signing.key
@@ -189,10 +189,10 @@
    # Postal SMTP settings (for Postal itself to send emails)  
    SMTP_HOST=smtp.gmail.com  
    SMTP_PORT=587  
-   SMTP_USER=admin@aeropace.test.local  
+   SMTP_USER=admin@aeropace.com  
    SMTP_PASS=[FILL UP]   
    SMTP_FROM_NAME=Badminton Court Management  
-   SMTP_FROM_EMAIL=admin@aeropace.test.local  
+   SMTP_FROM_EMAIL=admin@aeropace.com  
    SMTP_CERT_PATH=/postal/config/tls/cert.pem  
    SMTP_KEY_PATH=/postal/config/tls/key.pem  
    SIGNING_KEY_PATH=/postal/config/postal/signing.key  

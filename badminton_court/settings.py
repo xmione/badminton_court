@@ -360,7 +360,7 @@ DEFAULT_FROM_EMAIL = os.getenv('SMTP_FROM_EMAIL', 'noreply@aeropace.com')
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@aeropace.com')
 ADMIN_FIRST_NAME = os.getenv('ADMIN_FIRST_NAME', 'Admin')
 ADMIN_LAST_NAME = os.getenv('ADMIN_LAST_NAME', 'User')
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'Admin123!')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'StrongPassword123!')
 
 # Support email
 SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', 'support@aeropace.com')

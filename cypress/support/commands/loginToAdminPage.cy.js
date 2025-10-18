@@ -1,7 +1,7 @@
 // cypress/support/commands/loginToAdminPage.cy.js
 
 export const loginToAdminPage = () => {
-    Cypress.Commands.add('loginToAdminPage', (email = 'admin@aeropace.test.local', password = 'StrongPassword123!') => {
+    Cypress.Commands.add('loginToAdminPage', (email = 'admin@aeropace.com', password = 'StrongPassword123!') => {
         cy.showWaitMessage('This Test will log user as Admin in the Admin Page...', 10000)
         cy.adminLogin({ admin: 'admin', password: 'password', setup: false });
 

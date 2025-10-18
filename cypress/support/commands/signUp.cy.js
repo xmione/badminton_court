@@ -4,15 +4,21 @@ export const signUp = () => {
     // Command for admin login with setup
     // Now accepts a single options object
     Cypress.Commands.add('signUp', (options = {}) => {
+
+        cy.log('All available Cypress.env() variables:', Cypress.env());
         // Visit signup page
         cy.visit('/accounts/signup/')
 
         // Fill in registration form with the specified email
-        const uniqueEmail = 'admin@aeropace.test.local'
+        const uniqueEmail = Cypress.env('ADMIN_EMAIL');
+        const adminPassword = Cypress.env('ADMIN_PASSWORD');
+
+        cy.log('Using email for signup:', uniqueEmail);
+        cy.log('Using password for signup:', adminPassword);
 
         cy.get('#id_email').type(uniqueEmail)
-        cy.get('#id_password1').type('StrongPassword123!')
-        cy.get('#id_password2').type('StrongPassword123!')
+        cy.get('#id_password1').type(adminPassword)
+        cy.get('#id_password2').type(adminPassword)
 
         // Submit form
         cy.get('button[type="submit"]').click()

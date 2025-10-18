@@ -42,7 +42,7 @@ export RAILS_ENV=development
 ADMIN_EMAIL=${ADMIN_EMAIL:-"admin@aeropace.com"}
 ADMIN_FIRST_NAME=${ADMIN_FIRST_NAME:-"Admin"}
 ADMIN_LAST_NAME=${ADMIN_LAST_NAME:-"User"}
-ADMIN_PASSWORD=${ADMIN_PASSWORD:-"Admin123!"}
+ADMIN_PASSWORD=${ADMIN_PASSWORD:-"StrongPassword123!"}
 
 echo "Checking if admin user exists..."
 # Check if admin user already exists
