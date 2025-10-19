@@ -1,64 +1,53 @@
 // cypress/support/commands/signUp.cy.js
 
 export const signUp = () => {
-    // Command for admin login with setup
-    // Now accepts a single options object
+    // Command for user signup and email verification
+    // Now performs the complete flow: signup -> get token -> verify email
     Cypress.Commands.add('signUp', (options = {}) => {
 
-        cy.log('All available Cypress.env() variables:', Cypress.env());
-        // Visit signup page
-        cy.visit('/accounts/signup/')
-
-        // Fill in registration form with the specified email
+        // 1. Generate a unique email for this test run to prevent conflicts
         const uniqueEmail = Cypress.env('ADMIN_EMAIL');
-        const adminPassword = Cypress.env('ADMIN_PASSWORD');
+        const password = Cypress.env('ADMIN_PASSWORD');
 
-        cy.log('Using email for signup:', uniqueEmail);
-        cy.log('Using password for signup:', adminPassword);
+        cy.log(`Signing up with new email: ${uniqueEmail}`);
 
-        cy.get('#id_email').type(uniqueEmail)
-        cy.get('#id_password1').type(adminPassword)
-        cy.get('#id_password2').type(adminPassword)
+        // 2. Visit signup page and fill the registration form
+        cy.visit('/accounts/signup/');
+        cy.get('#id_email').type(uniqueEmail);
+        cy.get('#id_password1').type(password);
+        cy.get('#id_password2').type(password);
 
         // Submit form
-        cy.get('button[type="submit"]').click()
+        cy.get('button[type="submit"]').click();
 
-        // Debug: Print the page content to see what's actually displayed
-        cy.get('body').then(($body) => {
-            cy.log('Page content after registration:', $body.text())
-        })
+        // 3. Verify the "verification email sent" message is visible
+        // This confirms Django has processed the signup and sent the email.
+        cy.contains(/verification email sent/i, { timeout: 10000 }).should('be.visible');
 
-        // Verify successful registration
-        // Check if redirected to login page or if verification message is shown
-        cy.url().then((url) => {
-            cy.log('Current URL after registration:', url)
+        // 4. Call the custom API to retrieve the verification token from the database
+        cy.request({
+            method: 'POST',
+            url: '/api/get-verification-token/',
+            body: { email: uniqueEmail },
+        }).then((response) => {
+            // 5. Assert the API call was successful and extract the token
+            expect(response.status).to.equal(200, 'API to get verification token failed');
+            expect(response.body).to.have.property('token', 'Token not found in API response');
+            
+            const token = response.body.token;
+            cy.log(`Retrieved verification token: ${token}`);
 
-            if (url.includes('/accounts/login/')) {
-                // Redirected to login page
-                cy.url().should('include', '/accounts/login/')
-            } else {
-                // Look for any verification-related message with multiple possible texts
-                cy.get('body').then(($body) => {
-                    const pageText = $body.text()
+            // 6. Visit the verification URL to confirm the email address
+            cy.visit(`/accounts/confirm-email/${token}/`);
 
-                    if (pageText.includes('verification') || pageText.includes('Verification')) {
-                        // Found some verification message
-                        cy.contains(/verification|Verification/i).should('be.visible')
-                    } else if (pageText.includes('email') || pageText.includes('Email')) {
-                        // Found some email-related message
-                        cy.contains(/email|Email/i).should('be.visible')
-                    } else if (pageText.includes('sent') || pageText.includes('Sent')) {
-                        // Found some "sent" message
-                        cy.contains(/sent|Sent/i).should('be.visible')
-                    } else {
-                        // Just check that we're not on an error page
-                        cy.url().should('not.include', 'error')
-                        cy.log('No verification message found, but no error detected')
-                    }
-                })
-            }
-        })
+            // 7. Assert that the confirmation was successful on the UI
+            cy.contains('Email Confirmed').should('be.visible');
+            cy.log('Email successfully verified.');
+        });
 
+        // 8. Return the unique email address so it can be used by later commands in the test
+        // e.g., cy.signUp().then((email) => cy.login(email, password));
+        cy.wrap(uniqueEmail);
     });
 };
 
