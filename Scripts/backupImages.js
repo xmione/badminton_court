@@ -13,7 +13,10 @@ const desiredImages = [
   'badminton_court-tunnel:latest',
   'badminton_court-cypress:latest',
   'badminton_court-presentation:latest',
-  'badminton_court-test-setup:latest'
+  'badminton_court-test-setup:latest',
+  'redis:7-alpine',
+  'postgres:14',
+  'analogic/poste.io:latest'
 ];
 
 const backupDir = './backups';

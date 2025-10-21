@@ -355,7 +355,22 @@ EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')  # Or your SMTP username
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Or your SMTP password
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+# badminton_court/settings.py
 
+# Email configuration with system SSL context
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST')  
+EMAIL_PORT = int(os.getenv('EMAIL_PORT'))  
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS').lower() == 'true'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+
+# Use system default SSL context which will respect SSL_CERT_FILE
+if DEBUG:
+    import ssl
+    EMAIL_SSL_CONTEXT = ssl.create_default_context()
+    
 # Admin user settings
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
 ADMIN_FIRST_NAME = os.getenv('ADMIN_FIRST_NAME')

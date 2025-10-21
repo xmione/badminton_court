@@ -88,7 +88,9 @@
     "docker:restore-images": "node Scripts/restoreImages.js",
     "docker:backup-individual": "node Scripts/backupIndividual.js",
     "docker:restore-image": "node Scripts/restoreImage.js",
-    "docker:list-backups": "node Scripts/listBackups.js"
+    "docker:list-backups": "node Scripts/listBackups.js",
+    "docker:list-backup-contents": "node Scripts/listBackupContents.js",
+    "docker:list-backup-image-names": "node Scripts/listBackupImageNames.js"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
