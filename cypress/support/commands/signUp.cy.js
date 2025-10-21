@@ -6,9 +6,9 @@ export const signUp = () => {
     Cypress.Commands.add('signUp', (options = {}) => {
 
         // 1. Generate a unique email for this test run to prevent conflicts
-        const uniqueEmail = Cypress.env('ADMIN_EMAIL');
+        const uniqueEmail = Cypress.env('REGULARUSER_EMAIL');
         // const uniqueEmail = `testuser-${Date.now()}@aeropace.com`;
-        const password = Cypress.env('ADMIN_PASSWORD');
+        const password = Cypress.env('REGULARUSER_PASSWORD');
 
         cy.log(`Signing up with new email: ${uniqueEmail}`);
 

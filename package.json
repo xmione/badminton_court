@@ -10,13 +10,10 @@
     "docker:reset-db": "echo '🔄 Resetting database...' && powershell -ExecutionPolicy Bypass -File Scripts/reset-db-docker.ps1 -Force",
     "docker:reset-db-migrate": "echo '🔄 Resetting database with migrations...' && powershell -ExecutionPolicy Bypass -File Scripts/reset-db-docker.ps1 -Force -Migrate",
     "docker:reset-db-full": "echo '🔄 Full database reset with test data...' && powershell -ExecutionPolicy Bypass -File Scripts/reset-db-docker.ps1 -Force -Migrate -LoadTestData",
-    
     "dev:detached": "echo '🚀 Starting local development environment in detached mode...' && cross-env ENVIRONMENT=development node scripts/run-detached.js",
     "dev:stop": "echo '🛑 Stopping local dev server development...' && cross-env ENVIRONMENT=development node scripts/stop-server.js",
     "dev:load-data": "echo '📊 Loading local dev data...' && cross-env ENVIRONMENT=development python manage.py load_test_data",
-
     "dev:tunnel": "echo '🚀 Starting dev tunnel...' && python tunnel.py",
-    
     "dev:cypress-open": "echo '🔍 Opening Cypress in interactive mode...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress open",
     "dev:cypress-headed": "echo '🚀 Running Cypress tests (headed)...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress run --headed --browser chrome",
     "dev:cypress-headless": "echo '⚡ Running Cypress tests (headless)...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress run --headless --browser chrome",
@@ -24,7 +21,6 @@
     "dev:select-presentation": "echo '🎬 Select a Cypress test from the list and run it for presentation (headed)...' && cross-env ENVIRONMENT=development CYPRESS=false node scripts/create-presentation.js",
     "dev:post-process-videos": "echo '⚡ Running Post-Process Videos...' && cross-env ENVIRONMENT=development CYPRESS=false node scripts/post-process-videos.js",
     "dev:cypress-presentation-spec": "echo '⚡ Running Cypress tests for presentation spec (headed)...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress run --headed --browser chrome --config video=true --spec && npm run post-process-videos",
-
     "docker:build": "echo '🐳 Building all service images...' && docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation build  --progress=plain",
     "docker:build-nocache": "echo '🐳 Building all service images (no cache)...' && docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation build --progress=plain --no-cache",
     "docker:build-dev": "echo '🐳 Building dev service images...' && docker-compose --env-file .env.docker --profile dev build --progress=plain",
@@ -37,20 +33,17 @@
     "docker:rebuild-dev": "echo '🐳 Rebuilding dev services...' && docker-compose --env-file .env.docker --profile dev down -v --rmi all && docker-compose --env-file .env.docker --profile dev build",
     "docker:rebuild-test": "echo '🐳 Rebuilding test services...' && docker-compose --env-file .env.docker --profile test down -v --rmi all && docker-compose --env-file .env.docker --profile test build",
     "docker:rebuild-presentation": "echo '🐳 Rebuilding presentation services...' && docker-compose --env-file .env.docker --profile presentation down -v --rmi all && docker-compose --env-file .env.docker --profile presentation build",
-
     "docker:dev": "echo '🚀 Starting development environment...' && docker-compose --env-file .env.docker --profile dev up",
     "docker:dev-detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --env-file .env.docker --profile dev up -d",
     "docker:dev-stop": "echo '🛑 Stopping development services...' && docker-compose --env-file .env.docker --profile dev down",
     "docker:dev-logs": "echo '📋 Showing development logs...' && docker-compose --env-file .env.docker --profile dev logs -f",
     "docker:dev-restart": "echo '🔄 Restarting web-dev container...' && docker-compose --env-file .env.docker --profile dev restart web-dev",
-
     "docker:tunnel-build": "echo '🐳 Building tunnel service...' && docker-compose --env-file .env.docker --profile tunnel build tunnel",
     "docker:tunnel-build-nocache": "echo '🐳 Building tunnel service...' && docker-compose --env-file .env.docker --profile tunnel build tunnel --no-cache",
     "docker:tunnel": "echo '🚀 Starting docker tunnel...' && docker-compose --env-file .env.docker --profile tunnel up tunnel",
     "docker:tunnel-detached": "echo '🚀 Starting docker tunnel (detached)...' && docker-compose --env-file .env.docker --profile tunnel up -d tunnel",
     "docker:tunnel-stop": "echo '🛑 Stopping docker tunnel...' && docker-compose --env-file .env.docker --profile tunnel stop tunnel",
     "docker:tunnel-logs": "echo '📋 Showing tunnel logs...' && docker-compose --env-file .env.docker --profile tunnel logs -f tunnel",
-    
     "docker:test": "echo '🧪 Starting test environment...' && docker-compose --env-file .env.docker --profile test up",
     "docker:test-detached": "echo '🧪 Starting test environment (detached)...' && docker-compose --env-file .env.docker --profile test up -d",
     "docker:test-stop": "echo '🛑 Stopping test services...' && docker-compose --env-file .env.docker --profile test down",
@@ -66,9 +59,7 @@
     "docker:select-presentation": "echo '🎬 Select a Cypress test from the list and run it for presentation (headed) in Docker...' && docker-compose --env-file .env.docker --profile presentation run --rm presentation node scripts/create-presentation-docker.js",
     "docker:post-process-videos": "echo '⚡ Running Post-Process Videos in Docker...' && docker-compose --env-file .env.docker --profile presentation run --rm presentation node scripts/post-process-videos-docker.js",
     "docker:cypress-presentation-spec": "echo '🚀 Running Docker Cypress tests for presentation spec...' && docker-compose --env-file .env.docker --profile test exec cypress run --headed --browser chrome --config video=true --spec && npm run docker:post-process-videos",
-
-    "certs:create": "echo '🔐 Creating SSL certificates for development...' && node scripts/generate-certs.js",
- 
+    "certs:create": "echo '🔐 Creating SSL certificates for development...' && node --no-deprecation scripts/generate-certs.js",
     "docker:logs": "echo '📋 Showing service logs...' && docker-compose logs -f",
     "docker:shell": "echo '🖥️  Opening shell in service container...' && docker-compose exec",
     "docker:down-volumes": "echo '🗑️  Stopping all services and removing volumes...' && docker-compose down -v",
@@ -93,7 +84,8 @@
   "devDependencies": {
     "cross-env": "^10.1.0",
     "cypress": "^15.3.0",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "sudo-prompt": "^9.2.1"
   },
   "dependencies": {
     "inquirer": "^12.9.6"

@@ -165,7 +165,8 @@ services:
     image: analogic/poste.io
     restart: unless-stopped
     ports:
-      - "8080:80" # Web UI
+      #- "8080:80" # Web UI if HTTPS=OFF
+      - "8443:443" # Web UI if HTTPS=ON
       # The following mail ports are now free since Postal is commented out
       - "25:25"   # SMTP
       - "587:587"  # Submission
@@ -174,8 +175,9 @@ services:
       - HTTPS=ON
     volumes:
       - poste_data:/data # Persist mail data
-      - ./certs/posteio-cert.pem:/data/ssl/cert.pem 
-      - ./certs/posteio-key.pem:/data/ssl/key.pem
+      - ./certs/posteio-cert.pem:/data/ssl/server.crt
+      - ./certs/posteio-key.pem:/data/ssl/server.key
+      - ./certs/ca.pem:/data/ssl/ca.crt
     networks:
       - app-network
     profiles:
