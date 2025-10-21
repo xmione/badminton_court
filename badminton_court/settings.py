@@ -366,11 +366,25 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
-# Use system default SSL context which will respect SSL_CERT_FILE
 if DEBUG:
-    import ssl
-    EMAIL_SSL_CONTEXT = ssl.create_default_context()
+    import certifi
+    import os
     
+    dev_ca_path = os.getenv('SSL_CERT_FILE')
+    
+    if dev_ca_path and os.path.exists(dev_ca_path):
+        with open(dev_ca_path, 'rb') as dev_ca_file:
+            dev_ca = dev_ca_file.read()
+        
+        with open(certifi.where(), 'rb') as certifi_file:
+            certifi_bundle = certifi_file.read()
+        
+        if dev_ca not in certifi_bundle:
+            with open(certifi.where(), 'ab') as certifi_file:
+                certifi_file.write(b'\n' + dev_ca)
+        
+        print(f"Development certificate added to Python bundle from: {dev_ca_path}")
+
 # Admin user settings
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
 ADMIN_FIRST_NAME = os.getenv('ADMIN_FIRST_NAME')

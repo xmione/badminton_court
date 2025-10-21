@@ -42,6 +42,7 @@
     "docker:dev-detached": "echo '🚀 Starting development environment (detached)...' && docker-compose --env-file .env.docker --profile dev up -d",
     "docker:dev-stop": "echo '🛑 Stopping development services...' && docker-compose --env-file .env.docker --profile dev down",
     "docker:dev-logs": "echo '📋 Showing development logs...' && docker-compose --env-file .env.docker --profile dev logs -f",
+    "docker:dev-restart": "echo '🔄 Restarting web-dev container...' && docker-compose --env-file .env.docker --profile dev restart web-dev",
 
     "docker:tunnel-build": "echo '🐳 Building tunnel service...' && docker-compose --env-file .env.docker --profile tunnel build tunnel",
     "docker:tunnel-build-nocache": "echo '🐳 Building tunnel service...' && docker-compose --env-file .env.docker --profile tunnel build tunnel --no-cache",
