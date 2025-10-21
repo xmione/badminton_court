@@ -273,7 +273,7 @@ AUTHENTICATION_BACKENDS = [
 # Django Allauth Configuration - Updated to remove deprecation warnings
 ACCOUNT_LOGIN_METHODS = {'email'}  # Allow login with email only
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Required fields for signup
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # or 'optional' or 'none'
+ACCOUNT_EMAIL_VERIFICATION = 'none' 
 ACCOUNT_USERNAME_BLACKLIST = ['admin', 'staff', 'root']
 LOGIN_REDIRECT_URL = '/'  # Redirect to dashboard after login
 LOGOUT_REDIRECT_URL = '/accounts/login/'  # Redirect to login after logout
@@ -348,25 +348,14 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
 
 # Email configuration
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST')  # Postal server
-EMAIL_PORT = int(os.getenv('EMAIL_PORT'))  # Postal SMTP port
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')  # Or your SMTP username
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Or your SMTP password
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-# badminton_court/settings.py
-
-# Email configuration with system SSL context
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('EMAIL_HOST')  
-EMAIL_PORT = int(os.getenv('EMAIL_PORT'))  
+EMAIL_BACKEND = 'badminton_court.email_backend.CustomEmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-
-
+ 
 # Admin user settings
 ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
 ADMIN_FIRST_NAME = os.getenv('ADMIN_FIRST_NAME')

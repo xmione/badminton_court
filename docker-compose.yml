@@ -70,26 +70,24 @@ services:
       - presentation
       - tunnel  
   
-  # Development Web Service (dev and tunnel profiles only)
+# Development Web Service (dev and tunnel profiles only)
   web-dev:
     container_name: web-dev
     build: 
       context: .
       target: web
+    user: root
     entrypoint: ["/bin/sh", "-c"]
-    command: ["python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+    command: ["cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt && update-ca-certificates && su appuser -c 'python manage.py migrate && python manage.py runserver 0.0.0.0:8000'"]
     volumes:
       - .:/app
       - /app/node_modules
       - /app/venv
-      - ./certs/ca.pem:/etc/ssl/certs/ca-posteio.pem 
+      - ./certs:/certs:ro
     ports:
       - "8000:8000"
     env_file:
       - .env.docker
-    environment:
-      #- SSL_CERT_FILE=/dev/null 
-      - SSL_CERT_FILE=${SSL_CERT_FILE}
     networks:
       - app-network
     profiles:
