@@ -33,6 +33,11 @@ services:
       - app-network
     profiles:
       - dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   
   # Test Database (only for test profile)
   db-test:
@@ -71,21 +76,33 @@ services:
     build: 
       context: .
       target: web
-    entrypoint: ["python", "manage.py"] 
-    command: ["runserver", "0.0.0.0:8000"] 
-    volumes: *app-volumes
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/venv
+      - ./certs/ca.pem:/etc/ssl/certs/ca-posteio.pem 
     ports:
       - "8000:8000"
     env_file:
       - .env.docker
+    environment:
+      #- SSL_CERT_FILE=/dev/null 
+      - SSL_CERT_FILE=${SSL_CERT_FILE}
     networks:
       - app-network
     profiles:
       - dev
       - tunnel  
     depends_on:
-      - redis
-      
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy  
+      mail-test:
+        condition: service_healthy
+
   # Test Web Service (only for test profile)
   web-test:
     container_name: web-test
@@ -106,8 +123,6 @@ services:
       - test
     depends_on:
       - redis
-  
-    # Celery Worker (dev profile only)
   
     # Celery Worker (dev profile only)
   celery:
@@ -158,14 +173,25 @@ services:
       - "587:587"  # Submission
       - "465:465"  # SMTPS
     environment:
-      - HTTPS=OFF # Disables SSL for simple local testing
+      - HTTPS=ON
     volumes:
       - poste_data:/data # Persist mail data
+      - ./certs/posteio-cert.pem:/data/ssl/cert.pem 
+      - ./certs/posteio-key.pem:/data/ssl/key.pem
     networks:
       - app-network
     profiles:
       - dev
       - test
+    healthcheck:
+      # This uses netcat (nc) to check if the SMTP port 587 is actually open and listening.
+      # It will only be marked 'healthy' when the SMTP service is ready.
+      test: ["CMD", "nc", "-zv", "localhost", "587"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 60s # Give it up to 60 seconds to fully start
+
   # --- END: NEW SIMPLE MAIL SERVER ---
  
   # Ngrok Tunnel Service (depends on dev web service)
@@ -189,11 +215,12 @@ services:
       - tunnel
 
     # Cypress Testing 
+  
   cypress:
     container_name: cypress
     build:
       context: .
-      dockerfile: Dockerfile.cypress # Uses the slim, modern Dockerfile
+      dockerfile: Dockerfile.cypress 
     volumes:
       - ./cypress:/e2e/cypress
       - ./cypress.config.js:/e2e/cypress.config.js
@@ -218,7 +245,7 @@ services:
     container_name: presentation
     build:
       context: .
-      dockerfile: Dockerfile.cypress # <-- CHANGE THIS LINE
+      dockerfile: Dockerfile.cypress 
     volumes:
       - ./cypress:/e2e/cypress
       - ./cypress.config.js:/e2e/cypress.config.js

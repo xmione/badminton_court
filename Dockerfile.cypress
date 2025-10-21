@@ -1,11 +1,15 @@
 # Dockerfile.cypress
 FROM cypress/included:15.3.0
 
-# Install FFmpeg for video recording
-RUN apt-get update && apt-get install -y ffmpeg
+# Install FFmpeg for video recording and other dependencies
+RUN apt-get update && apt-get install -y ffmpeg xvfb ca-certificates
 
-# Install xvfb for virtual display (needed for headed mode)
-RUN apt-get update && apt-get install -y xvfb
+# Create SSL certificates directory and copy your SSL certificate
+RUN mkdir -p /etc/ssl/certs
+COPY ./certs/ca.pem /etc/ssl/certs/ca-posteio.pem
+
+# Update CA certificates to include your custom certificate
+RUN update-ca-certificates
 
 # Set working directory to /e2e (where Cypress expects to be)
 WORKDIR /e2e
@@ -26,11 +30,9 @@ COPY cypress.config.js ./
 # Create a script to start virtual display and run commands
 RUN echo '#!/bin/bash\n\
 Xvfb :99 -screen 0 1920x1080x24 &\n\
+export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-posteio.pem\n\
 exec "$@"' > /start-xvfb.sh && \
 chmod +x /start-xvfb.sh
 
 # Set the entrypoint to start virtual display
 ENTRYPOINT ["/start-xvfb.sh"]
-
-# Default command
-# CMD ["cypress", "run", "--headless"]

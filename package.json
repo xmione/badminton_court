@@ -4,6 +4,13 @@
   "description": "Badminton Court Management System",
   "scripts": {
     "dev": "echo '🚀 Starting local development environment...' && cross-env ENVIRONMENT=development python manage.py runserver 0.0.0.0:8000",
+    "docker:dev-start": "echo '🚀 Ensuring certificates exist and starting dev environment...' && npm run certs:generate && npm run docker:dev-detached",
+    "docker:dev-reset-and-start": "echo '🔄 Resetting dev environment and starting fresh...' && npm run docker:rebuild-dev && npm run certs:regenerate && npm run docker:dev-detached && powershell -Command \"Start-Sleep -Seconds 10\" && npm run docker:reset-db-migrate",
+    "docker:dev-migrate": "echo '🔧 Running database migrations in dev container...' && docker-compose --env-file .env.docker --profile dev exec -T web-dev python manage.py migrate",
+    "docker:reset-db": "echo '🔄 Resetting database...' && powershell -ExecutionPolicy Bypass -File Scripts/reset-db-docker.ps1 -Force",
+    "docker:reset-db-migrate": "echo '🔄 Resetting database with migrations...' && powershell -ExecutionPolicy Bypass -File Scripts/reset-db-docker.ps1 -Force -Migrate",
+    "docker:reset-db-full": "echo '🔄 Full database reset with test data...' && powershell -ExecutionPolicy Bypass -File Scripts/reset-db-docker.ps1 -Force -Migrate -LoadTestData",
+    
     "dev:detached": "echo '🚀 Starting local development environment in detached mode...' && cross-env ENVIRONMENT=development node scripts/run-detached.js",
     "dev:stop": "echo '🛑 Stopping local dev server development...' && cross-env ENVIRONMENT=development node scripts/stop-server.js",
     "dev:load-data": "echo '📊 Loading local dev data...' && cross-env ENVIRONMENT=development python manage.py load_test_data",
@@ -58,6 +65,12 @@
     "docker:select-presentation": "echo '🎬 Select a Cypress test from the list and run it for presentation (headed) in Docker...' && docker-compose --env-file .env.docker --profile presentation run --rm presentation node scripts/create-presentation-docker.js",
     "docker:post-process-videos": "echo '⚡ Running Post-Process Videos in Docker...' && docker-compose --env-file .env.docker --profile presentation run --rm presentation node scripts/post-process-videos-docker.js",
     "docker:cypress-presentation-spec": "echo '🚀 Running Docker Cypress tests for presentation spec...' && docker-compose --env-file .env.docker --profile test exec cypress run --headed --browser chrome --config video=true --spec && npm run docker:post-process-videos",
+
+    "certs:generate": "echo '🔐 Generating SSL certificates for Poste.io...' && powershell -ExecutionPolicy Bypass -File scripts/generate-certs.ps1",
+    "certs:generate:ps": "echo '🔐 Generating SSL certificates for Posteio (PowerShell)...' && powershell -ExecutionPolicy Bypass -File scripts/generate-certs.ps1",
+    "certs:regenerate": "echo '🔄 Regenerating SSL certificates for Poste.io...' && powershell -ExecutionPolicy Bypass -File scripts/generate-certs.ps1 -Force",
+    "certs:create": "echo '🔐 Creating openssl certificates for localhost...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\createcert.ps1\"",
+ 
     "docker:logs": "echo '📋 Showing service logs...' && docker-compose logs -f",
     "docker:shell": "echo '🖥️  Opening shell in service container...' && docker-compose exec",
     "docker:down-volumes": "echo '🗑️  Stopping all services and removing volumes...' && docker-compose down -v",
@@ -68,15 +81,14 @@
     "shell": "echo '🖥️  Opening shell in service container...' && docker-compose --profile dev exec",
     "pfs": "echo 'Print the Project Folder Structure..' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\pfs.ps1\"",
     "psql": "echo 'Running PSQL..' && docker exec -it db psql -U dbuser -d badminton_court",
-    "certs:create": "echo 'Creating openssl certificates for localhost...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\createcert.ps1\"",
     "encryptenvfiles": "echo 'Encrypting .env files...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\encryptenvfiles.ps1\"",
     "decryptenvfiles": "echo 'Decrypting .env files...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\decryptenvfiles.ps1\"",
     "createpostio": "echo 'Creating PostIO container...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\createpostio.ps1\"",
-    "docker:backup-images": "powershell -Command \"echo 'Backing up Docker images...'; if (-not (Test-Path './backups')) { New-Item -ItemType Directory -Path './backups' | Out-Null }; echo 'Checking if Docker images exist...'; docker images | findstr 'badminton_court'; echo 'Starting backup process (this may take a while)...'; docker save -o ./backups/all-images.tar badminton_court-postal:latest badminton_court-celery-beat:latest badminton_court-celery:latest badminton_court-web-dev:latest badminton_court-web-test:latest badminton_court-web:latest badminton_court-cypress:latest badminton_court-presentation:latest badminton_court-tunnel:latest badminton_court-test-setup:latest; if ($?) { echo 'Images backed up successfully' } else { echo 'Error: Backup failed' }\"",
-    "docker:restore-images": "powershell -Command \"echo 'Restoring Docker images...'; docker load -i ./backups/all-images.tar; if ($?) { echo 'Images restored successfully' } else { echo 'Error: Restore failed' }\"",
-    "docker:backup-individual": "powershell -Command \"echo 'Backing up individual Docker images...'; if (-not (Test-Path './backups')) { New-Item -ItemType Directory -Path './backups' | Out-Null }; echo 'Backing up postal image...'; docker save -o ./backups/postal-image.tar badminton_court-postal:latest; echo 'Backing up celery-beat image...'; docker save -o ./backups/celery-beat-image.tar badminton_court-celery-beat:latest; echo 'Backing up celery image...'; docker save -o ./backups/celery-image.tar badminton_court-celery:latest; echo 'Backing up web-dev image...'; docker save -o ./backups/web-dev-image.tar badminton_court-web-dev:latest; echo 'Backing up web-test image...'; docker save -o ./backups/web-test-image.tar badminton_court-web-test:latest; echo 'Backing up web image...'; docker save -o ./backups/web-image.tar badminton_court-web:latest; echo 'Backing up cypress image...'; docker save -o ./backups/cypress-image.tar badminton_court-cypress:latest; echo 'Backing up presentation image...'; docker save -o ./backups/presentation-image.tar badminton_court-presentation:latest; echo 'Backing up tunnel image...'; docker save -o ./backups/tunnel-image.tar badminton_court-tunnel:latest; echo 'Backing up test-setup image...'; docker save -o ./backups/test-setup-image.tar badminton_court-test-setup:latest; echo 'Individual images backed up successfully'\"",
-    "docker:restore-image": "powershell -Command \"param($imageName) echo 'Restoring specific Docker image...'; if (Test-Path \\\"./backups/$imageName-image.tar\\\") { docker load -i \\\"./backups/$imageName-image.tar\\\"; echo \\\"$imageName image restored successfully\\\" } else { echo \\\"Error: $imageName image backup not found\\\" }\"",
-    "docker:list-backups": "powershell -Command \"echo 'Available image backups:'; Get-ChildItem -Path ./backups/*-image.tar -ErrorAction SilentlyContinue | ForEach-Object { $_.Name.Replace('-image.tar', '') }\""
+    "docker:backup-images": "node Scripts/backupImages.js",
+    "docker:restore-images": "node Scripts/restoreImages.js",
+    "docker:backup-individual": "node Scripts/backupIndividual.js",
+    "docker:restore-image": "node Scripts/restoreImage.js",
+    "docker:list-backups": "node Scripts/listBackups.js"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

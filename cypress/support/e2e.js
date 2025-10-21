@@ -28,34 +28,9 @@ before(() => {
     statusId = id; // Assign the ID returned by showStatusMessage
   });
 
-  cy.wait(10000);
-  // Chaining the commands ensures proper sequence and visual updates
-  cy.then(() => {
-    cy.updateStatusMessage(statusId, 'Clearing cookies and localStorage to ensure clean state...', 'This may take a moment...');
-  })
-    .wait(1000) // Add a small wait to allow DOM to render the update
-    .then(() => {
-      // Clear cookies and localStorage to ensure clean state
-      cy.clearCookies();
-      cy.clearLocalStorage();
-    })
-    .then(() => {
-      cy.updateStatusMessage(statusId, 'Initializing database...', 'Please be patient...');
-    })
-    .wait(1000) // Add a small wait
-    .then(() => {
-      // Run Django migrations to ensure tables exist
-      cy.exec('python manage.py migrate', { timeout: 60000, failOnNonZeroExit: false })
-        .then((result) => {
-          if (result.code !== 0) {
-            cy.log(`Migration failed: ${result.stderr}`);
-          } else {
-            cy.log('Migrations completed successfully');
-          }
-        });
-    
-    });
-
+  // Clear cookies and localStorage to ensure a clean browser state before every test
+  cy.clearCookies();
+  cy.clearLocalStorage();
 
   // Set up error collection with stack trace
   Cypress.on('fail', (error, runnable) => {

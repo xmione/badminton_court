@@ -29,7 +29,8 @@ module.exports = defineConfig({
     browser: "chrome",
     modifiedObstructiveThirdPartyCodeResolution: "warning",
     experimentalModifyObstructiveThirdPartyCode: true,
-
+    experimentalSourceRewriting: false,
+    
     setupNodeEvents(on, config) {
       // --- EXPLICIT ENVIRONMENT VARIABLE LOADING ---
       // Manually read and set environment variables from the correct .env file.

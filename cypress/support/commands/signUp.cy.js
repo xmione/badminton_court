@@ -7,6 +7,7 @@ export const signUp = () => {
 
         // 1. Generate a unique email for this test run to prevent conflicts
         const uniqueEmail = Cypress.env('ADMIN_EMAIL');
+        // const uniqueEmail = `testuser-${Date.now()}@aeropace.com`;
         const password = Cypress.env('ADMIN_PASSWORD');
 
         cy.log(`Signing up with new email: ${uniqueEmail}`);
@@ -20,9 +21,13 @@ export const signUp = () => {
         // Submit form
         cy.get('button[type="submit"]').click();
 
-        // 3. Verify the "verification email sent" message is visible
-        // This confirms Django has processed the signup and sent the email.
-        cy.contains(/verification email sent/i, { timeout: 10000 }).should('be.visible');
+        cy.pause();
+        // 3. *** THE FIX IS HERE ***
+        // Verify the email verification page is displayed correctly.
+        // This is the standard page from django-allauth after registration.
+        cy.url().should('include', '/accounts/confirm-email/');
+        cy.get('h1').should('contain', 'Verify Your Email Address');
+        cy.contains('We have sent an email to you for verification.').should('be.visible');
 
         // 4. Call the custom API to retrieve the verification token from the database
         cy.request({
@@ -46,7 +51,6 @@ export const signUp = () => {
         });
 
         // 8. Return the unique email address so it can be used by later commands in the test
-        // e.g., cy.signUp().then((email) => cy.login(email, password));
         cy.wrap(uniqueEmail);
     });
 };

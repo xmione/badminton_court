@@ -35,7 +35,7 @@ USER appuser
 # Web service stage
 FROM base AS web
 EXPOSE 8000
-ENTRYPOINT ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 # Tunnel service stage
 FROM base AS tunnel

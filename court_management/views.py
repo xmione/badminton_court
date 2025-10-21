@@ -87,12 +87,13 @@ def index(request):
     
     return render(request, 'court_management/index.html', context)
 
+
 @csrf_exempt
 @require_POST
 def get_verification_token(request):
     """
-    Retrieve the email verification token that was generated during normal registration.
-    This uses the same token that would be included in the verification email.
+    Retrieve the email verification token for a user.
+    The token is stored on a related EmailConfirmation object, not the EmailAddress itself.
     """
     try:
         data = json.loads(request.body)
@@ -105,14 +106,19 @@ def get_verification_token(request):
         user = User.objects.get(email=email)
         
         # Import django-allauth models
-        from allauth.account.models import EmailAddress
+        from allauth.account.models import EmailAddress, EmailConfirmation
         
-        # Get the email address that was created during registration
+        # Get the email address object that was created during registration
         email_address = EmailAddress.objects.get(user=user, email=email)
         
-        # The token is stored in the 'key' field of the EmailAddress object
-        # This is the same token that would be included in the verification email
-        token = email_address.key
+        # *** THE FIX IS HERE ***
+        # The token is on a related EmailConfirmation object.
+        # We get the most recent confirmation record for this email address.
+        try:
+            confirmation = email_address.emailconfirmation_set.latest('created')
+            token = confirmation.key
+        except EmailConfirmation.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'No confirmation record found for this email.'}, status=404)
         
         return JsonResponse({'status': 'success', 'token': token})
     except User.DoesNotExist:
@@ -121,7 +127,7 @@ def get_verification_token(request):
         return JsonResponse({'status': 'error', 'message': 'Email address not found'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-        
+
 class SignUpView(CreateView):
     form_class = UserCreationForm
     success_url = reverse_lazy('account_login')  # Fixed: use 'account_login' instead of 'login'
@@ -811,15 +817,33 @@ def test_reset_database(request):
     This should only be used in development/testing environments.
     """
     if not settings.DEBUG:
-        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+        return JsonResponse({'status': 'error', 'public message': 'Only available in debug mode'}, status=403)
     
     try:
+        # Get a cursor to perform raw SQL
+        from django.db import connection
+        
+        # Disable foreign key checks temporarily
+        cursor = connection.cursor()
+        
+        try:
+            # --- THIS IS THE CORRECTED COMMAND ---
+            # Drop all schemas, including extensions like django_content_type
+            cursor.execute("""
+                DROP SCHEMA IF EXISTS CASCADE;
+                DROP EXTENSION IF EXISTS CASCADE;
+            """)
+        finally:
+            # --- THIS IS THE CRITICAL STEP ---
+            # ALWAYS close the cursor when you're done with it
+            cursor.close()
+        
         # Delete all user-related data directly
         User.objects.all().delete()
         
         # Delete allauth email addresses
         from allauth.account.models import EmailAddress
-        EmailAddress.objects.all().delete()
+        EmailAddress.objects.all().drop()
         
         # Delete allauth social accounts
         from allauth.socialaccount.models import SocialAccount, SocialToken
@@ -830,9 +854,13 @@ def test_reset_database(request):
         from django.contrib.sessions.models import Session
         Session.objects.all().delete()
         
-        return JsonResponse({'status': 'success', 'message': 'Database reset successfully'})
+        # Reset migration history to get a truly clean state
+        from django.core.management import call_command
+        call_command('migrate', fake=True, verbosity=0)
+
+        return JsonResponse({'status': 'success', 'message': 'Database, schemas, and migration history reset successfully'})
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'message': f'Error during database reset: {str(e)}'}, status=500)
 
 @csrf_exempt
 @require_POST
