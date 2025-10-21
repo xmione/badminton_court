@@ -67,16 +67,16 @@ if ($Migrate) {
         exit 1
     }
     
-    if ($LoadTestData) {
-        Write-Host ""
-        Write-Host "Loading test data..." -ForegroundColor Yellow
-        try {
-            docker-compose --env-file .env.docker --profile dev exec -T web-dev python manage.py load_test_data
-            Write-Host "SUCCESS: Test data loaded" -ForegroundColor Green
-        } catch {
-            Write-Host "WARNING: Failed to load test data: $_" -ForegroundColor Yellow
-        }
-    }
+    # if ($LoadTestData) {
+    #     Write-Host ""
+    #     Write-Host "Loading test data..." -ForegroundColor Yellow
+    #     try {
+    #         docker-compose --env-file .env.docker --profile dev exec -T web-dev python manage.py load_test_data
+    #         Write-Host "SUCCESS: Test data loaded" -ForegroundColor Green
+    #     } catch {
+    #         Write-Host "WARNING: Failed to load test data: $_" -ForegroundColor Yellow
+    #     }
+    # }
     
     Write-Host ""
     Write-Host "Database reset and migration completed!" -ForegroundColor Green

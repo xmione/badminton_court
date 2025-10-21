@@ -820,45 +820,28 @@ def test_reset_database(request):
         return JsonResponse({'status': 'error', 'public message': 'Only available in debug mode'}, status=403)
     
     try:
-        # Get a cursor to perform raw SQL
-        from django.db import connection
+        # Delete all data in reverse order of foreign key dependencies
+        from django.apps import apps
         
-        # Disable foreign key checks temporarily
-        cursor = connection.cursor()
+        # Get all models
+        all_models = apps.get_models()
         
-        try:
-            # --- THIS IS THE CORRECTED COMMAND ---
-            # Drop all schemas, including extensions like django_content_type
-            cursor.execute("""
-                DROP SCHEMA IF EXISTS CASCADE;
-                DROP EXTENSION IF EXISTS CASCADE;
-            """)
-        finally:
-            # --- THIS IS THE CRITICAL STEP ---
-            # ALWAYS close the cursor when you're done with it
-            cursor.close()
+        # Sort models by name to ensure consistent deletion order
+        sorted_models = sorted(all_models, key=lambda model: model._meta.label)
         
-        # Delete all user-related data directly
-        User.objects.all().delete()
+        # Delete all instances of each model
+        for model in sorted_models:
+            try:
+                model.objects.all().delete()
+            except Exception as e:
+                # Some models might not exist or have issues, continue anyway
+                print(f"Error deleting {model._meta.label}: {str(e)}")
         
-        # Delete allauth email addresses
-        from allauth.account.models import EmailAddress
-        EmailAddress.objects.all().drop()
-        
-        # Delete allauth social accounts
-        from allauth.socialaccount.models import SocialAccount, SocialToken
-        SocialAccount.objects.all().delete()
-        SocialToken.objects.all().delete()
-        
-        # Delete any sessions
-        from django.contrib.sessions.models import Session
-        Session.objects.all().delete()
-        
-        # Reset migration history to get a truly clean state
+        # Reset migration history
         from django.core.management import call_command
         call_command('migrate', fake=True, verbosity=0)
 
-        return JsonResponse({'status': 'success', 'message': 'Database, schemas, and migration history reset successfully'})
+        return JsonResponse({'status': 'success', 'message': 'Database reset successfully'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f'Error during database reset: {str(e)}'}, status=500)
 
@@ -956,11 +939,19 @@ def test_setup_admin(request):
         # Parse request body for options
         data = json.loads(request.body) if request.body else {}
         
-        # Get parameters
-        username = data.get('username', 'admin')
-        password = data.get('password', 'password')
-        email = data.get('email', 'admin@example.com')
-        reset = data.get('reset', False)
+        # Get parameters from request or environment variables (no fallbacks)
+        username = data.get('username', getattr(settings, 'ADMIN_EMAIL', None))
+        password = data.get('password', getattr(settings, 'ADMIN_PASSWORD', None))
+        email = data.get('email', getattr(settings, 'ADMIN_EMAIL', None))
+        reset = data.get('reset', True)
+        
+        # Verify environment variables are set
+        if not username:
+            return JsonResponse({'status': 'error', 'message': 'ADMIN_EMAIL environment variable is not set'}, status=400)
+        if not password:
+            return JsonResponse({'status': 'error', 'message': 'ADMIN_PASSWORD environment variable is not set'}, status=400)
+        if not email:
+            return JsonResponse({'status': 'error', 'message': 'ADMIN_EMAIL environment variable is not set'}, status=400)
         
         # Reset existing admin if requested
         if reset:
@@ -1021,7 +1012,7 @@ def test_setup_admin(request):
         return JsonResponse({'status': 'success', 'message': message})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-    
+
 @csrf_exempt
 @require_POST
 def test_get_verification_token(request):

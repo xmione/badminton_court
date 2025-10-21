@@ -7,9 +7,9 @@ export const setupTestAdmin = () => {
 
         const defaultOptions = {
             reset: true,
-            username: 'admin',
-            password: 'password',
-            email: 'admin@example.com'
+            username: Cypress.env('ADMIN_EMAIL'),
+            password: Cypress.env('ADMIN_PASSWORD'),
+            email: Cypress.env('ADMIN_EMAIL')
         }
 
         const finalOptions = { ...defaultOptions, ...options }
