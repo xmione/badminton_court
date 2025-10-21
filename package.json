@@ -4,8 +4,8 @@
   "description": "Badminton Court Management System",
   "scripts": {
     "dev": "echo '🚀 Starting local development environment...' && cross-env ENVIRONMENT=development python manage.py runserver 0.0.0.0:8000",
-    "docker:dev-start": "echo '🚀 Ensuring certificates exist and starting dev environment...' && npm run certs:generate && npm run docker:dev-detached",
-    "docker:dev-reset-and-start": "echo '🔄 Resetting dev environment and starting fresh...' && npm run docker:rebuild-dev && npm run certs:regenerate && npm run docker:dev-detached && powershell -Command \"Start-Sleep -Seconds 10\" && npm run docker:reset-db-migrate",
+    "docker:dev-start": "echo '🚀 Ensuring certificates exist and starting dev environment...' && npm run certs:create && npm run docker:dev-detached",
+    "docker:dev-reset-and-start": "echo '🔄 Resetting dev environment and starting fresh...' && npm run docker:rebuild-dev && npm run certs:create && npm run docker:dev-detached && powershell -Command \"Start-Sleep -Seconds 10\" && npm run docker:reset-db-migrate",
     "docker:dev-migrate": "echo '🔧 Running database migrations in dev container...' && docker-compose --env-file .env.docker --profile dev exec -T web-dev python manage.py migrate",
     "docker:reset-db": "echo '🔄 Resetting database...' && powershell -ExecutionPolicy Bypass -File Scripts/reset-db-docker.ps1 -Force",
     "docker:reset-db-migrate": "echo '🔄 Resetting database with migrations...' && powershell -ExecutionPolicy Bypass -File Scripts/reset-db-docker.ps1 -Force -Migrate",
@@ -67,10 +67,7 @@
     "docker:post-process-videos": "echo '⚡ Running Post-Process Videos in Docker...' && docker-compose --env-file .env.docker --profile presentation run --rm presentation node scripts/post-process-videos-docker.js",
     "docker:cypress-presentation-spec": "echo '🚀 Running Docker Cypress tests for presentation spec...' && docker-compose --env-file .env.docker --profile test exec cypress run --headed --browser chrome --config video=true --spec && npm run docker:post-process-videos",
 
-    "certs:generate": "echo '🔐 Generating SSL certificates for Poste.io...' && powershell -ExecutionPolicy Bypass -File scripts/generate-certs.ps1",
-    "certs:generate:ps": "echo '🔐 Generating SSL certificates for Posteio (PowerShell)...' && powershell -ExecutionPolicy Bypass -File scripts/generate-certs.ps1",
-    "certs:regenerate": "echo '🔄 Regenerating SSL certificates for Poste.io...' && powershell -ExecutionPolicy Bypass -File scripts/generate-certs.ps1 -Force",
-    "certs:create": "echo '🔐 Creating openssl certificates for localhost...' && powershell -ExecutionPolicy Bypass -Command \". .\\Scripts\\createcert.ps1\"",
+    "certs:create": "echo '🔐 Creating SSL certificates for development...' && node scripts/generate-certs.js",
  
     "docker:logs": "echo '📋 Showing service logs...' && docker-compose logs -f",
     "docker:shell": "echo '🖥️  Opening shell in service container...' && docker-compose exec",
