@@ -1,5 +1,3 @@
-# Docker Management Menu Script
-# Scripts/docker-menu.ps1
 function Test-EnvFile {
     $envFile = ".env.docker"
     Write-Host "Checking environment file..." -ForegroundColor Yellow
@@ -99,6 +97,7 @@ do {
     Write-Host "   9.2. Deep cleanup with Docker Desktop restart" -ForegroundColor White
     Write-Host "   9.3. Factory reset Docker Desktop" -ForegroundColor White
     Write-Host "   9.4. Clean Docker content store (fixes 'blob not found' errors)" -ForegroundColor White
+    Write-Host "   9.5. COMPLETE Docker reset (fixes content store corruption)" -ForegroundColor Red
     Write-Host ""
     Write-Host "10. BACKUP & RESTORE" -ForegroundColor Cyan
     Write-Host "   10.1. Backup all Docker images" -ForegroundColor White
@@ -448,6 +447,42 @@ do {
             Write-Host "Waiting for Docker Desktop to initialize..." -ForegroundColor Yellow
             Start-Sleep -Seconds 30
             Write-Host "Docker Desktop should be starting up. Please wait for it to fully initialize." -ForegroundColor Green
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }
+        "9.5" { 
+            Write-Host "WARNING: This will completely reset Docker's content store!" -ForegroundColor Red
+            Write-Host "This is the most aggressive cleanup option and should fix 'blob not found' errors." -ForegroundColor Red
+            $confirm = Read-Host "Are you sure you want to continue? (y/n)"
+            if ($confirm -eq "y") {
+                Write-Host "Stopping all Docker processes..." -ForegroundColor Yellow
+                Get-Process "*docker*" -ErrorAction SilentlyContinue | Stop-Process -Force
+                Write-Host "Waiting for processes to fully terminate..." -ForegroundColor Yellow
+                Start-Sleep -Seconds 10
+                
+                Write-Host "Clearing Docker's content store..." -ForegroundColor Yellow
+                Remove-Item -Path "$env:LOCALAPPDATA\Docker" -Recurse -Force -ErrorAction SilentlyContinue
+                Remove-Item -Path "$env:APPDATA\Docker" -Recurse -Force -ErrorAction SilentlyContinue
+                
+                Write-Host "Starting Docker Desktop..." -ForegroundColor Yellow
+                Start-Process -FilePath "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+                
+                Write-Host "Waiting for Docker Desktop to initialize..." -ForegroundColor Yellow
+                Start-Sleep -Seconds 60
+                
+                try {
+                    docker version 2>$null
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Host "Docker Desktop is running successfully!" -ForegroundColor Green
+                        Write-Host "Now you can try option 1.7 to rebuild and start your dev environment." -ForegroundColor Green
+                    } else {
+                        Write-Host "Docker Desktop started but Docker daemon is not responding." -ForegroundColor Yellow
+                        Write-Host "You may need to restart Docker Desktop manually from the Start Menu." -ForegroundColor Yellow
+                    }
+                } catch {
+                    Write-Host "Docker is not responding. Please check Docker Desktop manually." -ForegroundColor Red
+                }
+            }
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
