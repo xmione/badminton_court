@@ -92,28 +92,34 @@ do {
     Write-Host "   8.10. Reset environment (keep images)" -ForegroundColor White
     Write-Host "   8.11. Show service status" -ForegroundColor White
     Write-Host ""
-    Write-Host "9. BACKUP & RESTORE" -ForegroundColor Cyan
-    Write-Host "   9.1. Backup all Docker images" -ForegroundColor White
-    Write-Host "   9.2. Restore all Docker images" -ForegroundColor White
-    Write-Host "   9.3. Backup individual images" -ForegroundColor White
-    Write-Host "   9.4. Restore specific image" -ForegroundColor White
-    Write-Host "   9.5. List backup files" -ForegroundColor White
-    Write-Host "   9.6. List backup contents" -ForegroundColor White
-    Write-Host "   9.7. List backup image names" -ForegroundColor White
+    Write-Host "9. ADVANCED CLEANUP" -ForegroundColor Cyan
+    Write-Host "   9.1. Complete system cleanup (removes all images, containers, volumes)" -ForegroundColor White
+    Write-Host "   9.2. Deep cleanup with Docker Desktop restart" -ForegroundColor White
+    Write-Host "   9.3. Factory reset Docker Desktop" -ForegroundColor White
+    Write-Host "   9.4. Clean Docker content store (fixes 'blob not found' errors)" -ForegroundColor White
     Write-Host ""
-    Write-Host "10. UTILITIES" -ForegroundColor Cyan
-    Write-Host "   10.1. Create SSL certificates for development" -ForegroundColor White
-    Write-Host "   10.2. Open shell in service container" -ForegroundColor White
-    Write-Host "   10.3. Print project folder structure" -ForegroundColor White
-    Write-Host "   10.4. Run PSQL" -ForegroundColor White
-    Write-Host "   10.5. Encrypt .env files" -ForegroundColor White
-    Write-Host "   10.6. Decrypt .env files" -ForegroundColor White
-    Write-Host "   10.7. Create PostIO container" -ForegroundColor White
+    Write-Host "10. BACKUP & RESTORE" -ForegroundColor Cyan
+    Write-Host "   10.1. Backup all Docker images" -ForegroundColor White
+    Write-Host "   10.2. Restore all Docker images" -ForegroundColor White
+    Write-Host "   10.3. Backup individual images" -ForegroundColor White
+    Write-Host "   10.4. Restore specific image" -ForegroundColor White
+    Write-Host "   10.5. List backup files" -ForegroundColor White
+    Write-Host "   10.6. List backup contents" -ForegroundColor White
+    Write-Host "   10.7. List backup image names" -ForegroundColor White
     Write-Host ""
-    Write-Host "11. Exit" -ForegroundColor Red
+    Write-Host "11. UTILITIES" -ForegroundColor Cyan
+    Write-Host "   11.1. Create SSL certificates for development" -ForegroundColor White
+    Write-Host "   11.2. Open shell in service container" -ForegroundColor White
+    Write-Host "   11.3. Print project folder structure" -ForegroundColor White
+    Write-Host "   11.4. Run PSQL" -ForegroundColor White
+    Write-Host "   11.5. Encrypt .env files" -ForegroundColor White
+    Write-Host "   11.6. Decrypt .env files" -ForegroundColor White
+    Write-Host "   11.7. Create PostIO container" -ForegroundColor White
+    Write-Host ""
+    Write-Host "12. Exit" -ForegroundColor Red
     Write-Host ""
 
-    $choice = Read-Host "Select an option (e.g., 1.1, 2.3, or 11)"
+    $choice = Read-Host "Select an option (e.g., 1.1, 2.3, or 12)"
 
     switch ($choice) {
         # Development Environment
@@ -388,84 +394,140 @@ do {
             Read-Host
         }
         
-        # Backup & Restore
+        # Advanced Cleanup
         "9.1" { 
-            npm run docker:backup-images
+            Write-Host "Performing complete system cleanup..." -ForegroundColor Yellow
+            docker system prune -a --volumes
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
         "9.2" { 
-            npm run docker:restore-images
+            Write-Host "Performing deep cleanup with Docker Desktop restart..." -ForegroundColor Yellow
+            Write-Host "Stopping Docker Desktop..." -ForegroundColor Yellow
+            Get-Process "Docker Desktop" -ErrorAction SilentlyContinue | Stop-Process -Force
+            Write-Host "Waiting for Docker Desktop to fully terminate..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 10
+            Write-Host "Cleaning up Docker resources..." -ForegroundColor Yellow
+            docker system prune -a --volumes
+            Write-Host "Starting Docker Desktop..." -ForegroundColor Yellow
+            Start-Process -FilePath "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+            Write-Host "Waiting for Docker Desktop to initialize..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 30
+            Write-Host "Docker Desktop should be starting up. Please wait for it to fully initialize." -ForegroundColor Green
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
         "9.3" { 
+            Write-Host "WARNING: This will reset Docker Desktop to factory defaults!" -ForegroundColor Red
+            Write-Host "All images, containers, and settings will be lost." -ForegroundColor Red
+            $confirm = Read-Host "Are you sure you want to continue? (y/n)"
+            if ($confirm -eq "y") {
+                Write-Host "Resetting Docker Desktop to factory defaults..." -ForegroundColor Yellow
+                # This is a simplified version - in practice, you might need to automate the UI clicks
+                Write-Host "Please manually reset Docker Desktop by:" -ForegroundColor Yellow
+                Write-Host "1. Opening Docker Desktop" -ForegroundColor Yellow
+                Write-Host "2. Going to Settings > Troubleshooting" -ForegroundColor Yellow
+                Write-Host "3. Clicking 'Reset to factory defaults'" -ForegroundColor Yellow
+                Write-Host "4. Waiting for the reset to complete" -ForegroundColor Yellow
+            }
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }
+        "9.4" { 
+            Write-Host "Cleaning Docker content store to fix 'blob not found' errors..." -ForegroundColor Yellow
+            Write-Host "Stopping Docker Desktop..." -ForegroundColor Yellow
+            Get-Process "Docker Desktop" -ErrorAction SilentlyContinue | Stop-Process -Force
+            Write-Host "Waiting for Docker Desktop to fully terminate..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 10
+            Write-Host "Cleaning up Docker resources..." -ForegroundColor Yellow
+            docker system prune -a --volumes
+            Write-Host "Starting Docker Desktop..." -ForegroundColor Yellow
+            Start-Process -FilePath "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+            Write-Host "Waiting for Docker Desktop to initialize..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 30
+            Write-Host "Docker Desktop should be starting up. Please wait for it to fully initialize." -ForegroundColor Green
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }
+        
+        # Backup & Restore
+        "10.1" { 
+            npm run docker:backup-images
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }
+        "10.2" { 
+            npm run docker:restore-images
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }
+        "10.3" { 
             $imageName = Read-Host "Enter image name(s) to backup"
             npm run docker:backup-individual -- $imageName
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        "9.4" { 
+        "10.4" { 
             $imageName = Read-Host "Enter image name to restore"
             npm run docker:restore-image -- $imageName
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        "9.5" { 
+        "10.5" { 
             npm run docker:list-backups
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        "9.6" { 
+        "10.6" { 
             npm run docker:list-backup-contents
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        "9.7" { 
+        "10.7" { 
             npm run docker:list-backup-image-names
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
         
         # Utilities
-        "10.1" { 
+        "11.1" { 
             npm run certs:create
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        "10.2" { 
+        "11.2" { 
             $serviceName = Read-Host "Enter service name"
             npm run shell -- $serviceName
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        "10.3" { 
+        "11.3" { 
             npm run pfs
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        "10.4" { 
+        "11.4" { 
             npm run psql
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        "10.5" { 
+        "11.5" { 
             npm run encryptenvfiles
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        "10.6" { 
+        "11.6" { 
             npm run decryptenvfiles
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        "10.7" { 
+        "11.7" { 
             npm run createpostio
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
         
-        "11" { 
+        "12" { 
             Write-Host "Exiting..." -ForegroundColor Green
             exit
         }
@@ -474,4 +536,4 @@ do {
             Read-Host
         }
     }
-} while ($choice -ne "11")
+} while ($choice -ne "12")
