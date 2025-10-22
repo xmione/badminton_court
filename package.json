@@ -79,7 +79,8 @@
     "docker:restore-image": "echo '📦 Restoring a specific Docker image from all-images.tar (e.g.: npm run docker:restore-image -- web-dev)...' && node Scripts/restoreImage.js",
     "docker:list-backups": "echo '📋 Listing available backup files in the ./backups directory...' && node Scripts/listBackups.js",
     "docker:list-backup-contents": "echo '📋 Listing the raw contents of the all-images.tar archive...' && node Scripts/listBackupContents.js",
-    "docker:list-backup-image-names": "echo '🏷️ Showing a human-readable list of images in the all-images.tar archive...' && node Scripts/listBackupImageNames.js"
+    "docker:list-backup-image-names": "echo '🏷️ Showing a human-readable list of images in the all-images.tar archive...' && node Scripts/listBackupImageNames.js",
+    "docker:menu": "echo '📋 Showing Docker menu...' && powershell -ExecutionPolicy Bypass -File scripts\\docker-menu.ps1"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
