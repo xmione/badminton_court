@@ -49,6 +49,7 @@ do {
     Write-Host "   3.5. Restart web-dev container" -ForegroundColor White
     Write-Host "   3.6. Start dev environment with certificates" -ForegroundColor White
     Write-Host "   3.7. Reset and start dev environment" -ForegroundColor White
+    Write-Host "   3.8. Force recreate dev containers (keeps existing images)" -ForegroundColor White
     Write-Host ""
     Write-Host "4. DOCKER TESTING ENVIRONMENT" -ForegroundColor Cyan
     Write-Host "   4.1. Start test environment" -ForegroundColor White
@@ -244,7 +245,13 @@ do {
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        
+        "3.8" { 
+            Write-Host "Force recreating dev containers..." -ForegroundColor Yellow
+            docker-compose --env-file .env.docker --profile dev up -d --force-recreate
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }
+
         # Docker Testing Environment
         "4.1" { 
             npm run docker:test
