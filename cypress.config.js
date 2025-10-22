@@ -30,13 +30,14 @@ module.exports = defineConfig({
     modifiedObstructiveThirdPartyCodeResolution: "warning",
     experimentalModifyObstructiveThirdPartyCode: true,
     experimentalSourceRewriting: false,
-    
+
     setupNodeEvents(on, config) {
       // --- EXPLICIT ENVIRONMENT VARIABLE LOADING ---
       // Manually read and set environment variables from the correct .env file.
       // This is the most reliable method for Docker exec.
 
       const envFile = process.env.ENVIRONMENT === 'development' ? '.env.dev' : '.env.docker';
+      console.log(`Cypress: Attempting to load env file: ${envFile}`);
       try {
         const envVars = fs.readFileSync(path.resolve(__dirname, envFile), 'utf8')
           .split('\n')
@@ -49,8 +50,15 @@ module.exports = defineConfig({
             return acc;
           }, {});
 
+        console.log('Cypress: Variables read from file:', envVars);
         // Set all variables from the file into config.env
         config.env = { ...config.env, ...envVars };
+        console.log('Cypress: Final config.env object:', config.env);
+        
+        // Construct POSTE_API_HOST from the individual parts, just like docker-compose.yml
+        if (config.env.POSTE_PROTOCOL && config.env.POSTE_HOSTNAME && config.env.POSTE_PORT) {
+          config.env.POSTE_API_HOST = `${config.env.POSTE_PROTOCOL}://${config.env.POSTE_HOSTNAME}:${config.env.POSTE_PORT}`;
+        }
 
         // Set the baseUrl from the newly loaded variables
         config.baseUrl = config.env.CYPRESS_INTERNAL_baseUrl || config.env.CYPRESS_baseUrl || "http://localhost:8000";

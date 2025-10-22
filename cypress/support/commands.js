@@ -24,6 +24,8 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 
+import './commands/setupPosteio.cy.js'
+import './commands/posteioUserManagement.cy.js'
 import './commands/loginToAdminPage.cy.js'
 import './commands/loginToAdminPageWithInvalidCredentials.cy.js'
 import './commands/signUp.cy.js'

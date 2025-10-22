@@ -88,6 +88,11 @@ services:
       - "8000:8000"
     env_file:
       - .env.docker
+    environment:
+      # Explicitly pass ALL Poste.io variables to the Cypress container
+      - POSTE_API_HOST=${POSTE_PROTOCOL}://${POSTE_HOSTNAME}:${POSTE_PORT}
+      - POSTE_API_USER=${POSTE_API_USER}
+      - POSTE_API_PASSWORD=${POSTE_API_PASSWORD}
     networks:
       - app-network
     profiles:
@@ -228,11 +233,20 @@ services:
       - ./cypress/screenshots:/e2e/cypress/screenshots
       - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
       - ./scripts:/e2e/scripts
+      - ./certs/ca.pem:/etc/ssl/certs/ca-posteio.crt # Don't forget this!
     environment:
+      # This is the default for your Django tests
       - CYPRESS_baseUrl=http://web-test:8000
       - CYPRESS_headed=${CYPRESS_headed}
+      
+      # Explicitly pass ALL Poste.io variables to the Cypress container
+      - POSTE_API_HOST=${POSTE_PROTOCOL}://${POSTE_HOSTNAME}:${POSTE_PORT}
+      - POSTE_API_USER=${POSTE_API_USER}
+      - POSTE_API_PASSWORD=${POSTE_API_PASSWORD}
     env_file:
       - .env.docker
+    # Add an entrypoint to install the cert before running Cypress
+    entrypoint: ["/bin/sh", "-c", "update-ca-certificates && npx cypress"]
     depends_on:
       - web-test
     profiles:
