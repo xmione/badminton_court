@@ -1,3 +1,5 @@
+# Docker Management Menu Script
+# Scripts/docker-menu.ps1
 function Test-EnvFile {
     $envFile = ".env.docker"
     Write-Host "Checking environment file..." -ForegroundColor Yellow
