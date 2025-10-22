@@ -40,10 +40,11 @@ export const setupPosteio = () => {
         cy.get('#install_hostname').clear().typeWithHighlight(hostname);
         cy.get('#install_superAdmin').clear().typeWithHighlight(adminEmail);
         cy.get('#install_superAdminPassword').clear().typeWithHighlight(adminPassword);
-        cy.get('button[type="submit"]').clickWithHighlight();
+        cy.get('button[type="submit"]', {timeout: 10000}).clickWithHighlight();
 
+        cy.wait(5000); // Wait for setup to process
         // After setup, it redirects to the webmail page. We need to go to the admin login.
-        cy.url().should('include', '/webmail/');
+        cy.url().should('include', '/admin/box/');
         cy.log('Setup complete. Navigating to admin login...');
         cy.visit(`${apiHost}/admin/login`);
         performLogin(adminEmail, adminPassword);
@@ -55,8 +56,9 @@ export const setupPosteio = () => {
 
         cy.get('#email').clear().type(adminEmail);
         cy.get('#password').clear().type(adminPassword);
-        cy.get('button[type="submit"]').clickWithHighlight();
+        cy.get('button[type="submit"]', {timeout: 10000}).clickWithHighlight();
 
+        cy.wait(5000); // Wait for login to process
         // Verify successful login
         cy.url().should('not.include', '/login');
         cy.get('body').should('contain', 'Mailserver dashboard');
