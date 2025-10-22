@@ -50,10 +50,10 @@ module.exports = defineConfig({
             return acc;
           }, {});
 
-        console.log('Cypress: Variables read from file:', envVars);
+        // console.log('Cypress: Variables read from file:', envVars);
         // Set all variables from the file into config.env
         config.env = { ...config.env, ...envVars };
-        console.log('Cypress: Final config.env object:', config.env);
+        // console.log('Cypress: Final config.env object:', config.env);
         
         // Construct POSTE_API_HOST from the individual parts, just like docker-compose.yml
         if (config.env.POSTE_PROTOCOL && config.env.POSTE_HOSTNAME && config.env.POSTE_PORT) {

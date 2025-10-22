@@ -32,7 +32,6 @@ services:
     networks:
       - app-network
     profiles:
-      - all
       - dev
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -55,7 +54,6 @@ services:
     networks:
       - app-network
     profiles:
-      - all
       - test
   
   # Redis (shared by all profiles including tunnel)
@@ -67,13 +65,12 @@ services:
     networks:
       - app-network
     profiles:
-      - all
       - dev
       - test
       - presentation
       - tunnel  
   
-# Development Web Service (dev and tunnel profiles only)
+  # Development Web Service (dev and tunnel profiles only)
   web-dev:
     container_name: web-dev
     build: 
@@ -99,16 +96,15 @@ services:
     networks:
       - app-network
     profiles:
-      - all
       - dev
       - tunnel  
     depends_on:
       redis:
         condition: service_started
       db:
-        condition: service_healthy  
-      mail-test:
         condition: service_healthy
+      mail-test:
+        condition: service_started  # Changed from service_healthy to service_started
 
   # Test Web Service (only for test profile)
   web-test:
@@ -127,12 +123,11 @@ services:
     networks:
       - app-network
     profiles:
-      - all
       - test
     depends_on:
       - redis
   
-    # Celery Worker (dev profile only)
+  # Celery Worker (dev profile only)
   celery:
     container_name: celery
     build: 
@@ -148,7 +143,6 @@ services:
     networks:
       - app-network
     profiles:
-      - all
       - dev
   
   # Celery Beat Scheduler (dev profile only)
@@ -168,7 +162,6 @@ services:
       - app-network
     profiles:
       - dev
-      - all
 
   # --- START: NEW SIMPLE MAIL SERVER ---
   # This replaces the complex Postal/MariaDB setup
@@ -193,7 +186,6 @@ services:
     networks:
       - app-network
     profiles:
-      - all
       - dev
       - test
     healthcheck:
@@ -203,7 +195,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
-      start_period: 60s # Give it up to 60 seconds to fully start
+      start_period: 30s # Reduced from 60s to 30s
 
   # --- END: NEW SIMPLE MAIL SERVER ---
  
@@ -225,11 +217,9 @@ services:
     networks:
       - app-network
     profiles:
-      - all
       - tunnel
 
-    # Cypress Testing 
-  
+  # Cypress Testing 
   cypress:
     container_name: cypress
     build:
@@ -260,7 +250,6 @@ services:
       - web-test
     profiles:
       - test
-      - all
     networks:
       - app-network
 
@@ -285,7 +274,6 @@ services:
       - web-dev
     profiles:
       - presentation
-      - all
     networks:
       - app-network
 
@@ -310,6 +298,5 @@ services:
       - .env.docker
     profiles:
       - test
-      - all
     networks:
       - app-network

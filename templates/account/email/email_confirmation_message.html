@@ -1,0 +1,10 @@
+{% load i18n %}
+{% blocktrans %}Please click on the link to verify your email address:{% endblock %}
+
+{{ protocol }}://{{ domain }}{% url 'account_confirm_email' key=confirmation.key %}
+
+{% blocktrans %}If you cannot click the link, please copy and paste the following URL into your browser:{% endblock %}
+
+{{ protocol }}://{{ domain }}{% url 'account_confirm_email' key=confirmation.key %}
+
+{% blocktrans %}Thank you for using our service!{% endblock %}

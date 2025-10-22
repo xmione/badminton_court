@@ -273,8 +273,11 @@ AUTHENTICATION_BACKENDS = [
 # Django Allauth Configuration - Updated to remove deprecation warnings
 ACCOUNT_LOGIN_METHODS = {'email'}  # Allow login with email only
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Required fields for signup
-ACCOUNT_EMAIL_VERIFICATION = 'none' 
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory' 
 ACCOUNT_USERNAME_BLACKLIST = ['admin', 'staff', 'root']
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 LOGIN_REDIRECT_URL = '/'  # Redirect to dashboard after login
 LOGOUT_REDIRECT_URL = '/accounts/login/'  # Redirect to login after logout
 SOCIALACCOUNT_LOGIN_ON_GET = True

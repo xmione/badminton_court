@@ -8,7 +8,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     
     # Authentication URLs
-    path('signup/', views.SignUpView.as_view(), name='signup'),
+    # path('signup/', views.SignUpView.as_view(), name='signup'),
     path('profile/', views.profile, name='profile'),
     
     # Booking URLs
