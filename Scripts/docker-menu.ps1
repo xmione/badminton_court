@@ -50,6 +50,7 @@ do {
     Write-Host "   2.5. Select a Cypress test for presentation (headed)" -ForegroundColor White
     Write-Host "   2.6. Run Post-Process Videos" -ForegroundColor White
     Write-Host "   2.7. Run Cypress tests for presentation spec (headed)" -ForegroundColor White
+    Write-Host "   12.8. Save running containers to Docker Hub" -ForegroundColor White
     Write-Host ""
     Write-Host "3. DOCKER DEVELOPMENT ENVIRONMENT" -ForegroundColor Cyan
     Write-Host "   3.1. Start development environment" -ForegroundColor White
@@ -567,7 +568,7 @@ do {
             $confirm = Read-Host "Are you sure you want to continue? (y/n)"
             if ($confirm -eq "y") {
                 npm run docker:desktop-reset
-                Write-Host "Docker reset completed successfully!" -ForegroundColor Green
+                # Write-Host "Docker reset completed successfully!" -ForegroundColor Green
                 Write-Host "You can now use option 11.6 to completely reset and restart your environment." -ForegroundColor Green
             }
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
@@ -581,7 +582,7 @@ do {
             $confirm = Read-Host "Are you sure you want to continue? (y/n)"
             if ($confirm -eq "y") {
                 npm run docker:desktop-reset-and-rebuild
-                Write-Host "Complete reset, rebuild, and restart finished!" -ForegroundColor Green
+                # Write-Host "Complete reset, rebuild, and restart finished!" -ForegroundColor Green
             }
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
@@ -624,7 +625,13 @@ do {
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        
+
+        "12.8" { 
+            Write-Host "💾 Saving running containers to Docker Hub..." -ForegroundColor Yellow
+            npm run docker:save-to-hub
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }
         # Utilities
         "13.1" { 
             npm run certs:create
