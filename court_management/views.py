@@ -1,5 +1,5 @@
 # court_management/views.py
-
+import logging
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
@@ -1131,12 +1131,19 @@ def test_setup_admin(request):
         email = data.get('email', getattr(settings, 'ADMIN_EMAIL', None))
         reset = data.get('reset', True)
         
+        # Debug logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"test_setup_admin called with username: {username}, email: {email}, reset: {reset}")
+        
         # Verify environment variables are set
         if not username:
+            logger.error("ADMIN_EMAIL environment variable is not set")
             return JsonResponse({'status': 'error', 'message': 'ADMIN_EMAIL environment variable is not set'}, status=400)
         if not password:
+            logger.error("ADMIN_PASSWORD environment variable is not set")
             return JsonResponse({'status': 'error', 'message': 'ADMIN_PASSWORD environment variable is not set'}, status=400)
         if not email:
+            logger.error("ADMIN_EMAIL environment variable is not set")
             return JsonResponse({'status': 'error', 'message': 'ADMIN_EMAIL environment variable is not set'}, status=400)
         
         # Reset existing admin if requested
@@ -1192,13 +1199,16 @@ def test_setup_admin(request):
         
         if created:
             message = f"Admin user '{username}' created successfully"
+            logger.info(message)
         else:
             message = f"Admin user '{username}' updated successfully"
+            logger.info(message)
             
         return JsonResponse({'status': 'success', 'message': message})
     except Exception as e:
+        logger.error(f"Error in test_setup_admin: {str(e)}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
+    
 @csrf_exempt
 @require_POST
 def test_get_verification_token(request):

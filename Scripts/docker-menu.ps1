@@ -1,3 +1,13 @@
+# Docker Management Menu Script
+# This script provides a menu-driven interface for managing Docker environments and services.
+# It allows users to start, stop, and manage various Docker containers and services related to development, testing, and presentation.
+# Ensure you have Docker and Docker Compose installed and running before using this script.
+# Usage: Run this script in PowerShell to display the Docker management menu.
+# Check for .env.docker file in the current directory
+# If not found, display an error message and exit.
+# If found, display the first few lines of the file for verification.
+# Scripts/docker-menu.ps1
+
 function Test-EnvFile {
     $envFile = ".env.docker"
     Write-Host "Checking environment file..." -ForegroundColor Yellow
@@ -115,6 +125,7 @@ do {
     Write-Host "   11.3. Factory reset Docker Desktop" -ForegroundColor White
     Write-Host "   11.4. Clean Docker content store (fixes 'blob not found' errors)" -ForegroundColor White
     Write-Host "   11.5. COMPLETE Docker reset (fixes content store corruption)" -ForegroundColor Red
+    Write-Host "   11.6. COMPLETE Docker reset and restart dev environment" -ForegroundColor Red
     Write-Host ""
     Write-Host "12. BACKUP & RESTORE" -ForegroundColor Cyan
     Write-Host "   12.1. Backup all Docker images" -ForegroundColor White
@@ -202,7 +213,8 @@ do {
             $spec = Read-Host "Enter spec file path (optional)"
             if ($spec) {
                 npm run dev:cypress-presentation-spec -- --spec $spec
-            } else {
+            }
+            else {
                 npm run dev:cypress-presentation-spec
             }
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
@@ -247,7 +259,7 @@ do {
         }
         "3.8" { 
             Write-Host "Force recreating dev containers..." -ForegroundColor Yellow
-            docker-compose --env-file .env.docker --profile dev up -d --force-recreate
+            npm run docker:dev-recreate
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
@@ -331,7 +343,8 @@ do {
             $spec = Read-Host "Enter spec file path (optional)"
             if ($spec) {
                 npm run docker:cypress-presentation-spec -- --spec $spec
-            } else {
+            }
+            else {
                 npm run docker:cypress-presentation-spec
             }
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
@@ -495,7 +508,7 @@ do {
         # Advanced Cleanup
         "11.1" { 
             Write-Host "Performing complete system cleanup..." -ForegroundColor Yellow
-            docker system prune -a --volumes
+            npm run docker:system-prune-all
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
@@ -547,43 +560,32 @@ do {
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
+        # Enhanced option 11.5 for complete Docker reset
         "11.5" { 
             Write-Host "WARNING: This will completely reset Docker's content store!" -ForegroundColor Red
             Write-Host "This is the most aggressive cleanup option and should fix 'blob not found' errors." -ForegroundColor Red
             $confirm = Read-Host "Are you sure you want to continue? (y/n)"
             if ($confirm -eq "y") {
-                Write-Host "Stopping all Docker processes..." -ForegroundColor Yellow
-                Get-Process "*docker*" -ErrorAction SilentlyContinue | Stop-Process -Force
-                Write-Host "Waiting for processes to fully terminate..." -ForegroundColor Yellow
-                Start-Sleep -Seconds 10
-                
-                Write-Host "Clearing Docker's content store..." -ForegroundColor Yellow
-                Remove-Item -Path "$env:LOCALAPPDATA\Docker" -Recurse -Force -ErrorAction SilentlyContinue
-                Remove-Item -Path "$env:APPDATA\Docker" -Recurse -Force -ErrorAction SilentlyContinue
-                
-                Write-Host "Starting Docker Desktop..." -ForegroundColor Yellow
-                Start-Process -FilePath "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-                
-                Write-Host "Waiting for Docker Desktop to initialize..." -ForegroundColor Yellow
-                Start-Sleep -Seconds 60
-                
-                try {
-                    docker version 2>$null
-                    if ($LASTEXITCODE -eq 0) {
-                        Write-Host "Docker Desktop is running successfully!" -ForegroundColor Green
-                        Write-Host "Now you can try option 3.7 to rebuild and start your dev environment." -ForegroundColor Green
-                    } else {
-                        Write-Host "Docker Desktop started but Docker daemon is not responding." -ForegroundColor Yellow
-                        Write-Host "You may need to restart Docker Desktop manually from the Start Menu." -ForegroundColor Yellow
-                    }
-                } catch {
-                    Write-Host "Docker is not responding. Please check Docker Desktop manually." -ForegroundColor Red
-                }
+                npm run docker:desktop-reset
+                Write-Host "Docker reset completed successfully!" -ForegroundColor Green
+                Write-Host "You can now use option 11.6 to completely reset and restart your environment." -ForegroundColor Green
             }
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
-        
+
+        # Enhanced option 11.6 that combines complete cleanup with dev container recreation
+        "11.6" { 
+            Write-Host "WARNING: This will completely reset Docker and rebuild everything from scratch!" -ForegroundColor Red
+            Write-Host "This will remove all Docker resources and rebuild all images before starting dev environment." -ForegroundColor Red
+            $confirm = Read-Host "Are you sure you want to continue? (y/n)"
+            if ($confirm -eq "y") {
+                npm run docker:desktop-reset-and-rebuild
+                Write-Host "Complete reset, rebuild, and restart finished!" -ForegroundColor Green
+            }
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }   
         # Backup & Restore
         "12.1" { 
             npm run docker:backup-images

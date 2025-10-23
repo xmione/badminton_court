@@ -1,3 +1,4 @@
+# Dockerfile for Badminton Court Management Application
 # Use a slim Debian image for a good balance of size and compatibility
 FROM python:3.12-slim AS base
 
@@ -25,7 +26,6 @@ COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set environment variable to point to the system CA bundle
-# This ensures Python's requests library uses the updated cert store
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
@@ -34,16 +34,14 @@ COPY --chown=appuser:appuser ./badminton_court /app/badminton_court
 COPY --chown=appuser:appuser manage.py /app/
 COPY --chown=appuser:appuser tunnel.py /app/
 
-# Add this at the end before USER appuser:
-RUN echo '#!/bin/sh\nif [ -f /certs/ca.pem ]; then\n  cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt\n  update-ca-certificates\nfi' > /usr/local/bin/update-certs.sh && \
-    chmod +x /usr/local/bin/update-certs.sh
-
+# Switch to appuser
 USER appuser
 
 # Web service stage
 FROM base AS web
 EXPOSE 8000
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Use a direct command as the entrypoint instead of a script file
+ENTRYPOINT ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 # Tunnel service stage
 FROM base AS tunnel
