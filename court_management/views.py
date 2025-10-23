@@ -87,14 +87,53 @@ def index(request):
     
     return render(request, 'court_management/index.html', context)
 
-
+@csrf_exempt
+@require_POST
+def debug_check_confirmation(request):
+    """
+    Debug function to check if email confirmation exists for a user
+    """
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        user = User.objects.get(email=email)
+        from allauth.account.models import EmailAddress, EmailConfirmation
+        
+        email_address = EmailAddress.objects.filter(user=user, email=email).first()
+        if not email_address:
+            return JsonResponse({'status': 'error', 'message': 'Email address not found'})
+        
+        confirmations = EmailConfirmation.objects.filter(email_address=email_address)
+        confirmation_data = []
+        for conf in confirmations:
+            confirmation_data.append({
+                'id': conf.id,
+                'created': conf.created.isoformat(),
+                'key': conf.key,
+                'sent': conf.sent.isoformat() if conf.sent else None,
+                'expired': conf.key_expired()
+            })
+        
+        return JsonResponse({
+            'status': 'success', 
+            'email_address_id': email_address.id,
+            'email_verified': email_address.verified,
+            'confirmations': confirmation_data
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+    
 @csrf_exempt
 @require_POST
 def get_verification_token(request):
     """
-    Retrieve the email verification token for a user.
-    The token is stored on a related EmailConfirmation object, not the EmailAddress itself.
+    Get or create a verification token for testing purposes.
+    This should only be used in development/testing environments.
     """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
     try:
         data = json.loads(request.body)
         email = data.get('email')
@@ -103,31 +142,178 @@ def get_verification_token(request):
             return JsonResponse({'status': 'error', 'message': 'Email is required'}, status=400)
         
         # Get the user
-        user = User.objects.get(email=email)
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'User not found'}, status=404)
+        
+        # Import django-allauth models and utilities
+        from allauth.account.models import EmailAddress, EmailConfirmation
+        from django.utils import timezone
+        
+        # Get or create the email address
+        email_address, created = EmailAddress.objects.get_or_create(
+            user=user,
+            email=email,
+            defaults={'primary': True, 'verified': False}
+        )
+        
+        # If already verified, return success
+        if email_address.verified:
+            return JsonResponse({
+                'status': 'success',
+                'token': 'already_verified',
+                'message': 'Email already verified',
+                'verified': True
+            })
+        
+        # CRITICAL: Delete ALL existing confirmations for this email
+        # Old confirmations can interfere with new ones
+        deleted_count = EmailConfirmation.objects.filter(email_address=email_address).delete()[0]
+        if deleted_count > 0:
+            print(f"Deleted {deleted_count} old confirmation(s) for {email}")
+        
+        # Create a NEW confirmation record
+        confirmation = EmailConfirmation.create(email_address)
+        
+        # IMPORTANT: Set sent timestamp BEFORE saving
+        # This is required for the confirmation to be valid
+        confirmation.sent = timezone.now()
+        confirmation.save()
+        
+        # Verify the confirmation was created properly
+        if not confirmation.key:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Failed to generate confirmation key'
+            }, status=500)
+        
+        # Double-check it's in the database
+        try:
+            EmailConfirmation.objects.get(key=confirmation.key)
+        except EmailConfirmation.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Confirmation was not saved to database'
+            }, status=500)
+        
+        return JsonResponse({
+            'status': 'success',
+            'token': confirmation.key,
+            'verified': False,
+            'email': email,
+            'created_at': confirmation.created.isoformat(),
+            'sent_at': confirmation.sent.isoformat() if confirmation.sent else None,
+            'user_id': user.id
+        })
+        
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in get_verification_token: {str(e)}")
+        print(error_trace)
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e),
+            'trace': error_trace if settings.DEBUG else None
+        }, status=500)
+
+# Add this to your views.py for testing cleanup
+
+@csrf_exempt
+@require_POST
+def test_cleanup_user(request):
+    """
+    Clean up a specific user and their email confirmations for testing.
+    Only available in DEBUG mode.
+    """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        if not email:
+            return JsonResponse({'status': 'error', 'message': 'Email is required'}, status=400)
         
         # Import django-allauth models
         from allauth.account.models import EmailAddress, EmailConfirmation
         
-        # Get the email address object that was created during registration
-        email_address = EmailAddress.objects.get(user=user, email=email)
-        
-        # *** THE FIX IS HERE ***
-        # The token is on a related EmailConfirmation object.
-        # We get the most recent confirmation record for this email address.
+        # Delete user and all related data
+        User = get_user_model()
         try:
-            confirmation = email_address.emailconfirmation_set.latest('created')
-            token = confirmation.key
-        except EmailConfirmation.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'No confirmation record found for this email.'}, status=404)
-        
-        return JsonResponse({'status': 'success', 'token': token})
-    except User.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'User not found'}, status=404)
-    except EmailAddress.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Email address not found'}, status=404)
+            user = User.objects.get(email=email)
+            
+            # Delete email confirmations
+            email_addresses = EmailAddress.objects.filter(user=user)
+            for email_addr in email_addresses:
+                EmailConfirmation.objects.filter(email_address=email_addr).delete()
+            
+            # Delete email addresses
+            email_addresses.delete()
+            
+            # Delete user
+            user.delete()
+            
+            return JsonResponse({'status': 'success', 'message': f'User {email} cleaned up successfully'})
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'success', 'message': 'User not found (already clean)'})
+            
     except Exception as e:
+        import traceback
+        print(f"Error in test_cleanup_user: {str(e)}")
+        print(traceback.format_exc())
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+@csrf_exempt
+def debug_confirmation_status(request, token):
+    """
+    Debug endpoint to check if a confirmation token is valid.
+    Only available in DEBUG mode.
+    """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
+    try:
+        from allauth.account.models import EmailConfirmation
+        from django.utils import timezone
+        
+        # Try to find the confirmation
+        try:
+            confirmation = EmailConfirmation.objects.get(key=token)
+            
+            # Check if it's expired
+            is_expired = confirmation.key_expired()
+            
+            return JsonResponse({
+                'status': 'success',
+                'token_exists': True,
+                'token': token,
+                'email': confirmation.email_address.email,
+                'user_id': confirmation.email_address.user.id,
+                'created': confirmation.created.isoformat(),
+                'sent': confirmation.sent.isoformat() if confirmation.sent else None,
+                'is_expired': is_expired,
+                'email_verified': confirmation.email_address.verified,
+                'current_time': timezone.now().isoformat()
+            })
+        except EmailConfirmation.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'token_exists': False,
+                'token': token,
+                'message': 'Confirmation token not found in database'
+            })
+            
+    except Exception as e:
+        import traceback
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e),
+            'trace': traceback.format_exc()
+        }, status=500)
+        
 # class SignUpView(CreateView):
 #     form_class = UserCreationForm
 #     success_url = reverse_lazy('account_login')  # Fixed: use 'account_login' instead of 'login'

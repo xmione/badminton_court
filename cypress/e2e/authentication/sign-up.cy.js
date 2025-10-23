@@ -6,9 +6,21 @@ describe('Authentication Flow', () => {
     // Ensure we have a clean database before running sign-up tests
     cy.log('Cleaning database before authentication tests...');
     cy.resetDatabase();
+    
+    // Also clean up the specific test user we'll be using
+    cy.log('Cleaning up test user...');
+    cy.request({
+      method: 'POST',
+      url: '/api/test-cleanup-user/',
+      body: { email: Cypress.env('REGULARUSER_EMAIL') },
+      failOnStatusCode: false
+    }).then((response) => {
+      cy.log('Cleanup response:', response.body.message || 'User cleaned up');
+    });
   });
   
   it('should successfully register a new user', () => {
     cy.signUp();
-  })
-})
+  });
+   
+});

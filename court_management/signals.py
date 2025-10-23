@@ -1,3 +1,5 @@
+# court_management/signals.py
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
@@ -25,6 +27,8 @@ def send_welcome_email(sender, instance, created, **kwargs):
         - Book badminton courts
         - View your booking history
         - Manage your profile
+        
+        Please verify your email address by clicking on the link in the verification email we've sent you.
         
         If you have any questions or need assistance, please don't hesitate to contact our support team.
         

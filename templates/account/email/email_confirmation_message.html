@@ -1,10 +1,10 @@
 {% load i18n %}
-{% blocktrans %}Please click on the link to verify your email address:{% endblock %}
+{% blocktrans %}Please click on the link to verify your email address:{% endblocktrans %}
 
-{{ protocol }}://{{ domain }}{% url 'account_confirm_email' key=confirmation.key %}
+{{ protocol }}://{{ domain }}{% url 'account_confirm_email' key %}
 
-{% blocktrans %}If you cannot click the link, please copy and paste the following URL into your browser:{% endblock %}
+{% blocktrans %}If you cannot click the link, please copy and paste the following URL into your browser:{% endblocktrans %}
 
-{{ protocol }}://{{ domain }}{% url 'account_confirm_email' key=confirmation.key %}
+{{ protocol }}://{{ domain }}{% url 'account_confirm_email' key %}
 
-{% blocktrans %}Thank you for using our service!{% endblock %}
+{% blocktrans %}Thank you for using our service!{% endblocktrans %}

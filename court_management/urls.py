@@ -62,5 +62,9 @@ urlpatterns = [
     path('api/test-create-user/', views.test_create_user, name='test-create-user'),
     path('api/test-verify-user/', views.test_verify_user, name='test-verify-user'),
     path('api/test-setup-admin/', views.test_setup_admin, name='test-setup-admin'),
+    path('api/test-cleanup-user/', views.test_cleanup_user, name='test-cleanup-user'), 
+    path('api/get-verification-token/', views.get_verification_token, name='get-verification-token'),
+    path('api/debug-check-confirmation/', views.debug_check_confirmation, name='debug-check-confirmation'),
+    path('api/debug-confirmation/<str:token>/', views.debug_confirmation_status, name='debug-confirmation-status'),
     
 ]

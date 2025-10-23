@@ -59,6 +59,10 @@ APP_FULL_URL = f"{APP_BASE_URL}:{APP_PORT}"
 allowed_hosts_str = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,web')
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
 
+# Add testserver only when running tests or in DEBUG mode
+if DEBUG or os.environ.get('RUNNING_TESTS') == 'true':
+    ALLOWED_HOSTS.append('testserver')
+
 # Add ngrok domain patterns as a fallback for free tier
 ngrok_domains = ['.ngrok-free.dev', '.ngrok-free.app', '.ngrok.io']
 for domain in ngrok_domains:
@@ -274,6 +278,12 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_LOGIN_METHODS = {'email'}  # Allow login with email only
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Required fields for signup
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory' 
+ACCOUNT_EMAIL_REQUIRED = True   
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 7 
+ACCOUNT_EMAIL_CONFIRMATION_HMAC = False
+ACCOUNT_EMAIL_CONFIRMATION_COOLDOWN = 0
+ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = '/accounts/login/'
+ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = '/'
 ACCOUNT_USERNAME_BLACKLIST = ['admin', 'staff', 'root']
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_USERNAME_REQUIRED = False
@@ -351,7 +361,8 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
 
 # Email configuration
-EMAIL_BACKEND = 'badminton_court.email_backend.CustomEmailBackend'
+# EMAIL_BACKEND = 'badminton_court.email_backend.CustomEmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS').lower() == 'true'
@@ -377,6 +388,10 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+# These lines are for testing - makes Celery tasks run synchronously
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
 
 # Logging configuration
 LOGGING = {
