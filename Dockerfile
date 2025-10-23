@@ -34,14 +34,21 @@ COPY --chown=appuser:appuser ./badminton_court /app/badminton_court
 COPY --chown=appuser:appuser manage.py /app/
 COPY --chown=appuser:appuser tunnel.py /app/
 
+# Copy the certs directory (which already contains the mail-test certificates)
+COPY --chown=appuser:appuser ./certs /certs
+
+# Set up certificates as root before switching to appuser
+RUN cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt && \
+    update-ca-certificates
+
 # Switch to appuser
 USER appuser
 
 # Web service stage
 FROM base AS web
 EXPOSE 8000
-# Use a direct command as the entrypoint instead of a script file
-ENTRYPOINT ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Use a direct command that handles migrations
+ENTRYPOINT ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
 
 # Tunnel service stage
 FROM base AS tunnel
