@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Badminton Court Management System",
   "scripts": {
+    "docker:menu": "echo '📋 Showing Docker menu...' && powershell -ExecutionPolicy Bypass -File scripts\\docker-menu.ps1",
     "dev": "echo '🚀 Starting local development environment...' && cross-env ENVIRONMENT=development python manage.py runserver 0.0.0.0:8000",
     "docker:dev-start": "echo '🚀 Ensuring certificates exist and starting dev environment...' && npm run certs:create && npm run docker:dev-detached",
     "docker:dev-reset-and-start": "echo '🔄 Resetting dev environment and starting fresh...' && npm run docker:rebuild-dev && npm run certs:create && npm run docker:dev-detached && powershell -Command \"Start-Sleep -Seconds 10\" && npm run docker:reset-db-migrate",
@@ -84,7 +85,8 @@
     "docker:list-backups": "echo '📋 Listing available backup files in the ./backups directory...' && node Scripts/listBackups.js",
     "docker:list-backup-contents": "echo '📋 Listing the raw contents of the all-images.tar archive...' && node Scripts/listBackupContents.js",
     "docker:list-backup-image-names": "echo '🏷️ Showing a human-readable list of images in the all-images.tar archive...' && node Scripts/listBackupImageNames.js",
-    "docker:menu": "echo '📋 Showing Docker menu...' && powershell -ExecutionPolicy Bypass -File scripts\\docker-menu.ps1"
+    "docker:save-to-hub": "echo '💾 Saving running containers to Docker Hub...' && node scripts/saveToDockerHub.js"
+
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
