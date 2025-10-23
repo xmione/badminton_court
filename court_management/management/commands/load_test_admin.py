@@ -3,6 +3,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
+from django.conf import settings  # Import settings to access environment variables
 
 class Command(BaseCommand):
     help = 'Load test admin users for Cypress admin login tests'
@@ -28,15 +29,23 @@ class Command(BaseCommand):
         parser.add_argument(
             '--email',
             type=str,
-            default='admin@example.com',
-            help='Email for the admin user (default: admin@example.com)',
+            default=None,  # We'll set this dynamically
+            help='Email for the admin user (will use domain from settings)',
         )
     
     def handle(self, *args, **options):
         reset = options['reset']
         username = options['username']
         password = options['password']
-        email = options['email']
+        
+        # Get domain from settings or use default
+        domain = getattr(settings, 'DOMAIN_NAME')
+        
+        # Set email based on provided email or construct from username and domain
+        if options['email']:
+            email = options['email']
+        else:
+            email = f"{username}@{domain}"
         
         # If reset flag is provided, remove all test admin users
         if reset:
@@ -85,20 +94,20 @@ class Command(BaseCommand):
             )
         
         # Create additional test admin users for different scenarios
-        self._create_test_admin_users()
+        self._create_test_admin_users(domain)
         
         self.stdout.write(
-            self.style.SUCCESS('Admin test data loaded successfully')
+            self.style.SUCCESS(f'Admin test data loaded successfully with domain: {domain}')
         )
     
-    def _create_test_admin_users(self):
+    def _create_test_admin_users(self, domain):
         """Create additional test admin users for different testing scenarios"""
         
         # Create a superadmin with different credentials
         superadmin, created = User.objects.get_or_create(
             username='superadmin',
             defaults={
-                'email': 'superadmin@example.com',
+                'email': f'superadmin@{domain}',
                 'is_superuser': True,
                 'is_staff': True,
                 'is_active': True,
@@ -116,7 +125,7 @@ class Command(BaseCommand):
         staff_user, created = User.objects.get_or_create(
             username='staff_admin',
             defaults={
-                'email': 'staff@example.com',
+                'email': f'staff@{domain}',
                 'is_superuser': False,
                 'is_staff': True,
                 'is_active': True,
@@ -134,7 +143,7 @@ class Command(BaseCommand):
         inactive_admin, created = User.objects.get_or_create(
             username='inactive_admin',
             defaults={
-                'email': 'inactive@example.com',
+                'email': f'inactive@{domain}',
                 'is_superuser': True,
                 'is_staff': True,
                 'is_active': False,

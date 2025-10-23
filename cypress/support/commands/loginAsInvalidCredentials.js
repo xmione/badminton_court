@@ -1,13 +1,14 @@
 // cypress/support/commands/loginAsInvalidCredentials.cy.js
-
 export const loginAsInvalidCredentials = () => {
     Cypress.Commands.add('loginAsInvalidCredentials', (options = {}) => {
+        // Get domain from environment variables
+        const domain = Cypress.env('DOMAIN_NAME');
 
         // Visit login page
         cy.visit('/accounts/login/')
 
         // Fill in invalid credentials
-        cy.get('#id_login').type('invalid@example.com')
+        cy.get('#id_login').type(`invalid@${domain}`)
         cy.get('#id_password').type('wrongpassword')
 
         // Submit form

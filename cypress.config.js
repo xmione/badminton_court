@@ -63,8 +63,19 @@ module.exports = defineConfig({
         // Set the baseUrl from the newly loaded variables
         config.baseUrl = config.env.CYPRESS_INTERNAL_baseUrl || config.env.CYPRESS_baseUrl || "http://localhost:8000";
 
+        // Validate required environment variables
+        const requiredEnvVars = ['DOMAIN_NAME'];
+        const missingVars = requiredEnvVars.filter(varName => !config.env[varName]);
+        
+        if (missingVars.length > 0) {
+          throw new Error(`Missing required environment variables: ${missingVars.join(', ')}. Please add them to your ${envFile} file.`);
+        }
+        
+        console.log(`Cypress: DOMAIN_NAME loaded from env file: ${config.env.DOMAIN_NAME}`);
+
       } catch (error) {
         console.error(`Could not load environment file: ${envFile}`, error);
+        throw new Error(`Failed to load environment variables from ${envFile}. Please ensure the file exists and contains the required variables.`);
       }
       // --- END EXPLICIT ENVIRONMENT LOADING ---
 

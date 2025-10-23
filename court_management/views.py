@@ -1169,8 +1169,8 @@ def test_setup_admin(request):
         if not User.objects.filter(username='superadmin').exists():
             superadmin = User.objects.create_user(
                 username='superadmin',
-                email='superadmin@example.com',
-                password='superpassword'
+                email=getattr(settings, 'SUPERADMIN_EMAIL'),
+                password=getattr(settings, 'SUPERADMIN_PASSWORD')
             )
             superadmin.is_superuser = True
             superadmin.is_staff = True
@@ -1179,8 +1179,8 @@ def test_setup_admin(request):
         if not User.objects.filter(username='staff_admin').exists():
             staff_admin = User.objects.create_user(
                 username='staff_admin',
-                email='staff@example.com',
-                password='staffpassword'
+                email=getattr(settings, 'STAFF_ADMIN_EMAIL'),
+                password=getattr(settings, 'STAFF_ADMIN_PASSWORD')
             )
             staff_admin.is_superuser = False
             staff_admin.is_staff = True
@@ -1189,8 +1189,8 @@ def test_setup_admin(request):
         if not User.objects.filter(username='inactive_admin').exists():
             inactive_admin = User.objects.create_user(
                 username='inactive_admin',
-                email='inactive@example.com',
-                password='inactivepassword'
+                email=getattr(settings, 'INACTIVE_ADMIN_EMAIL'),
+                password=getattr(settings, 'INACTIVE_ADMIN_PASSWORD')
             )
             inactive_admin.is_superuser = True
             inactive_admin.is_staff = True
