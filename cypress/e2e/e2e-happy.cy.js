@@ -5,28 +5,35 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
 
   let statusId;
   before(() => {
-    cy.log('ADMIN SPEC: Starting admin-login.cy.js before()');
     // The database is already migrated from global before().
     // Now, reset and add admin-specific data.
+    cy.log('Cleaning database before authentication tests...');
     cy.resetDatabase(); // Resets tables *after* migrations
-    cy.setupTestAdmin({ reset: true }); // Creates admin user
-    cy.log('ADMIN SPEC: Finished admin-login.cy.js before()');
+    // cy.log('Cleaning up test user...');
+    // cy.request({
+    //   method: 'POST',
+    //   url: '/api/test-cleanup-user/',
+    //   body: { email: Cypress.env('REGULARUSER_EMAIL') },
+    //   failOnStatusCode: false
+    // });
+    // cy.setupTestAdmin({ reset: true }); // Creates admin user
   })
 
-  beforeEach(() => {
-    cy.log('ADMIN SPEC: Starting beforeEach()');
+  // beforeEach(() => {
+  //   cy.log('ADMIN SPEC: Starting beforeEach()');
     
-    // Ensure the admin user exists *before every test*
-    // without resetting the whole database.
-    cy.setupTestAdmin({ reset: false })
-  })
+  //   // Ensure the admin user exists *before every test*
+  //   // without resetting the whole database.
+  //   cy.setupTestAdmin({ reset: false })
+  // })
 
-  
   it('should successfully login to admin panel', () => {
+    cy.setupTestAdmin({ reset: true });
     cy.loginToAdminPage();
   })
-
+ 
   it('should show error for invalid credentials', () => {
+    cy.setupTestAdmin({ reset: false });
     cy.adminLogin({admin:'invalid_user', password:'wrong_password', setup:false});
     
     // Get the error note element and log its content
@@ -45,10 +52,12 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
 
   it('should successfully register a new user', () => {
     cy.signUp();
+    cy.signOut();
   })
 
   it('should successfully login with registered user', () => {
     cy.loginAsRegistered();
+    cy.signOut();
   })
 
   it('should show error for invalid login credentials', () => {
@@ -68,15 +77,15 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
     cy.log('BOOKING HAPPY PATH SPEC: Starting admin-login.cy.js before()');
     cy.showWaitMessage('This will process the Happy Path Booking Test.', 10000);
 
-    cy.showStatusMessage('Resetting Database...', {
-      showSpinner: true,
-      subText: 'Please be wait...'
-    }).then(id => {
-      statusId = id; // Assign the ID returned by showStatusMessage
-    });
+    // cy.showStatusMessage('Resetting Database...', {
+    //   showSpinner: true,
+    //   subText: 'Please be wait...'
+    // }).then(id => {
+    //   statusId = id; // Assign the ID returned by showStatusMessage
+    // });
 
-    // Reset the database
-    cy.resetDatabase();
+    // // Reset the database
+    // cy.resetDatabase();
 
     // Create test data for bookings (customers and courts)
     cy.updateStatusMessage(statusId, 'Creating test data for Bookings...', 'Please be patient...');

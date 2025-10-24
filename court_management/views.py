@@ -1,5 +1,5 @@
 # court_management/views.py
-
+import logging
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
@@ -47,6 +47,295 @@ from django.template.loader import get_template
 # Import Decimal for precise calculations
 from decimal import Decimal
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.contrib.sites.models import Site
+from django.conf import settings
+import json
+
+@csrf_exempt
+def debug_site_config(request):
+    """Debug endpoint to check site configuration"""
+    from django.contrib.sites.models import Site
+    from django.conf import settings
+    
+    site = Site.objects.get_current()
+    
+    return JsonResponse({
+        'site_id': settings.SITE_ID,
+        'site_domain': site.domain,
+        'site_name': site.name,
+        'default_from_email': settings.DEFAULT_FROM_EMAIL,
+        'account_email_subject_prefix': getattr(settings, 'ACCOUNT_EMAIL_SUBJECT_PREFIX', 'Not set'),
+    })
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def debug_email_content(request):
+    """Debug endpoint to see what email content would be generated"""
+    from allauth.account.adapter import get_adapter
+    from django.contrib.sites.models import Site
+    from django.contrib.auth import get_user_model
+    
+    User = get_user_model()
+    site = Site.objects.get_current()
+    adapter = get_adapter()
+    
+    data = json.loads(request.body)
+    email = data.get('email')
+    
+    # Create a mock context similar to what allauth uses
+    context = {
+        'user': User(email=email, username=email),
+        'current_site': site,
+        'activate_url': f"http://{site.domain}/accounts/confirm-email/test-key/",
+        'key': 'test-key',
+    }
+    
+    # Try to render the email templates
+    try:
+        subject = "Test Subject"
+        message = "Test Message"
+        
+        # This is how allauth renders emails internally
+        from django.template.loader import render_to_string
+        
+        subject_template = 'account/email/email_confirmation_subject'
+        message_template = 'account/email/email_confirmation_message'
+        
+        subject = render_to_string(subject_template, context).strip()
+        message = render_to_string(message_template, context)
+        
+    except Exception as e:
+        subject = f"Error: {str(e)}"
+        message = f"Error: {str(e)}"
+    
+    return JsonResponse({
+        'generated_subject': subject,
+        'generated_message': message,
+        'context_used': {
+            'site_domain': site.domain,
+            'site_name': site.name,
+            'user_email': email,
+        }
+    })
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def check_pending_emails(request):
+    """
+    Check for pending verification emails in the database.
+    """
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        if not email:
+            return JsonResponse({'error': 'Email is required'}, status=400)
+        
+        # Check django-allauth email confirmations
+        from allauth.account.models import EmailAddress, EmailConfirmation
+        from django.utils import timezone
+        
+        emails_data = []
+        need_manual_send = False
+        
+        try:
+            user = User.objects.get(email=email)
+            email_address = EmailAddress.objects.filter(user=user, email=email).first()
+            
+            if email_address:
+                # Get all confirmations for this email
+                confirmations = EmailConfirmation.objects.filter(
+                    email_address=email_address
+                ).order_by('-created')
+                
+                for conf in confirmations:
+                    emails_data.append({
+                        'id': conf.id,
+                        'key': conf.key,
+                        'created': conf.created.isoformat(),
+                        'sent': conf.sent.isoformat() if conf.sent else None,
+                        'expired': conf.key_expired(),
+                        'email_verified': email_address.verified
+                    })
+                
+                # Check if we need to manually send
+                if confirmations and not any(conf.sent for conf in confirmations):
+                    need_manual_send = True
+                    
+        except User.DoesNotExist:
+            pass
+        
+        return JsonResponse({
+            'emails': emails_data,
+            'need_manual_send': need_manual_send,
+            'email_found': len(emails_data) > 0
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def send_pending_emails(request):
+    """
+    Manually send pending verification emails.
+    """
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        if not email:
+            return JsonResponse({'error': 'Email is required'}, status=400)
+        
+        # Import django-allauth utilities
+        from allauth.account.models import EmailAddress, EmailConfirmation
+        from allauth.account import app_settings as account_settings
+        from allauth.account.adapter import get_adapter
+        from django.utils import timezone
+        
+        try:
+            user = User.objects.get(email=email)
+            email_address = EmailAddress.objects.filter(user=user, email=email).first()
+            
+            if not email_address:
+                return JsonResponse({'error': 'Email address not found'}, status=404)
+            
+            if email_address.verified:
+                return JsonResponse({'message': 'Email already verified'})
+            
+            # Get the most recent unsent confirmation or create one
+            confirmation = EmailConfirmation.objects.filter(
+                email_address=email_address,
+                sent__isnull=True
+            ).first()
+            
+            if not confirmation:
+                # Create a new confirmation
+                confirmation = EmailConfirmation.create(email_address)
+                confirmation.sent = timezone.now()
+                confirmation.save()
+            
+            # Manually send the confirmation email
+            adapter = get_adapter()
+            adapter.send_confirmation_mail(request, confirmation, signup=True)
+            
+            # Mark as sent
+            confirmation.sent = timezone.now()
+            confirmation.save()
+            
+            return JsonResponse({
+                'message': 'Verification email sent manually',
+                'confirmation_id': confirmation.id,
+                'key': confirmation.key
+            })
+            
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_all_site_domains(request):
+    """
+    Update ALL Site objects in the database to ensure django-allauth uses the correct domain.
+    """
+    try:
+        data = json.loads(request.body)
+        domain = data.get('domain')
+        name = data.get('name')
+        
+        if not domain or not name:
+            return JsonResponse({
+                'error': 'Both domain and name are required'
+            }, status=400)
+        
+        # Update ALL Site objects, not just the one with SITE_ID
+        from django.contrib.sites.models import Site
+        sites = Site.objects.all()
+        updated_count = 0
+        
+        for site in sites:
+            site.domain = domain
+            site.name = name
+            site.save()
+            updated_count += 1
+        
+        # Also update the default site if no sites exist
+        if updated_count == 0:
+            Site.objects.create(domain=domain, name=name)
+            updated_count = 1
+        
+        return JsonResponse({
+            'message': f'All {updated_count} site domain(s) updated successfully',
+            'updated_count': updated_count,
+            'domain': domain,
+            'name': name
+        }, status=200)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+    
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_site_domain(request):
+    """
+    API endpoint to update the Site domain and name.
+    This is used by Cypress tests to ensure the correct domain is set.
+    """
+    try:
+        data = json.loads(request.body)
+        domain = data.get('domain')
+        name = data.get('name')
+        
+        if not domain or not name:
+            return JsonResponse({
+                'error': 'Both domain and name are required'
+            }, status=400)
+        
+        # Get or create the site with the configured SITE_ID
+        site, created = Site.objects.get_or_create(
+            id=settings.SITE_ID,
+            defaults={
+                'domain': domain,
+                'name': name
+            }
+        )
+        
+        # Update if it already existed
+        if not created:
+            site.domain = domain
+            site.name = name
+            site.save()
+        
+        action = 'created' if created else 'updated'
+        
+        return JsonResponse({
+            'message': f'Site successfully {action}',
+            'site_id': site.id,
+            'domain': site.domain,
+            'name': site.name
+        }, status=200)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+    
 User = get_user_model()
 
 @login_required
@@ -89,11 +378,51 @@ def index(request):
 
 @csrf_exempt
 @require_POST
+def debug_check_confirmation(request):
+    """
+    Debug function to check if email confirmation exists for a user
+    """
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        user = User.objects.get(email=email)
+        from allauth.account.models import EmailAddress, EmailConfirmation
+        
+        email_address = EmailAddress.objects.filter(user=user, email=email).first()
+        if not email_address:
+            return JsonResponse({'status': 'error', 'message': 'Email address not found'})
+        
+        confirmations = EmailConfirmation.objects.filter(email_address=email_address)
+        confirmation_data = []
+        for conf in confirmations:
+            confirmation_data.append({
+                'id': conf.id,
+                'created': conf.created.isoformat(),
+                'key': conf.key,
+                'sent': conf.sent.isoformat() if conf.sent else None,
+                'expired': conf.key_expired()
+            })
+        
+        return JsonResponse({
+            'status': 'success', 
+            'email_address_id': email_address.id,
+            'email_verified': email_address.verified,
+            'confirmations': confirmation_data
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+    
+@csrf_exempt
+@require_POST
 def get_verification_token(request):
     """
-    Retrieve the email verification token that was generated during normal registration.
-    This uses the same token that would be included in the verification email.
+    Get or create a verification token for testing purposes.
+    This should only be used in development/testing environments.
     """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
     try:
         data = json.loads(request.body)
         email = data.get('email')
@@ -102,30 +431,182 @@ def get_verification_token(request):
             return JsonResponse({'status': 'error', 'message': 'Email is required'}, status=400)
         
         # Get the user
-        user = User.objects.get(email=email)
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'User not found'}, status=404)
+        
+        # Import django-allauth models and utilities
+        from allauth.account.models import EmailAddress, EmailConfirmation
+        from django.utils import timezone
+        
+        # Get or create the email address
+        email_address, created = EmailAddress.objects.get_or_create(
+            user=user,
+            email=email,
+            defaults={'primary': True, 'verified': False}
+        )
+        
+        # If already verified, return success
+        if email_address.verified:
+            return JsonResponse({
+                'status': 'success',
+                'token': 'already_verified',
+                'message': 'Email already verified',
+                'verified': True
+            })
+        
+        # CRITICAL: Delete ALL existing confirmations for this email
+        # Old confirmations can interfere with new ones
+        deleted_count = EmailConfirmation.objects.filter(email_address=email_address).delete()[0]
+        if deleted_count > 0:
+            print(f"Deleted {deleted_count} old confirmation(s) for {email}")
+        
+        # Create a NEW confirmation record
+        confirmation = EmailConfirmation.create(email_address)
+        
+        # IMPORTANT: Set sent timestamp BEFORE saving
+        # This is required for the confirmation to be valid
+        confirmation.sent = timezone.now()
+        confirmation.save()
+        
+        # Verify the confirmation was created properly
+        if not confirmation.key:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Failed to generate confirmation key'
+            }, status=500)
+        
+        # Double-check it's in the database
+        try:
+            EmailConfirmation.objects.get(key=confirmation.key)
+        except EmailConfirmation.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Confirmation was not saved to database'
+            }, status=500)
+        
+        return JsonResponse({
+            'status': 'success',
+            'token': confirmation.key,
+            'verified': False,
+            'email': email,
+            'created_at': confirmation.created.isoformat(),
+            'sent_at': confirmation.sent.isoformat() if confirmation.sent else None,
+            'user_id': user.id
+        })
+        
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in get_verification_token: {str(e)}")
+        print(error_trace)
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e),
+            'trace': error_trace if settings.DEBUG else None
+        }, status=500)
+
+# Add this to your views.py for testing cleanup
+
+@csrf_exempt
+@require_POST
+def test_cleanup_user(request):
+    """
+    Clean up a specific user and their email confirmations for testing.
+    Only available in DEBUG mode.
+    """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        if not email:
+            return JsonResponse({'status': 'error', 'message': 'Email is required'}, status=400)
         
         # Import django-allauth models
-        from allauth.account.models import EmailAddress
+        from allauth.account.models import EmailAddress, EmailConfirmation
         
-        # Get the email address that was created during registration
-        email_address = EmailAddress.objects.get(user=user, email=email)
-        
-        # The token is stored in the 'key' field of the EmailAddress object
-        # This is the same token that would be included in the verification email
-        token = email_address.key
-        
-        return JsonResponse({'status': 'success', 'token': token})
-    except User.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'User not found'}, status=404)
-    except EmailAddress.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Email address not found'}, status=404)
+        # Delete user and all related data
+        User = get_user_model()
+        try:
+            user = User.objects.get(email=email)
+            
+            # Delete email confirmations
+            email_addresses = EmailAddress.objects.filter(user=user)
+            for email_addr in email_addresses:
+                EmailConfirmation.objects.filter(email_address=email_addr).delete()
+            
+            # Delete email addresses
+            email_addresses.delete()
+            
+            # Delete user
+            user.delete()
+            
+            return JsonResponse({'status': 'success', 'message': f'User {email} cleaned up successfully'})
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'success', 'message': 'User not found (already clean)'})
+            
     except Exception as e:
+        import traceback
+        print(f"Error in test_cleanup_user: {str(e)}")
+        print(traceback.format_exc())
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@csrf_exempt
+def debug_confirmation_status(request, token):
+    """
+    Debug endpoint to check if a confirmation token is valid.
+    Only available in DEBUG mode.
+    """
+    if not settings.DEBUG:
+        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+    
+    try:
+        from allauth.account.models import EmailConfirmation
+        from django.utils import timezone
         
-class SignUpView(CreateView):
-    form_class = UserCreationForm
-    success_url = reverse_lazy('account_login')  # Fixed: use 'account_login' instead of 'login'
-    template_name = 'court_management/signup.html'  # Updated template path
+        # Try to find the confirmation
+        try:
+            confirmation = EmailConfirmation.objects.get(key=token)
+            
+            # Check if it's expired
+            is_expired = confirmation.key_expired()
+            
+            return JsonResponse({
+                'status': 'success',
+                'token_exists': True,
+                'token': token,
+                'email': confirmation.email_address.email,
+                'user_id': confirmation.email_address.user.id,
+                'created': confirmation.created.isoformat(),
+                'sent': confirmation.sent.isoformat() if confirmation.sent else None,
+                'is_expired': is_expired,
+                'email_verified': confirmation.email_address.verified,
+                'current_time': timezone.now().isoformat()
+            })
+        except EmailConfirmation.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'token_exists': False,
+                'token': token,
+                'message': 'Confirmation token not found in database'
+            })
+            
+    except Exception as e:
+        import traceback
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e),
+            'trace': traceback.format_exc()
+        }, status=500)
+        
+# class SignUpView(CreateView):
+#     form_class = UserCreationForm
+#     success_url = reverse_lazy('account_login')  # Fixed: use 'account_login' instead of 'login'
+#     template_name = 'court_management/signup.html'  # Updated template path
 
 @login_required
 def profile(request):
@@ -811,28 +1292,33 @@ def test_reset_database(request):
     This should only be used in development/testing environments.
     """
     if not settings.DEBUG:
-        return JsonResponse({'status': 'error', 'message': 'Only available in debug mode'}, status=403)
+        return JsonResponse({'status': 'error', 'public message': 'Only available in debug mode'}, status=403)
     
     try:
-        # Delete all user-related data directly
-        User.objects.all().delete()
+        # Delete all data in reverse order of foreign key dependencies
+        from django.apps import apps
         
-        # Delete allauth email addresses
-        from allauth.account.models import EmailAddress
-        EmailAddress.objects.all().delete()
+        # Get all models
+        all_models = apps.get_models()
         
-        # Delete allauth social accounts
-        from allauth.socialaccount.models import SocialAccount, SocialToken
-        SocialAccount.objects.all().delete()
-        SocialToken.objects.all().delete()
+        # Sort models by name to ensure consistent deletion order
+        sorted_models = sorted(all_models, key=lambda model: model._meta.label)
         
-        # Delete any sessions
-        from django.contrib.sessions.models import Session
-        Session.objects.all().delete()
+        # Delete all instances of each model
+        for model in sorted_models:
+            try:
+                model.objects.all().delete()
+            except Exception as e:
+                # Some models might not exist or have issues, continue anyway
+                print(f"Error deleting {model._meta.label}: {str(e)}")
         
+        # Reset migration history
+        from django.core.management import call_command
+        call_command('migrate', fake=True, verbosity=0)
+
         return JsonResponse({'status': 'success', 'message': 'Database reset successfully'})
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'message': f'Error during database reset: {str(e)}'}, status=500)
 
 @csrf_exempt
 @require_POST
@@ -928,11 +1414,26 @@ def test_setup_admin(request):
         # Parse request body for options
         data = json.loads(request.body) if request.body else {}
         
-        # Get parameters
-        username = data.get('username', 'admin')
-        password = data.get('password', 'password')
-        email = data.get('email', 'admin@example.com')
-        reset = data.get('reset', False)
+        # Get parameters from request or environment variables (no fallbacks)
+        username = data.get('username', getattr(settings, 'ADMIN_EMAIL', None))
+        password = data.get('password', getattr(settings, 'ADMIN_PASSWORD', None))
+        email = data.get('email', getattr(settings, 'ADMIN_EMAIL', None))
+        reset = data.get('reset', True)
+        
+        # Debug logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"test_setup_admin called with username: {username}, email: {email}, reset: {reset}")
+        
+        # Verify environment variables are set
+        if not username:
+            logger.error("ADMIN_EMAIL environment variable is not set")
+            return JsonResponse({'status': 'error', 'message': 'ADMIN_EMAIL environment variable is not set'}, status=400)
+        if not password:
+            logger.error("ADMIN_PASSWORD environment variable is not set")
+            return JsonResponse({'status': 'error', 'message': 'ADMIN_PASSWORD environment variable is not set'}, status=400)
+        if not email:
+            logger.error("ADMIN_EMAIL environment variable is not set")
+            return JsonResponse({'status': 'error', 'message': 'ADMIN_EMAIL environment variable is not set'}, status=400)
         
         # Reset existing admin if requested
         if reset:
@@ -957,8 +1458,8 @@ def test_setup_admin(request):
         if not User.objects.filter(username='superadmin').exists():
             superadmin = User.objects.create_user(
                 username='superadmin',
-                email='superadmin@example.com',
-                password='superpassword'
+                email=getattr(settings, 'SUPERADMIN_EMAIL'),
+                password=getattr(settings, 'SUPERADMIN_PASSWORD')
             )
             superadmin.is_superuser = True
             superadmin.is_staff = True
@@ -967,8 +1468,8 @@ def test_setup_admin(request):
         if not User.objects.filter(username='staff_admin').exists():
             staff_admin = User.objects.create_user(
                 username='staff_admin',
-                email='staff@example.com',
-                password='staffpassword'
+                email=getattr(settings, 'STAFF_ADMIN_EMAIL'),
+                password=getattr(settings, 'STAFF_ADMIN_PASSWORD')
             )
             staff_admin.is_superuser = False
             staff_admin.is_staff = True
@@ -977,8 +1478,8 @@ def test_setup_admin(request):
         if not User.objects.filter(username='inactive_admin').exists():
             inactive_admin = User.objects.create_user(
                 username='inactive_admin',
-                email='inactive@example.com',
-                password='inactivepassword'
+                email=getattr(settings, 'INACTIVE_ADMIN_EMAIL'),
+                password=getattr(settings, 'INACTIVE_ADMIN_PASSWORD')
             )
             inactive_admin.is_superuser = True
             inactive_admin.is_staff = True
@@ -987,11 +1488,14 @@ def test_setup_admin(request):
         
         if created:
             message = f"Admin user '{username}' created successfully"
+            logger.info(message)
         else:
             message = f"Admin user '{username}' updated successfully"
+            logger.info(message)
             
         return JsonResponse({'status': 'success', 'message': message})
     except Exception as e:
+        logger.error(f"Error in test_setup_admin: {str(e)}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
 @csrf_exempt

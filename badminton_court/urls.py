@@ -20,18 +20,18 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-from django.views.generic import TemplateView
+
+# Admin site customization using environment variables
+admin.site.site_header = settings.SITE_HEADER
+admin.site.site_title = settings.SITE_TITLE
+admin.site.index_title = settings.SITE_INDEX_TITLE
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', include('allauth.urls')),
-    path('', TemplateView.as_view(template_name='home.html'), name='home'),
-    path('court/', include('court_management.urls')),
-    path('email/', include('email_management.urls')),  # Add email management URLs
+    path('accounts/', include('allauth.urls')),  # Django Allauth URLs
+    path('', include('court_management.urls')),  # Include app URLs
 ]
 
-# Serve media files during development
+# For serving media files during development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += staticfiles_urlpatterns()

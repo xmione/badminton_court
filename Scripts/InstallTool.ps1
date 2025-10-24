@@ -25,11 +25,6 @@ function Write-Message {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logEntry = "[$timestamp] [$Level] $message"
     Write-Host $logEntry
-    
-    # Use the same log file as the main script
-    if ($Global:LogFile) {
-        Add-Content -Path $Global:LogFile -Value $logEntry -ErrorAction SilentlyContinue
-    }
 }
 
 # Function to check if Chocolatey exists, if not, install it
@@ -89,19 +84,19 @@ function Install-Tool {
         [scriptblock]$ProgressCallback = $null
     ) 
 
-    Write-Message "Processing installation for: $($appName)" -Level "INFO"
+    Write-Message "Processing installation for: $appName" -Level "INFO"
 
     $message = @" 
 
 ====================================================================================================================    
-appName: $($appName) 
-installCommand: $($installCommand) 
-checkCommand: $($checkCommand) 
-envPath: $($envPath) 
-manualInstallUrl: $($manualInstallUrl) 
-manualInstallPath: $($manualInstallPath) 
-ForceUpdate: $($ForceUpdate) 
-MaxRetries: $($MaxRetries) 
+appName: $appName 
+installCommand: $installCommand 
+checkCommand: $checkCommand 
+envPath: $envPath 
+manualInstallUrl: $manualInstallUrl 
+manualInstallPath: $manualInstallPath 
+ForceUpdate: $ForceUpdate 
+MaxRetries: $MaxRetries 
 ====================================================================================================================
 "@ 
 
@@ -110,140 +105,46 @@ MaxRetries: $($MaxRetries)
     $isInstalled = & $checkCommand -ErrorAction SilentlyContinue
 
     if (-not $isInstalled -or $ForceUpdate) {
-        Write-Message "Installing $($appName)..." -Level "INFO"
+        Write-Message "Installing $appName..." -Level "INFO"
         
         if ($ProgressCallback) {
-            & $ProgressCallback -Step "Installing $($appName)" -Status "In Progress"
+            & $ProgressCallback -Step "Installing $appName" -Status "In Progress"
         }
 
         Test-Chocolatey
         $installFailed = $false
         $retryCount = 0
-        $installOutput = ""
-        $installError = ""
 
         while ($retryCount -lt $MaxRetries) {
             try {
                 if ($installCommand) {
-                    Write-Message "Running custom install command for $($appName) (attempt $($retryCount + 1))..." -Level "INFO"
+                    Write-Message "Running custom install command for $appName (attempt $($retryCount + 1))..." -Level "INFO"
                     
                     # Check if the install command contains winget and if winget is available
                     $commandString = $installCommand.ToString()
                     if ($commandString -match "winget" -and -not (Test-Winget)) {
-                        Write-Message "winget not available, skipping installation for $($appName)" -Level "WARNING"
+                        Write-Message "winget not available, skipping installation for $appName" -Level "WARNING"
                         $installFailed = $true
                         break
                     }
                     
-                    # Clear previous errors
-                    $error.Clear()
-                    
-                    # Capture all output from the installation command
-                    $installOutput = & $installCommand 2>&1 | Out-String
-                    
-                    # Get any errors that occurred
-                    if ($error.Count -gt 0) {
-                        $installError = $error[0] | Out-String
-                    } else {
-                        $installError = ""
-                    }
-                    
-                    # Log the output
-                    Write-Message "Installation output for $($appName):" -Level "DEBUG"
-                    Write-Message $installOutput -Level "DEBUG"
-                    
-                    if ($installError) {
-                        Write-Message "Installation errors for $($appName):" -Level "ERROR"
-                        Write-Message $installError -Level "ERROR"
-                    }
-                    
-                    # Check if the command succeeded
-                    if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) {
-                        Write-Message "Installation command returned non-zero exit code: $($LASTEXITCODE)" -Level "ERROR"
-                        
-                        # For Visual Studio Build Tools, check if it's already installed despite the error
-                        if ($appName -eq "Visual Studio Build Tools") {
-                            # Check if the installation output indicates the tool is already installed
-                            if ($installOutput -match "Found an existing package already installed" -or 
-                                $installOutput -match "already installed" -or
-                                $installOutput -match "Installation completed successfully") {
-                                Write-Message "Visual Studio Build Tools appears to be installed despite the error code." -Level "INFO"
-                                $installFailed = $false
-                            } else {
-                                # Try to verify if the tool is actually installed by running the check command
-                                $isActuallyInstalled = & $checkCommand -ErrorAction SilentlyContinue
-                                if ($isActuallyInstalled) {
-                                    Write-Message "Visual Studio Build Tools is already installed on the system." -Level "INFO"
-                                    $installFailed = $false
-                                } else {
-                                    $installFailed = $true
-                                }
-                            }
-                        } else {
-                            $installFailed = $true
-                        }
-                    } else {
-                        $installFailed = $false
-                    }
+                    & $installCommand
                 } else {
-                    Write-Message "Installing $($appName) via Chocolatey (attempt $($retryCount + 1))..." -Level "INFO"
-                    $tempOutput = "${env:TEMP}\choco_output_$($appName).txt"
-                    $tempError = "${env:TEMP}\choco_error_$($appName).txt"
-                    $installOutput = Start-Process -NoNewWindow -Wait "choco" -ArgumentList "install $($appName) -y" -RedirectStandardOutput $tempOutput -RedirectStandardError $tempError -PassThru
-                    
-                    # Read and log the output files
-                    if (Test-Path $tempOutput) {
-                        $installOutput = Get-Content $tempOutput | Out-String
-                        Write-Message "Chocolatey output for $($appName):" -Level "DEBUG"
-                        Write-Message $installOutput -Level "DEBUG"
-                    }
-                    
-                    if (Test-Path $tempError) {
-                        $installError = Get-Content $tempError | Out-String
-                        if ($installError.Trim()) {
-                            Write-Message "Chocolatey errors for $($appName):" -Level "ERROR"
-                            Write-Message $installError -Level "ERROR"
-                        }
-                    }
-                    
-                    # Check if the command succeeded
-                    if ($installOutput -match "failed|error|not installed") {
-                        $installFailed = $true
-                    } else {
-                        $installFailed = $false
-                    }
+                    Write-Message "Installing $appName via Chocolatey (attempt $($retryCount + 1))..." -Level "INFO"
+                    Start-Process -NoNewWindow -Wait "choco" -ArgumentList "install $appName -y"
                 }
                 
-                # Increment retry counter
-                $retryCount++
-                
-                # If installation succeeded, break out of the loop
-                if (-not $installFailed) {
-                    break
-                }
-                
-                # If we've reached max retries, break out of the loop
-                if ($retryCount -ge $MaxRetries) {
-                    break
-                }
-                
-                # Wait before retrying
-                $waitTime = 5 * $retryCount
-                Write-Message "Waiting $($waitTime) seconds before retry..." -Level "INFO"
-                Start-Sleep -Seconds $waitTime
-                
+                # If we get here, the command completed without throwing an exception
+                $installFailed = $false
+                break
             } catch {
-                Write-Message "Installation attempt $($retryCount + 1) for $($appName) failed: $($_)" -Level "WARNING"
-                Write-Message "Exception details: $($_.Exception.Message)" -Level "ERROR"
-                Write-Message "Stack trace: $($_.ScriptStackTrace)" -Level "ERROR"
+                Write-Message "Installation attempt $($retryCount + 1) for $appName failed: $_" -Level "WARNING"
                 $installFailed = $true
-                
-                # Increment retry counter
                 $retryCount++
                 
                 if ($retryCount -lt $MaxRetries) {
                     $waitTime = 5 * $retryCount
-                    Write-Message "Waiting $($waitTime) seconds before retry..." -Level "INFO"
+                    Write-Message "Waiting $waitTime seconds before retry..." -Level "INFO"
                     Start-Sleep -Seconds $waitTime
                 }
             }
@@ -257,35 +158,16 @@ MaxRetries: $($MaxRetries)
         # Re-check if installation succeeded
         $isInstalled = & $checkCommand -ErrorAction SilentlyContinue
         if (-not $isInstalled) {
-            Write-Message "$($appName) installation failed verification." -Level "ERROR"
+            Write-Message "$appName installation failed verification." -Level "ERROR"
             $installFailed = $true
         }
 
         # Attempt manual install if needed
         if ($installFailed -and $manualInstallUrl -and $manualInstallPath) {
-            Write-Message "Attempting manual install for $($appName)..." -Level "INFO"
+            Write-Message "Attempting manual install for $appName..." -Level "INFO"
             try {
-                # Expand environment variables in paths using the execution context
-                $expandedInstallPath = $ExecutionContext.InvokeCommand.ExpandString($manualInstallPath)
-                DownloadWithProgress -url $manualInstallUrl -outputFile $expandedInstallPath
-                $tempOutput = "${env:TEMP}\manual_output_$($appName).txt"
-                $tempError = "${env:TEMP}\manual_error_$($appName).txt"
-                $manualOutput = Start-Process -FilePath $expandedInstallPath -ArgumentList '/silent' -Wait -RedirectStandardOutput $tempOutput -RedirectStandardError $tempError -PassThru
-                
-                # Read and log the output files
-                if (Test-Path $tempOutput) {
-                    $manualOutput = Get-Content $tempOutput | Out-String
-                    Write-Message "Manual installation output for $($appName):" -Level "DEBUG"
-                    Write-Message $manualOutput -Level "DEBUG"
-                }
-                
-                if (Test-Path $tempError) {
-                    $manualError = Get-Content $tempError | Out-String
-                    if ($manualError.Trim()) {
-                        Write-Message "Manual installation errors for $($appName):" -Level "ERROR"
-                        Write-Message $manualError -Level "ERROR"
-                    }
-                }
+                DownloadWithProgress -url $manualInstallUrl -outputFile $manualInstallPath
+                Start-Process -FilePath $manualInstallPath -ArgumentList '/silent' -Wait
 
                 # Add a delay after manual installation
                 Write-Message "Waiting 10 seconds after manual installation before verification..." -Level "INFO"
@@ -294,47 +176,39 @@ MaxRetries: $($MaxRetries)
                 # Final verification
                 $isInstalled = & $checkCommand -ErrorAction SilentlyContinue
                 if ($isInstalled) {
-                    Write-Message "$($appName) manual installation completed and verified." -Level "SUCCESS"
+                    Write-Message "$appName manual installation completed and verified." -Level "SUCCESS"
                 } else {
-                    Write-Message "$($appName) manual installation failed verification." -Level "ERROR"
+                    Write-Message "$appName manual installation failed verification." -Level "ERROR"
                 }
             } catch {
-                Write-Message "Manual installation for $($appName) failed: $($_)" -Level "ERROR"
-                Write-Message "Exception details: $($_.Exception.Message)" -Level "ERROR"
-                Write-Message "Stack trace: $($_.ScriptStackTrace)" -Level "ERROR"
+                Write-Message "Manual installation for $appName failed: $_" -Level "ERROR"
             }
         } elseif ($installFailed) {
-            Write-Message "Installation failed and no manual install method available for $($appName)." -Level "ERROR"
-            Write-Message "Last installation output was:" -Level "ERROR"
-            Write-Message $installOutput -Level "ERROR"
-            if ($installError) {
-                Write-Message "Last installation error was:" -Level "ERROR"
-                Write-Message $installError -Level "ERROR"
-            }
+            Write-Message "Installation failed and no manual install method available for $appName." -Level "ERROR"
         } else {
-            Write-Message "$($appName) installed successfully." -Level "SUCCESS"
+            Write-Message "$appName installed successfully." -Level "SUCCESS"
         }
     } else {
-        Write-Message "$($appName) is already installed." -Level "INFO"
+        Write-Message "$appName is already installed." -Level "INFO"
     }
 
     # If verified, ensure PATH is updated
     if ($isInstalled) {
         $currentPath = [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::User)
-        Write-Message "Current PATH: $($currentPath)" -Level "DEBUG"
+        Write-Message "Current PATH: $currentPath" -Level "DEBUG"
 
-        if (-not ($currentPath -like "*$($envPath)*")) {
-            $newPath = $currentPath + ";$($envPath)"
+        if (-not ($currentPath -like "*$envPath*")) {
+            $newPath = $currentPath + ";$envPath"
             [System.Environment]::SetEnvironmentVariable('Path', $newPath, [System.EnvironmentVariableTarget]::User)
             $env:Path = $newPath
-            Write-Message "Added $($appName) to the system PATH." -Level "SUCCESS"
+            Write-Message "Added $appName to the system PATH." -Level "SUCCESS"
         } else {
-            Write-Message "$($appName) is already in the system PATH." -Level "INFO"
+            Write-Message "$appName is already in the system PATH." -Level "INFO"
         }
     }
 
     if ($ProgressCallback) {
-        & $ProgressCallback -Step "Installing $($appName)" -Status "Completed"
+        & $ProgressCallback -Step "Installing $appName" -Status "Completed"
     }
 
     return $isInstalled
@@ -914,51 +788,4 @@ function Get-ngrokVersion {
     } catch {
         return $null
     }
-}
-
-# Function to check if a command exists
-function Test-CommandExists {
-    param (
-        [string]$command
-    )
-    $commandExists = $false
-    try {
-        $output = & $command --version 2>$null
-        if ($output) { $commandExists = $true }
-    } catch {
-        $commandExists = $false
-    }
-    return $commandExists
-}
-
-function Test-VisualStudioBuildToolsInstalled {
-    # Check for link.exe and cl.exe
-    $linker = Get-Command link.exe -ErrorAction SilentlyContinue
-    $compiler = Get-Command cl.exe -ErrorAction SilentlyContinue
-    
-    if ($linker -and $compiler) {
-        return $true
-    }
-    
-    # Check common MSVC paths
-    $commonPaths = @(
-        "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC",
-        "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC"
-    )
-    
-    foreach ($basePath in $commonPaths) {
-        if (Test-Path $basePath) {
-            $msvcDirs = Get-ChildItem -Path $basePath -Directory | Sort-Object Name -Descending
-            foreach ($dir in $msvcDirs) {
-                $binPath = Join-Path $dir.FullName "bin\Hostx64\x64"
-                $linkPath = Join-Path $binPath "link.exe"
-                $clPath = Join-Path $binPath "cl.exe"
-                if ((Test-Path $linkPath) -and (Test-Path $clPath)) {
-                    return $true
-                }
-            }
-        }
-    }
-    
-    return $false
 }

@@ -1,58 +1,110 @@
 // cypress/support/commands/signUp.cy.js
 
 export const signUp = () => {
-    // Command for admin login with setup
-    // Now accepts a single options object
     Cypress.Commands.add('signUp', (options = {}) => {
-        // Visit signup page
-        cy.visit('/accounts/signup/')
 
-        // Fill in registration form with the specified email
-        const uniqueEmail = 'paysol.postal@gmail.com'
+        const uniqueEmail = Cypress.env('REGULARUSER_EMAIL');
+        const password = Cypress.env('REGULARUSER_PASSWORD');
 
-        cy.get('#id_email').type(uniqueEmail)
-        cy.get('#id_password1').type('StrongPassword123!')
-        cy.get('#id_password2').type('StrongPassword123!')
+        cy.log(`Signing up with email: ${uniqueEmail}`);
+
+        // Visit signup page and fill the registration form
+        cy.visit('/accounts/signup/');
+        cy.get('#id_email').type(uniqueEmail);
+        cy.get('#id_password1').type(password);
+        cy.get('#id_password2').type(password);
 
         // Submit form
-        cy.get('button[type="submit"]').click()
+        cy.get('button[type="submit"]').click();
 
-        // Debug: Print the page content to see what's actually displayed
+        // Wait for redirect to confirmation page
+        cy.url().should('include', '/accounts/confirm-email/', { timeout: 10000 });
+        
+        // Verify the email verification page is displayed
+        cy.get('h1').should('contain', 'Verify Your Email Address');
+
+        // Call API to get the verification token
+        cy.request({
+            method: 'POST',
+            url: '/api/get-verification-token/',
+            body: { email: uniqueEmail },
+            failOnStatusCode: false
+        }).then((response) => {
+            cy.log('Token API Response Status:', response.status);
+            cy.log('Token API Response:', JSON.stringify(response.body));
+            
+            expect(response.status).to.equal(200);
+            expect(response.body).to.have.property('token');
+            const token = response.body.token;
+            
+            cy.log(`Verification token: ${token}`);
+            
+            // Debug - check if token is valid before using it
+            cy.request({
+                method: 'GET',
+                url: `/api/debug-confirmation/${token}/`,
+                failOnStatusCode: false
+            }).then((debugResponse) => {
+                cy.log('Token Debug Info:', JSON.stringify(debugResponse.body));
+                
+                // Log if token is expired
+                if (debugResponse.body.is_expired) {
+                    cy.log('WARNING: Token is already expired!');
+                }
+            });
+            
+            // Visit the verification URL
+            cy.visit(`/accounts/confirm-email/${token}/`);
+        });
+
+        // Wait for page to load
+        cy.wait(1000);
+        
+        // Check if we need to click a confirm button
         cy.get('body').then(($body) => {
-            cy.log('Page content after registration:', $body.text())
-        })
-
-        // Verify successful registration
-        // Check if redirected to login page or if verification message is shown
-        cy.url().then((url) => {
-            cy.log('Current URL after registration:', url)
-
-            if (url.includes('/accounts/login/')) {
-                // Redirected to login page
-                cy.url().should('include', '/accounts/login/')
-            } else {
-                // Look for any verification-related message with multiple possible texts
-                cy.get('body').then(($body) => {
-                    const pageText = $body.text()
-
-                    if (pageText.includes('verification') || pageText.includes('Verification')) {
-                        // Found some verification message
-                        cy.contains(/verification|Verification/i).should('be.visible')
-                    } else if (pageText.includes('email') || pageText.includes('Email')) {
-                        // Found some email-related message
-                        cy.contains(/email|Email/i).should('be.visible')
-                    } else if (pageText.includes('sent') || pageText.includes('Sent')) {
-                        // Found some "sent" message
-                        cy.contains(/sent|Sent/i).should('be.visible')
-                    } else {
-                        // Just check that we're not on an error page
-                        cy.url().should('not.include', 'error')
-                        cy.log('No verification message found, but no error detected')
-                    }
-                })
+            if ($body.find('button[type="submit"]').length > 0) {
+                cy.log('Found confirmation button - clicking it');
+                cy.get('button[type="submit"]').click();
+                cy.wait(1000);
             }
-        })
+        });
 
+        // Take screenshot for debugging
+        cy.screenshot('after-email-confirmation');
+
+        // Check the result
+        cy.get('body').then(($body) => {
+            const bodyText = $body.text().toLowerCase();
+            
+            if (bodyText.includes('confirmed') || bodyText.includes('verified')) {
+                cy.log('SUCCESS: Email confirmation successful');
+            } else if (bodyText.includes('expired') || bodyText.includes('invalid')) {
+                cy.log('ERROR: Token appears to be expired or invalid');
+                cy.log('Page content:', bodyText.substring(0, 500));
+                throw new Error('Email confirmation token is expired or invalid');
+            } else {
+                cy.log('WARNING: Unexpected page content');
+                cy.log('Body text:', bodyText.substring(0, 500));
+            }
+        });
+
+        // Verify we can now see a success state
+        cy.url().then((url) => {
+            if (url.includes('/accounts/login/')) {
+                cy.log('Redirected to login page - verification successful');
+            } else {
+                // Should have success message on current page
+                cy.get('body').should('satisfy', ($body) => {
+                    const text = $body.text().toLowerCase();
+                    return text.includes('confirmed') || 
+                           text.includes('verified') || 
+                           text.includes('success');
+                });
+            }
+        });
+
+        // Return the email
+        cy.wrap(uniqueEmail);
     });
 };
 

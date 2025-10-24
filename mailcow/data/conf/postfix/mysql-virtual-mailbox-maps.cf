@@ -1,5 +1,0 @@
-user = mailcow
-host = mysql-mailcow
-dbname = mailcow
-password = mailcow
-query = SELECT CONCAT(SUBSTRING_INDEX(username, "@", 1), "@", SUBSTRING_INDEX(username, "@", -1)) AS mailbox FROM mailbox WHERE username = "%s" AND active = "1"

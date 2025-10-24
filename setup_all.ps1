@@ -80,11 +80,11 @@ param (
 . "$PSScriptRoot\Scripts\InstallTool.ps1"
 
 # Load version configuration
-$versions = Get-Content "$PSScriptRoot\versions.json" | ConvertFrom-Json
+ $versions = Get-Content "$PSScriptRoot\versions.json" | ConvertFrom-Json
 
 # Enhanced logging and progress tracking
-$Global:SetupStartTime = Get-Date
-$Global:LogFile = $LogFile
+ $Global:SetupStartTime = Get-Date
+ $Global:LogFile = $LogFile
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
@@ -93,12 +93,6 @@ function Write-Log {
     Write-Host $logEntry
     if ($Global:LogFile) {
         Add-Content -Path $Global:LogFile -Value $logEntry -ErrorAction SilentlyContinue
-    }
-    
-    # Also write debug messages to a separate debug log file
-    if ($Level -eq "DEBUG" -and $Global:LogFile) {
-        $debugLogFile = $Global:LogFile.Replace(".txt", "_debug.txt")
-        Add-Content -Path $debugLogFile -Value $logEntry -ErrorAction SilentlyContinue
     }
 }
 
@@ -273,69 +267,6 @@ function Show-Summary {
     }
 }
 
-function Set-GitConfiguration {
-    Write-Log "Configuring Git user information..." -Level "INFO"
-    
-    # Check if Git is already configured
-    try {
-        $gitUserName = git config --global user.name 2>$null
-        $gitUserEmail = git config --global user.email 2>$null
-        
-        if ($gitUserName -and $gitUserEmail) {
-            Write-Log "Git is already configured:" -Level "INFO"
-            Write-Log "  Name: $gitUserName" -Level "INFO"
-            Write-Log "  Email: $gitUserEmail" -Level "INFO"
-            
-            $response = Read-Host "Do you want to reconfigure Git? (y/N)"
-            if ($response -ne 'y' -and $response -ne 'Y') {
-                return $true
-            }
-        }
-    }
-    catch {
-        Write-Log "Git configuration check failed, proceeding with setup." -Level "WARNING"
-    }
-    
-    # Prompt for user name
-    $userName = Read-Host "Enter your Git user name"
-    if ([string]::IsNullOrWhiteSpace($userName)) {
-        Write-Log "No user name provided. Skipping Git configuration." -Level "WARNING"
-        return $false
-    }
-    
-    # Prompt for user email
-    $userEmail = Read-Host "Enter your Git user email"
-    if ([string]::IsNullOrWhiteSpace($userEmail)) {
-        Write-Log "No user email provided. Skipping Git configuration." -Level "WARNING"
-        return $false
-    }
-    
-    try {
-        # Set Git configuration
-        git config --global user.name "$userName"
-        git config --global user.email "$userEmail"
-        
-        # Verify configuration
-        $configuredName = git config --global user.name
-        $configuredEmail = git config --global user.email
-        
-        if ($configuredName -eq $userName -and $configuredEmail -eq $userEmail) {
-            Write-Log "Git configuration set successfully:" -Level "SUCCESS"
-            Write-Log "  Name: $configuredName" -Level "SUCCESS"
-            Write-Log "  Email: $configuredEmail" -Level "SUCCESS"
-            return $true
-        }
-        else {
-            Write-Log "Failed to verify Git configuration." -Level "ERROR"
-            return $false
-        }
-    }
-    catch {
-        Write-Log "Failed to set Git configuration: $($_.Exception.Message)" -Level "ERROR"
-        return $false
-    }
-}
-
 # Main execution
 if (RelaunchAsAdmin) {
     try {
@@ -388,12 +319,6 @@ if (RelaunchAsAdmin) {
         Write-Progress-Step "Setting up VCVars environment" ($totalTools + 1) ($totalTools + 1)
         $results["VCVars Environment"] = SetupVCVars
         
-        # Configure Git if it was installed
-        if ($results["git"] -eq $true) {
-            Write-Progress-Step "Configuring Git" ($totalTools + 2) ($totalTools + 2)
-            $results["Git Configuration"] = Set-GitConfiguration
-        }
-        
         # Final verification
         Write-Progress-Step "Final verification" ($totalTools + 2) ($totalTools + 2)
         Write-Log "Performing final verification..." -Level "INFO"
@@ -431,9 +356,6 @@ if (RelaunchAsAdmin) {
     catch {
         Write-Log "Fatal error during setup: $($_.Exception.Message)" -Level "ERROR"
         Write-Log "Stack trace: $($_.ScriptStackTrace)" -Level "ERROR"
-        Write-Host ""
-        Write-Host "Press Enter to exit..." -ForegroundColor Red
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
         exit 1
     }
     finally {

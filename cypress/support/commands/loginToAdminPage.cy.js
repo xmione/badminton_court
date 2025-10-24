@@ -1,9 +1,25 @@
 // cypress/support/commands/loginToAdminPage.cy.js
 
 export const loginToAdminPage = () => {
-    Cypress.Commands.add('loginToAdminPage', (email = 'paysol.postal@gmail.com', password = 'StrongPassword123!') => {
-        cy.showWaitMessage('This Test will log user as Admin in the Admin Page...', 10000)
-        cy.adminLogin({ admin: 'admin', password: 'password', setup: false });
+    Cypress.Commands.add('loginToAdminPage', (options = {}) => {
+        // Get environment variables - these must be set
+        const adminEmail = Cypress.env('ADMIN_EMAIL');
+        const adminPassword = Cypress.env('ADMIN_PASSWORD');
+        
+        // Verify environment variables are set
+        if (!adminEmail) {
+            throw new Error('ADMIN_EMAIL environment variable is not set');
+        }
+        if (!adminPassword) {
+            throw new Error('ADMIN_PASSWORD environment variable is not set');
+        }
+        
+        cy.showWaitMessage('This Test will log user as Admin in the Admin Page...', 10000);
+        cy.adminLogin({ 
+            username: adminEmail, 
+            password: adminPassword, 
+            setup: false 
+        });
 
         // If it's an invalid login, these assertions might fail.
         // You might want to make the successful login verification conditional,
@@ -13,9 +29,7 @@ export const loginToAdminPage = () => {
         cy.contains('Aeropace Badminton Court').should('be.visible');
         cy.contains('Welcome, admin').should('be.visible');
         cy.showWaitMessage('Admins with valid credentials can view and manage the site...', 10000);
-        
     })
-
 };
 
 loginToAdminPage();

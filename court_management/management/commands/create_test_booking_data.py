@@ -2,6 +2,7 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone  # Import timezone utility
+from django.conf import settings  # Import settings to access environment variables
 from datetime import timedelta
 from court_management.models import Customer, Court, Booking
 
@@ -16,18 +17,21 @@ class Command(BaseCommand):
                 Court.objects.filter(name__in=["Court 1", "Court 2"]).delete()
                 Booking.objects.filter(customer__name__in=["John Doe", "Jane Smith"]).delete()
                 
+                # Get domain from settings or use default
+                domain = getattr(settings, 'DOMAIN_NAME')
+                
                 # Create test customers
                 john_doe = Customer.objects.create(
                     name="John Doe",
                     phone="1234567890",
-                    email="john@example.com",
+                    email=f"john@{domain}",
                     active=True
                 )
                 
                 jane_smith = Customer.objects.create(
                     name="Jane Smith",
                     phone="9876543210",
-                    email="jane@example.com",
+                    email=f"jane@{domain}",
                     active=True
                 )
                 
@@ -59,7 +63,7 @@ class Command(BaseCommand):
                     fee=20.00
                 )
                 
-                self.stdout.write(self.style.SUCCESS('Successfully created test booking data'))
+                self.stdout.write(self.style.SUCCESS(f'Successfully created test booking data with domain: {domain}'))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'Error creating test data: {str(e)}'))
             raise

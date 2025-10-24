@@ -8,7 +8,7 @@ export const signUpMismatchedPasswords = () => {
         cy.visit('/accounts/signup/')
 
         // Fill in registration form with mismatched passwords
-        const uniqueEmail = 'paysol.postal@gmail.com'
+        const uniqueEmail = 'admin@aeropace.com'
 
         cy.get('#id_email').type(uniqueEmail)
         cy.get('#id_password1').type('StrongPassword123!')

@@ -8,23 +8,18 @@ x-app-volumes: &app-volumes
 volumes:
   postgres_data:
   postgres_test_data:
-  maildata:
-  mailstate:
-  maillogs:
-  roundcube_data: 
-  tunnel_info:
+  # postal_data: # This is no longer needed with poste.io
+  mariadb_data:
+  poste_data: # New volume for the simple mail server
 
 networks:
   app-network:
     driver: bridge
-  # Remove external network declaration
-  # mailcow-network:
-  #   external: true
 
 services:
   # Development Database (only for dev profile)
-  badminton_db:
-    container_name: badminton_db
+  db:
+    container_name: db
     image: postgres:14
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -38,6 +33,11 @@ services:
       - app-network
     profiles:
       - dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   
   # Test Database (only for test profile)
   db-test:
@@ -57,8 +57,8 @@ services:
       - test
   
   # Redis (shared by all profiles including tunnel)
-  badminton_redis:
-    container_name: badminton_redis
+  redis:
+    container_name: redis
     image: redis:7-alpine
     ports:
       - "6379:6379"
@@ -75,32 +75,42 @@ services:
     container_name: web-dev
     build: 
       context: .
-      dockerfile: Dockerfile
       target: web
-    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
       - /app/node_modules
       - /app/venv
-      - tunnel_info:/app/shared  
+      - ./certs:/certs:ro
     ports:
       - "8000:8000"
     env_file:
       - .env.docker
+    environment:
+      - POSTE_API_HOST=${POSTE_PROTOCOL}://${POSTE_HOSTNAME}:${POSTE_PORT}
+      - POSTE_API_USER=${POSTE_API_USER}
+      - POSTE_API_PASSWORD=${POSTE_API_PASSWORD}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - ADMIN_FIRST_NAME=${ADMIN_FIRST_NAME}
+      - ADMIN_LAST_NAME=${ADMIN_LAST_NAME}
     networks:
       - app-network
     profiles:
       - dev
       - tunnel  
     depends_on:
-      - badminton_redis
-      
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+      mail-test:
+        condition: service_started
+
   # Test Web Service (only for test profile)
   web-test:
     container_name: web-test
     build: 
       context: .
-      dockerfile: Dockerfile
       target: web
     command: python manage.py runserver 0.0.0.0:8000
     volumes: *app-volumes
@@ -115,19 +125,19 @@ services:
     profiles:
       - test
     depends_on:
-      - badminton_redis
+      - redis
   
   # Celery Worker (dev profile only)
   celery:
     container_name: celery
     build: 
       context: .
-      dockerfile: Dockerfile
       target: web
-    command: celery -A badminton_court worker --loglevel=info
+    entrypoint: ["celery"] # <-- SET ENTRYPOINT TO CELERY
+    command: ["-A", "badminton_court", "worker", "--loglevel=info"] 
     volumes: *app-volumes
     depends_on:
-      - badminton_redis
+      - redis
     env_file:
       - .env.docker
     networks:
@@ -140,38 +150,68 @@ services:
     container_name: celery-beat
     build: 
       context: .
-      dockerfile: Dockerfile
       target: web
-    command: celery -A badminton_court beat --loglevel=info
+    entrypoint: ["celery"] # <-- SET ENTRYPOINT TO CELERY
+    command: ["-A", "badminton_court", "beat", "--loglevel=info"]  
     volumes: *app-volumes
     depends_on:
-      - badminton_redis
+      - redis
     env_file:
       - .env.docker
     networks:
       - app-network
     profiles:
       - dev
-  
-  # Ngrok Tunnel Service for web-dev
-  tunnel-dev:
-    container_name: ngrok_tunnel_dev
+
+  # --- START: NEW SIMPLE MAIL SERVER ---
+  # This replaces the complex Postal/MariaDB setup
+  mail-test:
+    container_name: mail-test
+    image: analogic/poste.io
+    restart: unless-stopped
+    ports:
+      #- "8080:80" # Web UI if HTTPS=OFF
+      - "8443:443" # Web UI if HTTPS=ON
+      # The following mail ports are now free since Postal is commented out
+      - "25:25"   # SMTP
+      - "587:587"  # Submission
+      - "465:465"  # SMTPS
+    environment:
+      - HTTPS=ON
+    volumes:
+      - poste_data:/data # Persist mail data
+      - ./certs/posteio-cert.pem:/data/ssl/server.crt
+      - ./certs/posteio-key.pem:/data/ssl/server.key
+      - ./certs/ca.pem:/data/ssl/ca.crt
+    networks:
+      - app-network
+    profiles:
+      - dev
+      - test
+    healthcheck:
+      # This uses netcat (nc) to check if the SMTP port 587 is actually open and listening.
+      # It will only be marked 'healthy' when the SMTP service is ready.
+      test: ["CMD", "nc", "-zv", "localhost", "587"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s # Reduced from 60s to 30s
+
+  # --- END: NEW SIMPLE MAIL SERVER ---
+ 
+  # Ngrok Tunnel Service (depends on dev web service)
+  tunnel:
+    container_name: ngrok_tunnel
     build: 
       context: .
-      dockerfile: Dockerfile
       target: tunnel
-    command: python tunnel.py --service web-dev --port 8000
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/venv
-      - tunnel_info:/app/shared  
+    command: python tunnel.py
+    volumes: *app-volumes
     depends_on:
-      - web-dev   
+      - web-dev  # Changed from web to web-dev
     environment:
       - NGR_AUTHTOKEN=${NGR_AUTHTOKEN}
-      - APP_PORT=8000
-      - SERVICE_NAME=web-dev
+      - APP_PORT=${APP_PORT}
     env_file:
       - .env.docker
     networks:
@@ -179,38 +219,12 @@ services:
     profiles:
       - tunnel
 
-  # Ngrok Tunnel Service for web-test
-  tunnel-test:
-    container_name: ngrok_tunnel_test
-    build: 
-      context: .
-      dockerfile: Dockerfile
-      target: tunnel
-    command: python tunnel.py --service web-test --port 8001
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/venv
-      - tunnel_info:/app/shared  
-    depends_on:
-      - web-test   
-    environment:
-      - NGR_AUTHTOKEN=${NGR_AUTHTOKEN}
-      - APP_PORT=8001
-      - SERVICE_NAME=web-test
-    env_file:
-      - .env.docker
-    networks:
-      - app-network
-    profiles:
-      - tunnel
-
-  # Cypress Testing (depends on test web service)
+  # Cypress Testing 
   cypress:
     container_name: cypress
     build:
       context: .
-      dockerfile: Dockerfile.cypress
+      dockerfile: Dockerfile.cypress 
     volumes:
       - ./cypress:/e2e/cypress
       - ./cypress.config.js:/e2e/cypress.config.js
@@ -218,49 +232,33 @@ services:
       - ./cypress/screenshots:/e2e/cypress/screenshots
       - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
       - ./scripts:/e2e/scripts
+      - ./certs/ca.pem:/etc/ssl/certs/ca-posteio.crt # Don't forget this!
     environment:
+      # This is the default for your Django tests
       - CYPRESS_baseUrl=http://web-test:8000
       - CYPRESS_headed=${CYPRESS_headed}
-    env_file:
-      - .env.docker
-    depends_on:
-      - web-test
-    profiles:
-      - test
-    networks:
-      - app-network
       
-  # Test Data Setup (depends on test web service)
-  test-setup:
-    container_name: test-setup
-    build: 
-      context: .
-      dockerfile: Dockerfile
-      target: web
-    command: python manage.py load_test_data
-    volumes: *app-volumes
-    depends_on:
-      - db-test
-      - badminton_redis
-      - web-test
-    environment:
-      - DEBUG=${DEBUG}
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-test:5432/${POSTGRES_DB}
-      - REDIS_URL=${REDIS_URL}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      # Explicitly pass ALL Poste.io variables to the Cypress container
+      - POSTE_API_HOST=${POSTE_PROTOCOL}://${POSTE_HOSTNAME}:${POSTE_PORT}
+      - POSTE_API_USER=${POSTE_API_USER}
+      - POSTE_API_PASSWORD=${POSTE_API_PASSWORD}
     env_file:
       - .env.docker
+    # Add an entrypoint to install the cert before running Cypress
+    entrypoint: ["/bin/sh", "-c", "update-ca-certificates && npx cypress"]
+    depends_on:
+      - web-test
     profiles:
       - test
     networks:
       - app-network
-  
-  # Presentation Video Creation Service (can use either web service)
+
+  # Presentation Video Creation Service 
   presentation:
     container_name: presentation
     build:
       context: .
-      dockerfile: Dockerfile.presentation
+      dockerfile: Dockerfile.cypress 
     volumes:
       - ./cypress:/e2e/cypress
       - ./cypress.config.js:/e2e/cypress.config.js
@@ -276,5 +274,29 @@ services:
       - web-dev
     profiles:
       - presentation
+    networks:
+      - app-network
+
+  # Test Data Setup (depends on test web service)
+  test-setup:
+    container_name: test-setup
+    build: 
+      context: .
+      target: web
+    command: python manage.py load_test_data
+    volumes: *app-volumes
+    depends_on:
+      - db-test
+      - redis
+      - web-test  # Changed from web to web-test
+    environment:
+      - DEBUG=${DEBUG}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-test:5432/${POSTGRES_DB}
+      - REDIS_URL=${REDIS_URL}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+    env_file:
+      - .env.docker
+    profiles:
+      - test
     networks:
       - app-network

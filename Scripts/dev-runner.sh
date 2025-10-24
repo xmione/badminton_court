@@ -9,13 +9,19 @@ docker-compose up -d db redis web celery celery-beat
 echo "🔄 Running migrations..."
 docker-compose exec -T web python manage.py migrate
 
+# Get domain from environment or use default
+DOMAIN_NAME=$(grep "^DOMAIN_NAME=" .env.docker | cut -d '=' -f2)
+if [ -z "$DOMAIN_NAME" ]; then
+    return
+fi
+
 # Create superuser if it doesn't exist
 echo "👤 Creating superuser if needed..."
 docker-compose exec -T web python manage.py shell -c "
 from django.contrib.auth.models import User
 if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@example.com', 'password')
-    print('Superuser created')
+    User.objects.create_superuser('admin', 'admin@$DOMAIN_NAME')
+    print('Superuser created with email admin@$DOMAIN_NAME')
 else:
     print('Superuser already exists')
 "
@@ -28,4 +34,5 @@ docker-compose exec -T web python manage.py load_test_data
 echo "✅ Services started. Press Ctrl+C to stop."
 echo "🌐 Application available at: http://localhost:8000"
 echo "🔐 Admin login: admin/password"
+echo "📧 Admin email: admin@$DOMAIN_NAME"
 docker-compose logs -f

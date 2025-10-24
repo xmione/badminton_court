@@ -3,7 +3,8 @@
 describe('Admin Login', () => {
   before(() => {
     cy.log('ADMIN SPEC: Starting admin-login.cy.js before()');
-    // The database is already migrated from global before().
+    
+    // The database is already migrated from the container startup
     // Now, reset and add admin-specific data.
     cy.resetDatabase(); // Resets tables *after* migrations
     cy.setupTestAdmin({ reset: true }); // Creates admin user

@@ -1,5 +1,0 @@
-user = mailcow
-host = mysql-mailcow
-dbname = mailcow
-password = mailcow
-query = SELECT transport FROM mailbox WHERE username="%s" AND active="1"

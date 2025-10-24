@@ -8,7 +8,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     
     # Authentication URLs
-    path('signup/', views.SignUpView.as_view(), name='signup'),
+    # path('signup/', views.SignUpView.as_view(), name='signup'),
     path('profile/', views.profile, name='profile'),
     
     # Booking URLs
@@ -62,5 +62,15 @@ urlpatterns = [
     path('api/test-create-user/', views.test_create_user, name='test-create-user'),
     path('api/test-verify-user/', views.test_verify_user, name='test-verify-user'),
     path('api/test-setup-admin/', views.test_setup_admin, name='test-setup-admin'),
+    path('api/test-cleanup-user/', views.test_cleanup_user, name='test-cleanup-user'), 
+    path('api/get-verification-token/', views.get_verification_token, name='get-verification-token'),
+    path('api/debug-check-confirmation/', views.debug_check_confirmation, name='debug-check-confirmation'),
+    path('api/debug-confirmation/<str:token>/', views.debug_confirmation_status, name='debug-confirmation-status'),
+    path('api/update-site-domain/', views.update_site_domain, name='update_site_domain'),
+    path('api/update-all-site-domains/', views.update_all_site_domains, name='update_all_site_domains'),
+    path('api/check-pending-emails/', views.check_pending_emails, name='check_pending_emails'),
+    path('api/send-pending-emails/', views.send_pending_emails, name='send_pending_emails'),
+    path('api/debug-site-config/', views.debug_site_config, name='debug_site_config'),
+    path('api/debug-email-content/', views.debug_email_content, name='debug_email_content'),
     
 ]

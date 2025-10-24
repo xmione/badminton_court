@@ -20,6 +20,7 @@ export const createAdminUser = () => {
                 cy.log(`Failed to create admin user: ${result.stderr}`)
                 // Fallback: try creating user directly through Django shell
                 cy.exec(`python manage.py shell -c "
+from django.conf import settings
 from django.contrib.auth.models import User
 try:
     user = User.objects.get(username='${username}')
@@ -29,7 +30,9 @@ try:
     user.save()
     print('Admin user updated successfully')
 except User.DoesNotExist:
-    User.objects.create_superuser('${username}', 'admin@example.com', '${password}')
+    # Get domain from settings or use default
+    domain = getattr(settings, 'DOMAIN_NAME')
+    User.objects.create_superuser('${username}', f'${username}@{domain}', '${password}')
     print('Admin user created successfully')
 "`, { timeout: 30000 })
             }

@@ -163,6 +163,9 @@ cython_debug/
 /media/
 /static/
 
+# Docker
+.dockerignore
+
 # OS generated files
 .DS_Store
 .DS_Store?
