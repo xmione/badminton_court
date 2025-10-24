@@ -27,11 +27,11 @@ export const signUpDuplicateEmails = () => {
         });
 
         // Check for any form elements or messages
-        cy.get('form').then(($form) => {
-            if ($form.length > 0) {
-                cy.log('Form action:', $form.attr('action'));
-            }
-        });
+        // cy.get('form').then(($form) => {
+        //     if ($form.length > 0) {
+        //         cy.log('Form action:', $form.attr('action'));
+        //     }
+        // });
     });
 };
 
