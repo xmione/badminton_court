@@ -19,5 +19,6 @@ describe('Authentication Flow', () => {
   
   it('should successfully register a new user', () => {
     cy.signUp();
+    cy.signOut();
   });
 });

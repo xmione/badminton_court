@@ -5,10 +5,6 @@ export const loginAsRegistered = () => {
         const uniqueEmail = Cypress.env('REGULARUSER_EMAIL');
         const password = Cypress.env('REGULARUSER_PASSWORD');
 
-        // First, ensure we're logged out
-        cy.visit('/accounts/logout/');
-        cy.get('button[type="submit"]').contains('Sign Out').click();
-
         // Now login properly
         cy.visit('/accounts/login/');
         cy.url().should('include', '/accounts/login/');

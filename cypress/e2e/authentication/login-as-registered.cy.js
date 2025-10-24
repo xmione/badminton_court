@@ -21,6 +21,7 @@ describe('Authentication Flow', () => {
   it('should successfully login with registered user', () => {
     cy.log("Simulating signup for now. This should be setup as a ready data.");
     cy.signUp(); 
+    cy.signOut();
     cy.loginAsRegistered();  
   })
 })

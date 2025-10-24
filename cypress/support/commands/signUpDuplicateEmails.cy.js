@@ -35,22 +35,27 @@ export const signUpDuplicateEmails = () => {
         // Submit form
         cy.get('button[type="submit"]').click()
 
+        cy.pause();
         // Debug: Print the page content to see what's actually displayed
         cy.get('body').then(($body) => {
             cy.log('Page content after duplicate registration:', $body.text())
         })
-
+cy.pause();
         // Verify error message - look for any duplicate email error
         cy.get('body').then(($body) => {
             const pageText = $body.text()
-
+cy.pause();
             if (pageText.includes('already registered') || pageText.includes('already in use')) {
-                cy.contains(/already registered|already in use/i).should('be.visible')
+                cy.pause();
+                cy.contains(/already registered|already in use/i).should('be.visible');
             } else if (pageText.includes('duplicate') || pageText.includes('Duplicate')) {
+                cy.pause();
                 cy.contains(/duplicate|Duplicate/i).should('be.visible')
             } else if (pageText.includes('email') && (pageText.includes('taken') || pageText.includes('exists'))) {
-                cy.contains(/email.*(taken|exists)|(taken|exists).*email/i).should('be.visible')
+                cy.pause();
+                cy.contains(/email.*(taken|exists)|(taken|exists).*email/i).should('be.visible');
             } else {
+                cy.pause();
                 // Look for Django's default error list or any element containing error-related text
                 cy.get('body').then(($body) => {
                     // Check for Django's errorlist class
@@ -80,7 +85,7 @@ export const signUpDuplicateEmails = () => {
                 })
             }
         })
-
+cy.pause();
     });
 };
 
