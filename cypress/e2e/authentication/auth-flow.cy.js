@@ -5,7 +5,7 @@ describe('Authentication Flow', { testIsolation: false }, () => {
   
   before(() => {
     // Update site domain FIRST before any other operations
-    cy.updateSiteDomain();
+    // cy.updateSiteDomain();
     
     // Then clean database
     cy.log('Cleaning database before authentication tests...');
