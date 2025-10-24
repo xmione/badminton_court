@@ -1,3 +1,5 @@
+# court_management/adapters.py
+
 from allauth.account.adapter import DefaultAccountAdapter
 from django.conf import settings
 from django.contrib.sites.models import Site
