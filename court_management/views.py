@@ -56,6 +56,171 @@ import json
 
 @csrf_exempt
 @require_http_methods(["POST"])
+def check_pending_emails(request):
+    """
+    Check for pending verification emails in the database.
+    """
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        if not email:
+            return JsonResponse({'error': 'Email is required'}, status=400)
+        
+        # Check django-allauth email confirmations
+        from allauth.account.models import EmailAddress, EmailConfirmation
+        from django.utils import timezone
+        
+        emails_data = []
+        need_manual_send = False
+        
+        try:
+            user = User.objects.get(email=email)
+            email_address = EmailAddress.objects.filter(user=user, email=email).first()
+            
+            if email_address:
+                # Get all confirmations for this email
+                confirmations = EmailConfirmation.objects.filter(
+                    email_address=email_address
+                ).order_by('-created')
+                
+                for conf in confirmations:
+                    emails_data.append({
+                        'id': conf.id,
+                        'key': conf.key,
+                        'created': conf.created.isoformat(),
+                        'sent': conf.sent.isoformat() if conf.sent else None,
+                        'expired': conf.key_expired(),
+                        'email_verified': email_address.verified
+                    })
+                
+                # Check if we need to manually send
+                if confirmations and not any(conf.sent for conf in confirmations):
+                    need_manual_send = True
+                    
+        except User.DoesNotExist:
+            pass
+        
+        return JsonResponse({
+            'emails': emails_data,
+            'need_manual_send': need_manual_send,
+            'email_found': len(emails_data) > 0
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def send_pending_emails(request):
+    """
+    Manually send pending verification emails.
+    """
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        if not email:
+            return JsonResponse({'error': 'Email is required'}, status=400)
+        
+        # Import django-allauth utilities
+        from allauth.account.models import EmailAddress, EmailConfirmation
+        from allauth.account import app_settings as account_settings
+        from allauth.account.adapter import get_adapter
+        from django.utils import timezone
+        
+        try:
+            user = User.objects.get(email=email)
+            email_address = EmailAddress.objects.filter(user=user, email=email).first()
+            
+            if not email_address:
+                return JsonResponse({'error': 'Email address not found'}, status=404)
+            
+            if email_address.verified:
+                return JsonResponse({'message': 'Email already verified'})
+            
+            # Get the most recent unsent confirmation or create one
+            confirmation = EmailConfirmation.objects.filter(
+                email_address=email_address,
+                sent__isnull=True
+            ).first()
+            
+            if not confirmation:
+                # Create a new confirmation
+                confirmation = EmailConfirmation.create(email_address)
+                confirmation.sent = timezone.now()
+                confirmation.save()
+            
+            # Manually send the confirmation email
+            adapter = get_adapter()
+            adapter.send_confirmation_mail(request, confirmation, signup=True)
+            
+            # Mark as sent
+            confirmation.sent = timezone.now()
+            confirmation.save()
+            
+            return JsonResponse({
+                'message': 'Verification email sent manually',
+                'confirmation_id': confirmation.id,
+                'key': confirmation.key
+            })
+            
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_all_site_domains(request):
+    """
+    Update ALL Site objects in the database to ensure django-allauth uses the correct domain.
+    """
+    try:
+        data = json.loads(request.body)
+        domain = data.get('domain')
+        name = data.get('name')
+        
+        if not domain or not name:
+            return JsonResponse({
+                'error': 'Both domain and name are required'
+            }, status=400)
+        
+        # Update ALL Site objects, not just the one with SITE_ID
+        from django.contrib.sites.models import Site
+        sites = Site.objects.all()
+        updated_count = 0
+        
+        for site in sites:
+            site.domain = domain
+            site.name = name
+            site.save()
+            updated_count += 1
+        
+        # Also update the default site if no sites exist
+        if updated_count == 0:
+            Site.objects.create(domain=domain, name=name)
+            updated_count = 1
+        
+        return JsonResponse({
+            'message': f'All {updated_count} site domain(s) updated successfully',
+            'updated_count': updated_count,
+            'domain': domain,
+            'name': name
+        }, status=200)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+    
+@csrf_exempt
+@require_http_methods(["POST"])
 def update_site_domain(request):
     """
     API endpoint to update the Site domain and name.

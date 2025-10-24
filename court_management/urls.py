@@ -67,5 +67,8 @@ urlpatterns = [
     path('api/debug-check-confirmation/', views.debug_check_confirmation, name='debug-check-confirmation'),
     path('api/debug-confirmation/<str:token>/', views.debug_confirmation_status, name='debug-confirmation-status'),
     path('api/update-site-domain/', views.update_site_domain, name='update_site_domain'),
+    path('api/update-all-site-domains/', views.update_all_site_domains, name='update_all_site_domains'),
+    path('api/check-pending-emails/', views.check_pending_emails, name='check_pending_emails'),
+    path('api/send-pending-emails/', views.send_pending_emails, name='send_pending_emails'),
     
 ]
