@@ -66,5 +66,6 @@ urlpatterns = [
     path('api/get-verification-token/', views.get_verification_token, name='get-verification-token'),
     path('api/debug-check-confirmation/', views.debug_check_confirmation, name='debug-check-confirmation'),
     path('api/debug-confirmation/<str:token>/', views.debug_confirmation_status, name='debug-confirmation-status'),
+    path('api/update-site-domain/', views.update_site_domain, name='update_site_domain'),
     
 ]
