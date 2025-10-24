@@ -55,6 +55,73 @@ from django.conf import settings
 import json
 
 @csrf_exempt
+def debug_site_config(request):
+    """Debug endpoint to check site configuration"""
+    from django.contrib.sites.models import Site
+    from django.conf import settings
+    
+    site = Site.objects.get_current()
+    
+    return JsonResponse({
+        'site_id': settings.SITE_ID,
+        'site_domain': site.domain,
+        'site_name': site.name,
+        'default_from_email': settings.DEFAULT_FROM_EMAIL,
+        'account_email_subject_prefix': getattr(settings, 'ACCOUNT_EMAIL_SUBJECT_PREFIX', 'Not set'),
+    })
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def debug_email_content(request):
+    """Debug endpoint to see what email content would be generated"""
+    from allauth.account.adapter import get_adapter
+    from django.contrib.sites.models import Site
+    from django.contrib.auth import get_user_model
+    
+    User = get_user_model()
+    site = Site.objects.get_current()
+    adapter = get_adapter()
+    
+    data = json.loads(request.body)
+    email = data.get('email')
+    
+    # Create a mock context similar to what allauth uses
+    context = {
+        'user': User(email=email, username=email),
+        'current_site': site,
+        'activate_url': f"http://{site.domain}/accounts/confirm-email/test-key/",
+        'key': 'test-key',
+    }
+    
+    # Try to render the email templates
+    try:
+        subject = "Test Subject"
+        message = "Test Message"
+        
+        # This is how allauth renders emails internally
+        from django.template.loader import render_to_string
+        
+        subject_template = 'account/email/email_confirmation_subject'
+        message_template = 'account/email/email_confirmation_message'
+        
+        subject = render_to_string(subject_template, context).strip()
+        message = render_to_string(message_template, context)
+        
+    except Exception as e:
+        subject = f"Error: {str(e)}"
+        message = f"Error: {str(e)}"
+    
+    return JsonResponse({
+        'generated_subject': subject,
+        'generated_message': message,
+        'context_used': {
+            'site_domain': site.domain,
+            'site_name': site.name,
+            'user_email': email,
+        }
+    })
+
+@csrf_exempt
 @require_http_methods(["POST"])
 def check_pending_emails(request):
     """

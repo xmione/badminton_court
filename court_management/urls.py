@@ -70,5 +70,7 @@ urlpatterns = [
     path('api/update-all-site-domains/', views.update_all_site_domains, name='update_all_site_domains'),
     path('api/check-pending-emails/', views.check_pending_emails, name='check_pending_emails'),
     path('api/send-pending-emails/', views.send_pending_emails, name='send_pending_emails'),
+    path('api/debug-site-config/', views.debug_site_config, name='debug_site_config'),
+    path('api/debug-email-content/', views.debug_email_content, name='debug_email_content'),
     
 ]
