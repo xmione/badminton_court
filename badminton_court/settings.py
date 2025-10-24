@@ -298,6 +298,7 @@ SOCIALACCOUNT_STORE_TOKENS = False
 
 # Site Configuration
 SITE_ID = 1
+ACCOUNT_ADAPTER = 'court_management.adapters.CustomEmailAdapter'
 
 # Social Media Provider Configuration (single definition)
 SOCIALACCOUNT_PROVIDERS = {
