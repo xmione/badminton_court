@@ -2,21 +2,24 @@
 
 export const loginAsRegistered = () => {
     Cypress.Commands.add('loginAsRegistered', (options = {}) => {
-        // Use the existing email for consistency
-        const uniqueEmail = Cypress.env('ADMIN_EMAIL');
-        const adminPassword = Cypress.env('ADMIN_PASSWORD');
+        const uniqueEmail = Cypress.env('REGULARUSER_EMAIL');
+        const password = Cypress.env('REGULARUSER_PASSWORD');
 
-        cy.signUp();
-        // Now login with the verified user
+        // First, ensure we're logged out
+        cy.visit('/accounts/logout/');
+        cy.get('button[type="submit"]').contains('Sign Out').click();
+
+        // Now login properly
         cy.visit('/accounts/login/');
+        cy.url().should('include', '/accounts/login/');
+
         cy.get('#id_login').type(uniqueEmail);
-        cy.get('#id_password').type(adminPassword);
+        cy.get('#id_password').type(password);
         cy.get('button[type="submit"]').click();
         
         // Verify successful login
         cy.url().should('eq', 'http://localhost:8000/');
         cy.get('.navbar-nav .dropdown-toggle').should('contain', uniqueEmail.split('@')[0]);
-            
     });
 };
 
