@@ -1,0 +1,13 @@
+{% load i18n %}
+{% autoescape off %}
+{% blocktrans %}You are receiving this email because someone tried to register an account at {{ current_site.name }} using your email address.{% endblocktrans %}
+
+{% blocktrans %}If this was you, you can try to reset your password using the link below:{% endblocktrans %}
+
+{{ password_reset_url }}
+
+{% blocktrans %}If this wasn't you, please ignore this email.{% endblocktrans %}
+
+{% blocktrans %}Thank you,{% endblocktrans %}
+{{ current_site.name }}
+{% endautoescape %}

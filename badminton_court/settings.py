@@ -277,7 +277,9 @@ AUTHENTICATION_BACKENDS = [
 # Django Allauth Configuration - Updated to remove deprecation warnings
 ACCOUNT_LOGIN_METHODS = {'email'}  # Allow login with email only
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Required fields for signup
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory' 
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_UNIQUE_EMAIL = True  # This should be True to prevent duplicates
+ACCOUNT_PREVENT_ENUMERATION = True  # This might be causing the issue
 # ACCOUNT_EMAIL_REQUIRED = True   // deprecated moved to SOCIALACCOUNT_EMAIL_REQUIRED
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 7 
 ACCOUNT_EMAIL_CONFIRMATION_HMAC = False
