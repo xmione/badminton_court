@@ -1219,6 +1219,22 @@ def test_setup_admin(request):
         admin_user.set_password(password)
         admin_user.save()
         
+        # CRITICAL: Handle EmailAddress for django-allauth
+        try:
+            from allauth.account.models import EmailAddress
+            email_address, created = EmailAddress.objects.get_or_create(
+                user=admin_user,
+                email=email,
+                defaults={'primary': True, 'verified': True}  # Ensure it's verified
+            )
+            if not created:
+                email_address.verified = True
+                email_address.primary = True
+                email_address.save()
+        except Exception as e:
+            # Log the error but don't fail the whole request
+            print(f"Error creating EmailAddress: {str(e)}")
+        
         # Create additional test admin users if not already present
         if not User.objects.filter(username='superadmin').exists():
             superadmin = User.objects.create_user(
@@ -1262,7 +1278,7 @@ def test_setup_admin(request):
     except Exception as e:
         logger.error(f"Error in test_setup_admin: {str(e)}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
+    
 @csrf_exempt
 @require_POST
 def get_verification_token(request):

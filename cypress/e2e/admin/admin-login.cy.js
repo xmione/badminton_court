@@ -20,6 +20,9 @@ describe('Admin Login', () => {
     
     // Ensure the Administrators group exists
     cy.createAdminGroup()
+    
+    // Ensure admin user's email is verified
+    cy.verifyUser(Cypress.env('ADMIN_EMAIL'))
         
   })
 
