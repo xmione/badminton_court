@@ -17,6 +17,9 @@ describe('Admin Login', () => {
     // Ensure the admin user exists *before every test*
     // without resetting the whole database.
     cy.setupTestAdmin({ reset: false })
+    
+    // Create the Administrators group
+    cy.createAdminGroup()
   })
 
   it('should successfully login to admin panel', () => {

@@ -1,16 +1,17 @@
 // cypress/e2e/admin/delete-admin-group.cy.js
 
 describe('Delete Administrators Group', () => {
+    before(() => {
+        // Reset database and setup admin user
+        cy.resetDatabase();
+        cy.setupTestAdmin({ reset: true });
+    });
+
     beforeEach(() => {
-        // Ensure a clean state
-        cy.clearAllCookies();
-        cy.clearLocalStorage();
-        cy.clearAllSessionStorage();
+        // Ensure admin user exists without resetting database
+        cy.setupTestAdmin({ reset: false });
         
-        // Create admin user via API
-        cy.setupTestAdmin();
-        
-        // Actually log in via browser to establish session
+        // Log in via browser to establish session
         cy.visit('/admin/login/');
         cy.get('#id_username').type(Cypress.env('ADMIN_EMAIL'));
         cy.get('#id_password').type(Cypress.env('ADMIN_PASSWORD'));
