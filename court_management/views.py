@@ -62,8 +62,11 @@ def index(request):
     # Get today's bookings
     today = timezone.now().date()
     
+    # Check if user is a customer
+    is_customer = request.user.groups.filter(name='Customers').exists()
+    
     # Filter bookings based on user role
-    if request.user.groups.filter(name='Customers').exists():
+    if is_customer:
         try:
             customer = Customer.objects.get(user=request.user)
             today_bookings = Booking.objects.filter(
@@ -79,19 +82,19 @@ def index(request):
     active_courts = Court.objects.filter(active=True).count()
     
     # Get total customers
-    if request.user.has_perm('court_management.view_customer_list'):
+    if request.user.has_perm('court_management.view_all_customers'):
         total_customers = Customer.objects.filter(active=True).count()
     else:
         total_customers = 0
     
     # Get active employees
-    if request.user.has_perm('court_management.view_employee_list'):
+    if request.user.has_perm('court_management.view_all_employees'):
         active_employees = Employee.objects.filter(active=True).count()
     else:
         active_employees = 0
     
     # Get recent activities (last 5 bookings)
-    if request.user.has_perm('court_management.view_booking_list'):
+    if request.user.has_perm('court_management.view_all_bookings'):
         recent_bookings = Booking.objects.order_by('-created_at')[:5]
     else:
         recent_bookings = Booking.objects.none()
@@ -112,6 +115,8 @@ def index(request):
         'total_customers': total_customers,
         'active_employees': active_employees,
         'recent_activities': recent_activities,
+        'can_add_booking': request.user.has_perm('court_management.add_booking'),
+        'is_customer': is_customer,
     }
     
     return render(request, 'court_management/index.html', context)
@@ -133,11 +138,14 @@ class BookingListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Booking
     template_name = 'court_management/booking_list.html'
     context_object_name = 'bookings'
-    permission_required = 'court_management.view_all_bookings'
+    permission_required = 'court_management.view_booking'
     
     def get_queryset(self):
+        # Check if user is a customer
+        self.is_customer = self.request.user.groups.filter(name='Customers').exists()
+        
         # If user is a customer, only show their bookings
-        if self.request.user.groups.filter(name='Customers').exists():
+        if self.is_customer:
             try:
                 customer = Customer.objects.get(user=self.request.user)
                 return Booking.objects.filter(customer=customer).order_by('start_time')
@@ -145,6 +153,13 @@ class BookingListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
                 return Booking.objects.none()
         # Staff and admin can see all bookings
         return Booking.objects.all().order_by('start_time')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add context to indicate if user can add bookings
+        context['can_add_booking'] = self.request.user.has_perm('court_management.add_booking')
+        context['is_customer'] = self.is_customer
+        return context
 
 class BookingDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = Booking
@@ -166,39 +181,64 @@ class BookingDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView)
                 raise PermissionDenied
         return obj
 
-class BookingCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
+class BookingCreateView(LoginRequiredMixin, CreateView):
     model = Booking
     form_class = BookingForm
     template_name = 'court_management/booking_form.html'
-    success_url = reverse_lazy('booking-list')
-    permission_required = 'court_management.manage_any_booking'
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Check if user has permission to add booking
+        if not request.user.has_perm('court_management.add_booking'):
+            messages.error(request, "You don't have permission to create bookings.")
+            return redirect('index')
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_success_url(self):
+        # If user is a customer, redirect to their bookings
+        if self.request.user.groups.filter(name='Customers').exists():
+            return reverse_lazy('booking-list')
+        return reverse_lazy('booking-list')
     
     def form_valid(self, form):
+        # If user is a customer, set the customer to their profile
+        if self.request.user.groups.filter(name='Customers').exists():
+            try:
+                customer = Customer.objects.get(user=self.request.user)
+                form.instance.customer = customer
+            except Customer.DoesNotExist:
+                form.add_error(None, "You don't have a customer profile. Please contact support.")
+                return self.form_invalid(form)
+        
         response = super().form_valid(form)
         messages.success(self.request, 'Booking created successfully!')
         return response
     
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        # If user is a customer, pre-select their customer profile
-        if self.request.user.groups.filter(name='Customers').exists():
+        # Add user to form kwargs
+        kwargs['user'] = self.request.user
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add customer info to context
+        is_customer = self.request.user.groups.filter(name='Customers').exists()
+        context['is_customer'] = is_customer
+        
+        if is_customer:
             try:
                 customer = Customer.objects.get(user=self.request.user)
-                kwargs['initial'] = {'customer': customer.id}
-                # Make customer field read-only for customers
-                if 'data' in kwargs:
-                    kwargs['data'] = kwargs['data'].copy()
-                    kwargs['data']['customer'] = customer.id
+                context['customer'] = customer
             except Customer.DoesNotExist:
                 pass
-        return kwargs
+        return context
 
 class BookingUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     model = Booking
     form_class = BookingForm
     template_name = 'court_management/booking_form.html'
     success_url = reverse_lazy('booking-list')
-    permission_required = 'court_management.manage_any_booking'
+    permission_required = 'court_management.change_booking'
     
     def get_object(self):
         obj = super().get_object()
@@ -218,12 +258,32 @@ class BookingUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView)
         response = super().form_valid(form)
         messages.success(self.request, 'Booking updated successfully!')
         return response
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # Add user to form kwargs
+        kwargs['user'] = self.request.user
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add customer info to context
+        is_customer = self.request.user.groups.filter(name='Customers').exists()
+        context['is_customer'] = is_customer
+        
+        if is_customer:
+            try:
+                customer = Customer.objects.get(user=self.request.user)
+                context['customer'] = customer
+            except Customer.DoesNotExist:
+                pass
+        return context
 
 class BookingDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = Booking
     template_name = 'court_management/booking_confirm_delete.html'
     success_url = reverse_lazy('booking-list')
-    permission_required = 'court_management.manage_any_booking'
+    permission_required = 'court_management.delete_booking'
     
     def get_object(self):
         obj = super().get_object()
@@ -309,7 +369,7 @@ def customer_booking_history(request, customer_id):
     return render(request, 'court_management/customer_booking_history.html', context)
 
 @login_required
-@permission_required('court_management.process_payment', raise_exception=True)
+@permission_required('court_management.add_payment', raise_exception=True)
 def make_payment(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
     
@@ -337,7 +397,7 @@ def make_payment(request, pk):
     return render(request, 'court_management/make_payment.html', context)
 
 @login_required
-@permission_required('court_management.cancel_booking', raise_exception=True)
+@permission_required('court_management.change_booking', raise_exception=True)
 def cancel_booking(request, pk):
     booking = get_object_or_404(Booking, pk=pk)
     
@@ -363,7 +423,7 @@ class CustomerListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Customer
     template_name = 'court_management/customer_list.html'
     context_object_name = 'customers'
-    permission_required = 'court_management.view_customer_list'
+    permission_required = 'court_management.view_customer'
     
     def get_queryset(self):
         # Only staff and admin can see all customers
@@ -380,7 +440,7 @@ class CustomerDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView
     model = Customer
     template_name = 'court_management/customer_detail.html'
     context_object_name = 'customer'
-    permission_required = 'court_management.view_customer_detail'
+    permission_required = 'court_management.view_customer'
     
     def get_object(self):
         obj = super().get_object()
@@ -409,7 +469,7 @@ class CustomerCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView
     form_class = CustomerForm
     template_name = 'court_management/customer_form.html'
     success_url = reverse_lazy('customer-list')
-    permission_required = 'court_management.manage_customer'
+    permission_required = 'court_management.add_customer'
     
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -421,7 +481,7 @@ class CustomerUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
     form_class = CustomerForm
     template_name = 'court_management/customer_form.html'
     success_url = reverse_lazy('customer-list')
-    permission_required = 'court_management.manage_customer'
+    permission_required = 'court_management.change_customer'
     
     def get_object(self):
         obj = super().get_object()
@@ -446,7 +506,7 @@ class CustomerDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView
     model = Customer
     template_name = 'court_management/customer_confirm_delete.html'
     success_url = reverse_lazy('customer-list')
-    permission_required = 'court_management.manage_customer'
+    permission_required = 'court_management.delete_customer'
     
     def delete(self, request, *args, **kwargs):
         customer = self.get_object()
@@ -460,7 +520,7 @@ class CourtListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Court
     template_name = 'court_management/court_list.html'
     context_object_name = 'courts'
-    permission_required = 'court_management.view_court_list'
+    permission_required = 'court_management.view_court'
     
     def get_queryset(self):
         return Court.objects.filter(active=True)
@@ -469,7 +529,7 @@ class CourtDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView):
     model = Court
     template_name = 'court_management/court_detail.html'
     context_object_name = 'court'
-    permission_required = 'court_management.view_court_detail'
+    permission_required = 'court_management.view_court'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -484,7 +544,7 @@ class CourtCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView):
     form_class = CourtForm
     template_name = 'court_management/court_form.html'
     success_url = reverse_lazy('court-list')
-    permission_required = 'court_management.manage_court'
+    permission_required = 'court_management.add_court'
     
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -496,7 +556,7 @@ class CourtUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView):
     form_class = CourtForm
     template_name = 'court_management/court_form.html'
     success_url = reverse_lazy('court-list')
-    permission_required = 'court_management.manage_court'
+    permission_required = 'court_management.change_court'
     
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -507,7 +567,7 @@ class CourtDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView):
     model = Court
     template_name = 'court_management/court_confirm_delete.html'
     success_url = reverse_lazy('court-list')
-    permission_required = 'court_management.manage_court'
+    permission_required = 'court_management.delete_court'
     
     def delete(self, request, *args, **kwargs):
         court = self.get_object()
@@ -521,7 +581,7 @@ class EmployeeListView(PermissionRequiredMixin, LoginRequiredMixin, ListView):
     model = Employee
     template_name = 'court_management/employee_list.html'
     context_object_name = 'employees'
-    permission_required = 'court_management.view_employee_list'
+    permission_required = 'court_management.view_employee'
     
     def get_queryset(self):
         return Employee.objects.filter(active=True)
@@ -530,7 +590,7 @@ class EmployeeDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView
     model = Employee
     template_name = 'court_management/employee_detail.html'
     context_object_name = 'employee'
-    permission_required = 'court_management.view_employee_detail'
+    permission_required = 'court_management.view_employee'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -545,7 +605,7 @@ class EmployeeCreateView(PermissionRequiredMixin, LoginRequiredMixin, CreateView
     form_class = EmployeeForm
     template_name = 'court_management/employee_form.html'
     success_url = reverse_lazy('employee-list')
-    permission_required = 'court_management.manage_employee'
+    permission_required = 'court_management.add_employee'
     
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -557,7 +617,7 @@ class EmployeeUpdateView(PermissionRequiredMixin, LoginRequiredMixin, UpdateView
     form_class = EmployeeForm
     template_name = 'court_management/employee_form.html'
     success_url = reverse_lazy('employee-list')
-    permission_required = 'court_management.manage_employee'
+    permission_required = 'court_management.change_employee'
     
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -568,7 +628,7 @@ class EmployeeDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView
     model = Employee
     template_name = 'court_management/employee_confirm_delete.html'
     success_url = reverse_lazy('employee-list')
-    permission_required = 'court_management.manage_employee'
+    permission_required = 'court_management.delete_employee'
     
     def delete(self, request, *args, **kwargs):
         employee = self.get_object()
@@ -578,7 +638,7 @@ class EmployeeDeleteView(PermissionRequiredMixin, LoginRequiredMixin, DeleteView
         return redirect('employee-list')
 
 @login_required
-@permission_required('court_management.manage_schedule', raise_exception=True)
+@permission_required('court_management.change_workschedule', raise_exception=True)
 def employee_schedule(request, employee_id, year=None, month=None):
     employee = get_object_or_404(Employee, pk=employee_id)
     
@@ -648,7 +708,7 @@ def employee_schedule(request, employee_id, year=None, month=None):
     return render(request, 'court_management/employee_schedule.html', context)
 
 @login_required
-@permission_required('court_management.clock_in_out', raise_exception=True)
+@permission_required('court_management.add_timeentry', raise_exception=True)
 def clock_in(request, employee_id):
     employee = get_object_or_404(Employee, pk=employee_id)
     
@@ -673,7 +733,7 @@ def clock_in(request, employee_id):
     return redirect('employee-detail', pk=employee.pk)
 
 @login_required
-@permission_required('court_management.clock_in_out', raise_exception=True)
+@permission_required('court_management.change_timeentry', raise_exception=True)
 def clock_out(request, employee_id):
     employee = get_object_or_404(Employee, pk=employee_id)
     
@@ -697,7 +757,7 @@ def clock_out(request, employee_id):
 
 # Report Views
 @login_required
-@permission_required('court_management.view_booking_list', raise_exception=True)
+@permission_required('court_management.view_booking', raise_exception=True)
 def sales_report(request):
     # Get date range from request or use default (last 30 days)
     end_date = timezone.now().date()
@@ -797,7 +857,7 @@ def sales_report(request):
     return render(request, 'court_management/sales_report.html', context)
 
 @login_required
-@permission_required('court_management.view_payroll', raise_exception=True)
+@permission_required('court_management.view_employee', raise_exception=True)
 def payroll_report(request, year=None, month=None):
     if year is None:
         year = timezone.now().year
@@ -848,7 +908,7 @@ def payroll_report(request, year=None, month=None):
     return render(request, 'court_management/payroll_report.html', context)
 
 @login_required
-@permission_required('court_management.view_booking_list', raise_exception=True)
+@permission_required('court_management.view_booking', raise_exception=True)
 def export_sales_report_csv(request):
     # Get date range from request or use default (last 30 days)
     end_date = timezone.now().date()
@@ -959,6 +1019,32 @@ def generate_pie_chart(labels, data, title):
     plt.close()
     
     return graphic
+
+# Debug view for permissions
+@login_required
+def debug_permissions(request):
+    """Debug view to check user permissions"""
+    user = request.user
+    groups = user.groups.all()
+    
+    # Get all permissions for this user
+    user_permissions = user.get_all_permissions()
+    
+    # Check specific permissions
+    can_add_booking = user.has_perm('court_management.add_booking')
+    can_view_booking = user.has_perm('court_management.view_booking')
+    can_view_court = user.has_perm('court_management.view_court')
+    
+    context = {
+        'user': user,
+        'groups': groups,
+        'user_permissions': user_permissions,
+        'can_add_booking': can_add_booking,
+        'can_view_booking': can_view_booking,
+        'can_view_court': can_view_court,
+    }
+    
+    return render(request, 'court_management/debug_permissions.html', context)
 
 # Test API endpoints for Cypress testing
 @csrf_exempt
@@ -1175,44 +1261,6 @@ def test_setup_admin(request):
         logger.error(f"Error in test_setup_admin: {str(e)}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-# Additional test views for debugging
-@csrf_exempt
-@require_POST
-def debug_check_confirmation(request):
-    """
-    Debug function to check if email confirmation exists for a user
-    """
-    try:
-        data = json.loads(request.body)
-        email = data.get('email')
-        
-        user = User.objects.get(email=email)
-        from allauth.account.models import EmailAddress, EmailConfirmation
-        
-        email_address = EmailAddress.objects.filter(user=user, email=email).first()
-        if not email_address:
-            return JsonResponse({'status': 'error', 'message': 'Email address not found'})
-        
-        confirmations = EmailConfirmation.objects.filter(email_address=email_address)
-        confirmation_data = []
-        for conf in confirmations:
-            confirmation_data.append({
-                'id': conf.id,
-                'created': conf.created.isoformat(),
-                'key': conf.key,
-                'sent': conf.sent.isoformat() if conf.sent else None,
-                'expired': conf.key_expired()
-            })
-        
-        return JsonResponse({
-            'status': 'success', 
-            'email_address_id': email_address.id,
-            'email_verified': email_address.verified,
-            'confirmations': confirmation_data
-        })
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)})
-    
 @csrf_exempt
 @require_POST
 def get_verification_token(request):
@@ -1405,72 +1453,139 @@ def debug_confirmation_status(request, token):
         
 @csrf_exempt
 @require_http_methods(["POST"])
-def debug_site_config(request):
-    """Debug endpoint to check site configuration"""
-    from django.contrib.sites.models import Site
-    from django.conf import settings
+def debug_check_confirmation(request):
+    """
+    Debug function to check if email confirmation exists for a user
+    """
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        
+        user = User.objects.get(email=email)
+        from allauth.account.models import EmailAddress, EmailConfirmation
+        
+        email_address = EmailAddress.objects.filter(user=user, email=email).first()
+        if not email_address:
+            return JsonResponse({'status': 'error', 'message': 'Email address not found'})
+        
+        confirmations = EmailConfirmation.objects.filter(email_address=email_address)
+        confirmation_data = []
+        for conf in confirmations:
+            confirmation_data.append({
+                'id': conf.id,
+                'created': conf.created.isoformat(),
+                'key': conf.key,
+                'sent': conf.sent.isoformat() if conf.sent else None,
+                'expired': conf.key_expired()
+            })
+        
+        return JsonResponse({
+            'status': 'success', 
+            'email_address_id': email_address.id,
+            'email_verified': email_address.verified,
+            'confirmations': confirmation_data
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
     
-    site = Site.objects.get_current()
-    
-    return JsonResponse({
-        'site_id': settings.SITE_ID,
-        'site_domain': site.domain,
-        'site_name': site.name,
-        'default_from_email': settings.DEFAULT_FROM_EMAIL,
-        'account_email_subject_prefix': getattr(settings, 'ACCOUNT_EMAIL_SUBJECT_PREFIX', 'Not set'),
-    })
-
 @csrf_exempt
 @require_http_methods(["POST"])
-def debug_email_content(request):
-    """Debug endpoint to see what email content would be generated"""
-    from allauth.account.adapter import get_adapter
-    from django.contrib.sites.models import Site
-    from django.contrib.auth import get_user_model
-    
-    User = get_user_model()
-    site = Site.objects.get_current()
-    adapter = get_adapter()
-    
-    data = json.loads(request.body)
-    email = data.get('email')
-    
-    # Create a mock context similar to what allauth uses
-    context = {
-        'user': User(email=email, username=email),
-        'current_site': site,
-        'activate_url': f"http://{site.domain}/accounts/confirm-email/test-key/",
-        'key': 'test-key',
-    }
-    
-    # Try to render the email templates
+def update_site_domain(request):
+    """
+    API endpoint to update the Site domain and name.
+    This is used by Cypress tests to ensure the correct domain is set.
+    """
     try:
-        subject = "Test Subject"
-        message = "Test Message"
+        data = json.loads(request.body)
+        domain = data.get('domain')
+        name = data.get('name')
         
-        # This is how allauth renders emails internally
-        from django.template.loader import render_to_string
+        if not domain or not name:
+            return JsonResponse({
+                'error': 'Both domain and name are required'
+            }, status=400)
         
-        subject_template = 'account/email/email_confirmation_subject'
-        message_template = 'account/email/email_confirmation_message'
+        # Get or create the site with the configured SITE_ID
+        site, created = Site.objects.get_or_create(
+            id=settings.SITE_ID,
+            defaults={
+                'domain': domain,
+                'name': name
+            }
+        )
         
-        subject = render_to_string(subject_template, context).strip()
-        message = render_to_string(message_template, context)
+        # Update if it already existed
+        if not created:
+            site.domain = domain
+            site.name = name
+            site.save()
         
+        action = 'created' if created else 'updated'
+        
+        return JsonResponse({
+            'message': f'Site successfully {action}',
+            'site_id': site.id,
+            'domain': site.domain,
+            'name': site.name
+        }, status=200)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'error': 'Invalid JSON data'
+        }, status=400)
     except Exception as e:
-        subject = f"Error: {str(e)}"
-        message = f"Error: {str(e)}"
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
     
-    return JsonResponse({
-        'generated_subject': subject,
-        'generated_message': message,
-        'context_used': {
-            'site_domain': site.domain,
-            'site_name': site.name,
-            'user_email': email,
-        }
-    })
-
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_all_site_domains(request):
+    """
+    Update ALL Site objects in the database to ensure django-allauth uses the correct domain.
+    """
+    try:
+        data = json.loads(request.body)
+        domain = data.get('domain')
+        name = data.get('name')
+        
+        if not domain or not name:
+            return JsonResponse({
+                'error': 'Both domain and name are required'
+            }, status=400)
+        
+        # Update ALL Site objects, not just the one with SITE_ID
+        from django.contrib.sites.models import Site
+        sites = Site.objects.all()
+        updated_count = 0
+        
+        for site in sites:
+            site.domain = domain
+            site.name = name
+            site.save()
+            updated_count += 1
+        
+        # Also update the default site if no sites exist
+        if updated_count == 0:
+            Site.objects.create(domain=domain, name=name)
+            updated_count = 1
+        
+        return JsonResponse({
+            'message': f'All {updated_count} site domain(s) updated successfully',
+            'updated_count': updated_count,
+            'domain': domain,
+            'name': name
+        }, status=200)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
+    
 @csrf_exempt
 @require_http_methods(["POST"])
 def check_pending_emails(request):
@@ -1590,98 +1705,68 @@ def send_pending_emails(request):
     
 @csrf_exempt
 @require_http_methods(["POST"])
-def update_all_site_domains(request):
-    """
-    Update ALL Site objects in the database to ensure django-allauth uses the correct domain.
-    """
-    try:
-        data = json.loads(request.body)
-        domain = data.get('domain')
-        name = data.get('name')
-        
-        if not domain or not name:
-            return JsonResponse({
-                'error': 'Both domain and name are required'
-            }, status=400)
-        
-        # Update ALL Site objects, not just the one with SITE_ID
-        from django.contrib.sites.models import Site
-        sites = Site.objects.all()
-        updated_count = 0
-        
-        for site in sites:
-            site.domain = domain
-            site.name = name
-            site.save()
-            updated_count += 1
-        
-        # Also update the default site if no sites exist
-        if updated_count == 0:
-            Site.objects.create(domain=domain, name=name)
-            updated_count = 1
-        
-        return JsonResponse({
-            'message': f'All {updated_count} site domain(s) updated successfully',
-            'updated_count': updated_count,
-            'domain': domain,
-            'name': name
-        }, status=200)
-        
-    except json.JSONDecodeError:
-        return JsonResponse({
-            'error': 'Invalid JSON data'
-        }, status=400)
-    except Exception as e:
-        return JsonResponse({
-            'error': str(e)
-        }, status=500)
+def debug_site_config(request):
+    """Debug endpoint to check site configuration"""
+    from django.contrib.sites.models import Site
+    from django.conf import settings
     
+    site = Site.objects.get_current()
+    
+    return JsonResponse({
+        'site_id': settings.SITE_ID,
+        'site_domain': site.domain,
+        'site_name': site.name,
+        'default_from_email': settings.DEFAULT_FROM_EMAIL,
+        'account_email_subject_prefix': getattr(settings, 'ACCOUNT_EMAIL_SUBJECT_PREFIX', 'Not set'),
+    })
+
 @csrf_exempt
 @require_http_methods(["POST"])
-def update_site_domain(request):
-    """
-    API endpoint to update the Site domain and name.
-    This is used by Cypress tests to ensure the correct domain is set.
-    """
+def debug_email_content(request):
+    """Debug endpoint to see what email content would be generated"""
+    from allauth.account.adapter import get_adapter
+    from django.contrib.sites.models import Site
+    from django.contrib.auth import get_user_model
+    
+    User = get_user_model()
+    site = Site.objects.get_current()
+    adapter = get_adapter()
+    
+    data = json.loads(request.body)
+    email = data.get('email')
+    
+    # Create a mock context similar to what allauth uses
+    context = {
+        'user': User(email=email, username=email),
+        'current_site': site,
+        'activate_url': f"http://{site.domain}/accounts/confirm-email/test-key/",
+        'key': 'test-key',
+    }
+    
+    # Try to render the email templates
     try:
-        data = json.loads(request.body)
-        domain = data.get('domain')
-        name = data.get('name')
+        subject = "Test Subject"
+        message = "Test Message"
         
-        if not domain or not name:
-            return JsonResponse({
-                'error': 'Both domain and name are required'
-            }, status=400)
+        # This is how allauth renders emails internally
+        from django.template.loader import render_to_string
         
-        # Get or create the site with the configured SITE_ID
-        site, created = Site.objects.get_or_create(
-            id=settings.SITE_ID,
-            defaults={
-                'domain': domain,
-                'name': name
-            }
-        )
+        subject_template = 'account/email/email_confirmation_subject'
+        message_template = 'account/email/email_confirmation_message'
         
-        # Update if it already existed
-        if not created:
-            site.domain = domain
-            site.name = name
-            site.save()
+        subject = render_to_string(subject_template, context).strip()
+        message = render_to_string(message_template, context)
         
-        action = 'created' if created else 'updated'
-        
-        return JsonResponse({
-            'message': f'Site successfully {action}',
-            'site_id': site.id,
-            'domain': site.domain,
-            'name': site.name
-        }, status=200)
-        
-    except json.JSONDecodeError:
-        return JsonResponse({
-            'error': 'Invalid JSON data'
-        }, status=400)
     except Exception as e:
-        return JsonResponse({
-            'error': str(e)
-        }, status=500)
+        subject = f"Error: {str(e)}"
+        message = f"Error: {str(e)}"
+    
+    return JsonResponse({
+        'generated_subject': subject,
+        'generated_message': message,
+        'context_used': {
+            'site_domain': site.domain,
+            'site_name': site.name,
+            'user_email': email,
+        }
+    })

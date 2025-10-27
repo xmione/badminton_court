@@ -72,5 +72,6 @@ urlpatterns = [
     path('api/send-pending-emails/', views.send_pending_emails, name='send_pending_emails'),
     path('api/debug-site-config/', views.debug_site_config, name='debug_site_config'),
     path('api/debug-email-content/', views.debug_email_content, name='debug_email_content'),
+    path('debug-permissions/', views.debug_permissions, name='debug-permissions'),
     
 ]

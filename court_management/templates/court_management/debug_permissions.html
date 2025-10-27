@@ -1,0 +1,40 @@
+<!-- court_management/templates/court_management/debug_permissions.html -->
+{% extends 'court_management/base.html' %}
+
+{% block title %}Debug Permissions{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Debug Permissions</h1>
+        
+        <h3>User: {{ user.username }}</h3>
+        
+        <h3>Groups:</h3>
+        <ul>
+            {% for group in groups %}
+                <li>{{ group.name }}</li>
+            {% empty %}
+                <li>No groups</li>
+            {% endfor %}
+        </ul>
+        
+        <h3>All Permissions:</h3>
+        <ul>
+            {% for perm in user_permissions %}
+                <li>{{ perm }}</li>
+            {% empty %}
+                <li>No permissions</li>
+            {% endfor %}
+        </ul>
+        
+        <h3>Specific Checks:</h3>
+        <ul>
+            <li>Can add booking: <strong>{% if can_add_booking %}YES{% else %}NO{% endif %}</strong></li>
+            <li>Can view booking: <strong>{% if can_view_booking %}YES{% else %}NO{% endif %}</strong></li>
+        </ul>
+        
+        <a href="{% url 'index' %}" class="btn btn-primary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

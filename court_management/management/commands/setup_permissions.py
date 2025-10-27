@@ -11,9 +11,16 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # Create groups
         admin_group, created = Group.objects.get_or_create(name='Administrators')
+        self.stdout.write(self.style.SUCCESS(f'Administrators group: {"created" if created else "already exists"}'))
+        
         staff_group, created = Group.objects.get_or_create(name='Staff')
+        self.stdout.write(self.style.SUCCESS(f'Staff group: {"created" if created else "already exists"}'))
+        
         reception_group, created = Group.objects.get_or_create(name='Reception')
+        self.stdout.write(self.style.SUCCESS(f'Reception group: {"created" if created else "already exists"}'))
+        
         customer_group, created = Group.objects.get_or_create(name='Customers')
+        self.stdout.write(self.style.SUCCESS(f'Customers group: {"created" if created else "already exists"}'))
 
         # Get all content types
         customer_ct = ContentType.objects.get_for_model(Customer)
@@ -33,6 +40,12 @@ class Command(BaseCommand):
         time_entry_permissions = Permission.objects.filter(content_type=time_entry_ct)
         payment_permissions = Permission.objects.filter(content_type=payment_ct)
 
+        # Clear existing permissions
+        admin_group.permissions.clear()
+        staff_group.permissions.clear()
+        reception_group.permissions.clear()
+        customer_group.permissions.clear()
+
         # Assign permissions to Administrators (all permissions)
         admin_group.permissions.set(
             list(customer_permissions) + 
@@ -43,6 +56,7 @@ class Command(BaseCommand):
             list(time_entry_permissions) +
             list(payment_permissions)
         )
+        self.stdout.write(self.style.SUCCESS(f'Assigned {admin_group.permissions.count()} permissions to Administrators'))
 
         # Assign permissions to Staff
         staff_permissions = [
@@ -60,6 +74,7 @@ class Command(BaseCommand):
             *list(time_entry_permissions),
         ]
         staff_group.permissions.set(staff_permissions)
+        self.stdout.write(self.style.SUCCESS(f'Assigned {len(staff_permissions)} permissions to Staff'))
 
         # Assign permissions to Reception
         reception_permissions = [
@@ -73,16 +88,23 @@ class Command(BaseCommand):
             *list(payment_permissions),
         ]
         reception_group.permissions.set(reception_permissions)
+        self.stdout.write(self.style.SUCCESS(f'Assigned {len(reception_permissions)} permissions to Reception'))
 
-        # Assign permissions to Customers
+        # Assign permissions to Customers - THIS IS THE KEY PART
         customer_permissions = [
             # Customer permissions (view own only)
             *Permission.objects.filter(codename__in=['view_customer']),
             # Court permissions (view only)
             *Permission.objects.filter(codename__in=['view_court', 'view_all_courts']),
-            # Booking permissions (view own, add, change own)
+            # Booking permissions - CRITICAL: Include add_booking!
             *Permission.objects.filter(codename__in=['view_booking', 'add_booking', 'change_booking'])
         ]
         customer_group.permissions.set(customer_permissions)
+        self.stdout.write(self.style.SUCCESS(f'Assigned {len(customer_permissions)} permissions to Customers'))
+        
+        # List the specific permissions for Customers
+        self.stdout.write(self.style.SUCCESS('Customers group permissions:'))
+        for perm in customer_group.permissions.all():
+            self.stdout.write(f'  - {perm.codename}')
 
         self.stdout.write(self.style.SUCCESS('Successfully set up user groups and permissions'))
