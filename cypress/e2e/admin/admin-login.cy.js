@@ -18,12 +18,16 @@ describe('Admin Login', () => {
     // without resetting the whole database.
     cy.setupTestAdmin({ reset: false })
     
-    // Create the Administrators group
+    // Ensure the Administrators group exists
     cy.createAdminGroup()
+        
   })
 
   it('should successfully login to admin panel', () => {
     cy.loginToAdminPage();
+
+    // Add the admin user to the Administrators group via UI
+    cy.addUserToAdminGroup()
   })
 
   it('should show error for invalid credentials', () => {
