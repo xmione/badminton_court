@@ -181,6 +181,8 @@ class BookingDetailView(PermissionRequiredMixin, LoginRequiredMixin, DetailView)
                 raise PermissionDenied
         return obj
 
+# court_management/views.py (fix the BookingCreateView)
+
 class BookingCreateView(LoginRequiredMixin, CreateView):
     model = Booking
     form_class = BookingForm
@@ -206,7 +208,7 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
                 customer = Customer.objects.get(user=self.request.user)
                 form.instance.customer = customer
             except Customer.DoesNotExist:
-                form.add_error(None, "You don't have a customer profile. Please contact support.")
+                form.add_error(None, "You don't have a customer profile.")
                 return self.form_invalid(form)
         
         response = super().form_valid(form)

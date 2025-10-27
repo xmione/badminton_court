@@ -1,7 +1,7 @@
 # court_management/admin.py
 
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib import messages
 from django.utils.html import format_html
 from django.urls import reverse
