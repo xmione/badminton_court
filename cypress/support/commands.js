@@ -26,6 +26,7 @@
 
 import './commands/setupPosteio.cy.js'
 import './commands/posteioUserManagement.cy.js'
+import './commands/deletePosteioRegularUser.cy.js'
 import './commands/createAdminGroup.cy.js'
 import './commands/deleteAdminGroup.cy.js'
 import './commands/addUserToAdminGroup.cy.js'

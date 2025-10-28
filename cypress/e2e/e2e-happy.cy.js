@@ -37,6 +37,13 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
   });
 
   it('should add a new regular user successfully', () => {
+    cy.log('Cleaning up test user...');
+    cy.request({
+      method: 'POST',
+      url: '/api/test-cleanup-user/',
+      body: { email: Cypress.env('REGULARUSER_EMAIL') },
+      failOnStatusCode: false
+    });
     // Use the new command to add the user defined in your .env file
     cy.addRegularUser();
 
@@ -45,6 +52,7 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
   
   it('should successfully login to admin panel', () => {
     cy.setupTestAdmin({ reset: true });
+    cy.createAdminGroup();
     cy.loginToAdminPage();
   })
  
@@ -67,6 +75,7 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
   })
 
   it('should successfully register a new user', () => {
+    cy.createRegularUsersGroup();
     cy.signUp();
     cy.signOut();
   })
