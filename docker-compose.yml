@@ -77,7 +77,7 @@ services:
       context: .
       target: web
     volumes:
-      - .:/app
+      - /badminton_court:/app  # Explicitly mount the badminton_court directory
       - /app/node_modules
       - /app/venv
       - ./certs:/certs:ro
