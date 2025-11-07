@@ -72,5 +72,12 @@ urlpatterns = [
     path('api/send-pending-emails/', views.send_pending_emails, name='send_pending_emails'),
     path('api/debug-site-config/', views.debug_site_config, name='debug_site_config'),
     path('api/debug-email-content/', views.debug_email_content, name='debug_email_content'),
+    path('debug-permissions/', views.debug_permissions, name='debug-permissions'),
+    path('api/test-create-admin-group/', views.test_create_admin_group, name='test-create-admin-group'),
+    path('api/test-delete-admin-group/', views.test_delete_admin_group, name='test-delete-admin-group'),
+    path('api/test-create-regular-users-group/', views.test_create_regular_users_group, name='test-create-regular-users-group'),
+    path('api/test-delete-regular-users-group/', views.test_delete_regular_users_group, name='test-delete-regular-users-group'),
+    path('api/debug-check-user/', views.debug_check_user, name='debug-check-user'),
+    path('api/test-set-user-staff/', views.test_set_user_staff, name='test-set-user-staff'),
     
 ]

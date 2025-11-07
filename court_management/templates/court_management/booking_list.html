@@ -1,5 +1,4 @@
 <!-- court_management/templates/court_management/booking_list.html -->
- 
 {% extends 'court_management/base.html' %}
 
 {% block title %}Bookings - Badminton Court Management{% endblock %}
@@ -7,12 +6,20 @@
 {% block content %}
 <div class="row mb-3">
     <div class="col-md-10">
-        <h1>Bookings</h1>
+        <h1>
+            {% if is_customer %}
+                My Bookings
+            {% else %}
+                Bookings
+            {% endif %}
+        </h1>
     </div>
     <div class="col-md-2 text-end">
+        {% if can_add_booking %}
         <a href="{% url 'booking-create' %}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> New Booking
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -23,7 +30,9 @@
                 <thead>
                     <tr>
                         <th>ID</th>
+                        {% if not is_customer %}
                         <th>Customer</th>
+                        {% endif %}
                         <th>Court</th>
                         <th>Start Time</th>
                         <th>End Time</th>
@@ -37,7 +46,9 @@
                     {% for booking in bookings %}
                         <tr>
                             <td>{{ booking.id }}</td>
+                            {% if not is_customer %}
                             <td>{{ booking.customer.name }}</td>
+                            {% endif %}
                             <td>{{ booking.court.name }}</td>
                             <td>{{ booking.start_time|date:"Y-m-d H:i" }}</td>
                             <td>{{ booking.end_time|date:"Y-m-d H:i" }}</td>
@@ -57,18 +68,22 @@
                                     <a href="{% url 'booking-detail' booking.pk %}" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-eye"></i>
                                     </a>
+                                    {% if booking.customer.user == user or user.is_staff %}
                                     <a href="{% url 'booking-update' booking.pk %}" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-pencil"></i>
                                     </a>
+                                    {% endif %}
+                                    {% if user.is_staff and booking.payment_status != 'paid' %}
                                     <a href="{% url 'booking-delete' booking.pk %}" class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-trash"></i>
                                     </a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="9" class="text-center">No bookings found.</td>
+                            <td colspan="{% if is_customer %}8{% else %}9{% endif %}" class="text-center">No bookings found.</td>
                         </tr>
                     {% endfor %}
                 </tbody>

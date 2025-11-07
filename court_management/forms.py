@@ -13,12 +13,24 @@ class BookingForm(forms.ModelForm):
         widgets = {
             'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'end_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'notes': forms.Textarea(attrs={'rows': 4}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
         }
     
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        self.fields['customer'].queryset = Customer.objects.filter(active=True)
+        
+        # If user is a customer, hide or disable the customer field
+        if user and user.groups.filter(name='Customers').exists():
+            try:
+                customer = Customer.objects.get(user=user)
+                self.fields['customer'].queryset = Customer.objects.filter(id=customer.id)
+                self.fields['customer'].initial = customer
+                self.fields['customer'].widget = forms.HiddenInput()
+            except Customer.DoesNotExist:
+                pass
+        
+        # Filter courts to only show active ones
         self.fields['court'].queryset = Court.objects.filter(active=True)
     
     def clean(self):

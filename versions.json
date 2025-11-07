@@ -35,13 +35,13 @@
         },
         {
             "appName": "Docker Desktop",
-            "installCommand": "$installerPath = \"$env:TEMP\\DockerDesktopInstaller.exe\"; Invoke-WebRequest -Uri $versions.system_tools.docker_desktop.download_url -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList \"install --quiet\" -Wait; Remove-Item $installerPath -Force",
-            "checkCommand": "$dockerProcess = Get-Process -Name \"Docker Desktop\" -ErrorAction SilentlyContinue; if ($dockerProcess) { return $true } else { $dockerExe = Get-Command docker -ErrorAction SilentlyContinue; if ($dockerExe) { try { \u0026 docker version --format \"{{.Client.Version}}\" 2\u003e$null; if ($LASTEXITCODE -eq 0) { return $true } } catch {} } }; return $false",
+            "installCommand": "$version = '4.47.0.206054'; $buildNumber = $version.Split('.')[-1]; $installerPath = Join-Path $env:TEMP 'DockerDesktopInstaller.exe'; $downloadUrl = \"https://desktop.docker.com/win/main/amd64/$buildNumber/Docker%20Desktop%20Installer.exe\"; Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList 'install --quiet' -Wait; Remove-Item $installerPath -Force; Start-Sleep -Seconds 30",
+            "checkCommand": "$dockerExe = Get-Command docker -ErrorAction SilentlyContinue; if (-not $dockerExe) { return $false }; try { $maxAttempts = 3; $attempt = 0; do { $attempt++; Start-Sleep -Seconds 20; $versionInfo = \u0026 docker version --format '{{json .}}' 2\u003e$null | ConvertFrom-Json 2>$null; if ($versionInfo) { $installedVersion = $versionInfo.Client.Version; if ($installedVersion -like '4.47.0*') { return $true } } } while ($attempt -lt $maxAttempts); return $false } catch { return $false }",
             "envPath": "C:\\Program Files\\Docker\\Docker",
             "manualInstallUrl": null,
             "manualInstallPath": null,
             "isCoreTool": true,
-            "maxRetries": 2,
+            "maxRetries": 1,
             "version": "4.47.0.206054",
             "expected_version": "4.47.0.206054"
         },

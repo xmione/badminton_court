@@ -17,10 +17,20 @@ describe('Admin Login', () => {
     // Ensure the admin user exists *before every test*
     // without resetting the whole database.
     cy.setupTestAdmin({ reset: false })
+    
+    // Ensure the Administrators group exists
+    cy.createAdminGroup()
+    
+    // Ensure admin user's email is verified
+    cy.verifyUser(Cypress.env('ADMIN_EMAIL'))
+        
   })
 
   it('should successfully login to admin panel', () => {
     cy.loginToAdminPage();
+
+    // Add the admin user to the Administrators group via UI
+    cy.addUserToAdminGroup()
   })
 
   it('should show error for invalid credentials', () => {

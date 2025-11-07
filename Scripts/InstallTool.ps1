@@ -62,6 +62,11 @@ function DownloadWithProgress {
     Write-Message "Starting download of $url..." -Level "INFO"
 
     try {
+        # If outputFile is just a filename, use TEMP directory
+        if ([System.IO.Path]::GetFileName($outputFile) -eq $outputFile) {
+            $outputFile = Join-Path $env:TEMP $outputFile
+        }
+        
         Invoke-WebRequest -Uri $url -OutFile $outputFile -UseBasicParsing
         Write-Message "Download completed: $outputFile" -Level "SUCCESS"
     } catch {

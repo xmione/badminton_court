@@ -1,3 +1,4 @@
+// cypress/support/commands/posteioUserManagement.cy.js
 // Command to add a new regular user to Poste.io
 Cypress.Commands.add('addRegularUser', () => {
     // Get environment variables

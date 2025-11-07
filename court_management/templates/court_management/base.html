@@ -20,21 +20,33 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'index' %}">Dashboard</a>
                     </li>
+                    {% if perms.court_management.view_booking %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'booking-list' %}">Bookings</a>
+                        <a class="nav-link" href="{% url 'booking-list' %}">
+                            {% if is_customer %}My Bookings{% else %}Bookings{% endif %}
+                        </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'customer-list' %}">Customers</a>
-                    </li>
+                    {% endif %}
+                    {% if perms.court_management.view_court %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'court-list' %}">Courts</a>
                     </li>
+                    {% endif %}
+                    {% if perms.court_management.view_customer %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'customer-list' %}">Customers</a>
+                    </li>
+                    {% endif %}
+                    {% if perms.court_management.view_employee %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'employee-list' %}">Employees</a>
                     </li>
+                    {% endif %}
+                    {% if perms.court_management.view_booking %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'sales-report' %}">Reports</a>
                     </li>
+                    {% endif %}
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
@@ -44,6 +56,9 @@
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+                                {% if is_customer %}
+                                <li><a class="dropdown-item" href="{% url 'booking-list' %}">My Bookings</a></li>
+                                {% endif %}
                                 <li><a class="dropdown-item" href="{% url 'account_change_password' %}">Change Password</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'account_logout' %}">Logout</a></li>

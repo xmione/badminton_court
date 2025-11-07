@@ -1,3 +1,4 @@
+<!-- court_management/templates/court_management/booking_form.html -->
 {% extends 'court_management/base.html' %}
 
 {% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Booking - Badminton Court Management{% endblock %}
@@ -19,13 +20,18 @@
                         </div>
                     {% endif %}
                     
-                    <div class="mb-3">
-                        <label for="{{ form.customer.id_for_label }}" class="form-label">Customer</label>
+                    {% if is_customer %}
+                        <!-- Customer field is hidden for customers -->
                         {{ form.customer }}
-                        {% if form.customer.errors %}
-                            <div class="text-danger">{{ form.customer.errors }}</div>
-                        {% endif %}
-                    </div>
+                    {% else %}
+                        <div class="mb-3">
+                            <label for="{{ form.customer.id_for_label }}" class="form-label">Customer</label>
+                            {{ form.customer }}
+                            {% if form.customer.errors %}
+                                <div class="text-danger">{{ form.customer.errors }}</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
                     
                     <div class="mb-3">
                         <label for="{{ form.court.id_for_label }}" class="form-label">Court</label>
