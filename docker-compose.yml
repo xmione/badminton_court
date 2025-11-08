@@ -113,8 +113,6 @@ services:
         condition: service_healthy
       mail-test:
         condition: service_started
-    # Add this debug command
-    command: ["sh", "-c", "echo 'Looking for manage.py:' && find /app -name 'manage.py' -type f && echo '---' && ls -la /app && echo '---' && sleep infinity"]
 
   # Test Database (only for test profile)
   # db-test:
