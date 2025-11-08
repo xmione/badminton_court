@@ -101,6 +101,8 @@ services:
         condition: service_healthy
       mail-test:
         condition: service_started
+    # Add this debug command
+    command: ["sh", "-c", "ls -la /app && echo '---' && find /app -name 'manage.py' && echo '---' && sleep infinity"]
 
   # Test Web Service (only for test profile)
   web-test:
