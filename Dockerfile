@@ -23,6 +23,10 @@ RUN useradd --create-home --shell /bin/bash appuser
 
 # Copy and install Python dependencies FIRST to leverage Docker cache
 # COPY requirements.txt /app/
+
+# Copy the rest of your application code
+COPY . .
+
 # RUN pip install --no-cache-dir -r requirements.txt
 
 # Set environment variable to point to the system CA bundle
