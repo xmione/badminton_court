@@ -1,0 +1,60 @@
+# --- ARCHIVES ---
+# Exclude large archive files
+*.tgz
+*.zip
+*.tar.gz
+*.rar
+
+# --- MEDIA & LARGE FILES ---
+# Exclude common video, audio, and image files
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.mp3
+*.wav
+*.flac
+*.aac
+# Exclude entire media directories if they exist
+media/
+static/media/
+uploads/
+
+# --- PYTHON & DJANGO ---
+# Exclude compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+# Exclude virtual environments
+venv/
+env/
+.venv/
+# Exclude local environment files (these should be injected via bind mount or secrets)
+.env
+.env.*
+!.env.example
+
+# --- NODE & FRONTEND ---
+# Exclude Node modules and build artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- DEVELOPMENT & IDE ---
+# Exclude version control and editor files
+.git
+.gitignore
+README.md
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OPERATING SYSTEM ---
+# Exclude macOS and Windows system files
+.DS_Store
+Thumbs.db
+desktop.ini
