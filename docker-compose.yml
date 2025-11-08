@@ -86,7 +86,7 @@ services:
     container_name: web-dev
     build: 
       context: .
-    command: ["sh", "-c", "echo '--- Agent PWD ---' && pwd && echo '--- Contents of Agent PWD ---' && ls -la && echo '--- Contents of /app ---' && ls -la /app && echo '--- Sleeping ---' && sleep infinity"]
+    # command: ["sh", "-c", "echo '--- Agent PWD ---' && pwd && echo '--- Contents of Agent PWD ---' && ls -la && echo '--- Contents of /app ---' && ls -la /app && echo '--- Sleeping ---' && sleep infinity"]
     volumes: *app-volumes
     ports:
       - "8000:8000"
