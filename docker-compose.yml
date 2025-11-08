@@ -4,6 +4,7 @@ x-app-volumes: &app-volumes
   - .:/app
   - /app/node_modules
   - /app/venv
+  - ./certs:/certs:ro
 
 volumes:
   postgres_data:
@@ -128,40 +129,40 @@ services:
       - redis
   
   # Celery Worker (dev profile only)
-  celery:
-    container_name: celery
-    build: 
-      context: .
-      target: web
-    entrypoint: ["celery"] # <-- SET ENTRYPOINT TO CELERY
-    command: ["-A", "badminton_court", "worker", "--loglevel=info"] 
-    volumes: *app-volumes
-    depends_on:
-      - redis
-    env_file:
-      - .env.docker
-    networks:
-      - app-network
-    profiles:
-      - dev
-  
-  # Celery Beat Scheduler (dev profile only)
-  celery-beat:
-    container_name: celery-beat
-    build: 
-      context: .
-      target: web
-    entrypoint: ["celery"] # <-- SET ENTRYPOINT TO CELERY
-    command: ["-A", "badminton_court", "beat", "--loglevel=info"]  
-    volumes: *app-volumes
-    depends_on:
-      - redis
-    env_file:
-      - .env.docker
-    networks:
-      - app-network
-    profiles:
-      - dev
+celery:
+  container_name: celery
+  build: 
+    context: .
+    target: web
+  entrypoint: ["celery"] # <-- SET ENTRYPOINT TO CELERY
+  command: ["-A", "badminton_court", "worker", "--loglevel=info"] 
+  volumes: *app-volumes
+  depends_on:
+    - redis
+  env_file:
+    - .env.docker
+  networks:
+    - app-network
+  profiles:
+    - dev
+
+# Celery Beat Scheduler (dev profile only)
+celery-beat:
+  container_name: celery-beat
+  build: 
+    context: .
+    target: web
+  entrypoint: ["celery"] # <-- SET ENTRYPOINT TO CELERY
+  command: ["-A", "badminton_court", "beat", "--loglevel=info"]  
+  volumes: *app-volumes
+  depends_on:
+    - redis
+  env_file:
+    - .env.docker
+  networks:
+    - app-network
+  profiles:
+    - dev
 
   # --- START: NEW SIMPLE MAIL SERVER ---
   # This replaces the complex Postal/MariaDB setup
