@@ -223,7 +223,7 @@ services:
       - ./cypress/screenshots:/e2e/cypress/screenshots
       - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
       - ./scripts:/e2e/scripts
-      - ./certs/ca.pem:/etc/ssl/certs/ca-posteio.crt
+      - ./certs:/certs:ro  # Mount the entire certs directory
     environment:
       - CYPRESS_baseUrl=http://web-test:8000
       - CYPRESS_headed=${CYPRESS_headed}
@@ -232,7 +232,6 @@ services:
       - POSTE_API_PASSWORD=${POSTE_API_PASSWORD}
     env_file:
       - .env.docker
-    entrypoint: ["/bin/sh", "-c", "update-ca-certificates && npx cypress"]
     depends_on:
       - web-test
     profiles:
@@ -252,6 +251,7 @@ services:
       - ./scripts:/e2e/scripts
       - ./cypress/videos:/e2e/cypress/videos
       - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
+      - ./certs:/certs:ro  # Mount the entire certs directory
     environment:
       - CYPRESS_baseUrl=${CYPRESS_baseUrl}
       - DISPLAY=:99

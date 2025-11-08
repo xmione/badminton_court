@@ -4,12 +4,20 @@ FROM cypress/included:15.3.0
 # Install FFmpeg for video recording and other dependencies
 RUN apt-get update && apt-get install -y ffmpeg xvfb ca-certificates
 
-# Create SSL certificates directory and copy your SSL certificate
+# Create SSL certificates directory
 RUN mkdir -p /etc/ssl/certs
-COPY ./certs/ca.pem /etc/ssl/certs/ca-posteio.pem
 
-# Update CA certificates to include your custom certificate
-RUN update-ca-certificates
+# Create a script to handle certificate setup at runtime
+RUN echo '#!/bin/bash\n\
+if [ -f /certs/ca.pem ]; then\n\
+    cp /certs/ca.pem /etc/ssl/certs/ca-posteio.pem\n\
+    update-ca-certificates\n\
+fi\n\
+# Start Xvfb\n\
+Xvfb :99 -screen 0 1920x1080x24 &\n\
+export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-posteio.pem\n\
+exec "$@"' > /start-cypress.sh && \
+    chmod +x /start-cypress.sh
 
 # Set working directory to /e2e (where Cypress expects to be)
 WORKDIR /e2e
@@ -27,12 +35,5 @@ RUN npm ci
 COPY cypress/ ./cypress/
 COPY cypress.config.js ./
 
-# Create a script to start virtual display and run commands
-RUN echo '#!/bin/bash\n\
-Xvfb :99 -screen 0 1920x1080x24 &\n\
-export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-posteio.pem\n\
-exec "$@"' > /start-xvfb.sh && \
-chmod +x /start-xvfb.sh
-
-# Set the entrypoint to start virtual display
-ENTRYPOINT ["/start-xvfb.sh"]
+# Set the entrypoint to handle certificates and start virtual display
+ENTRYPOINT ["/start-cypress.sh"]
