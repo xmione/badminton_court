@@ -52,8 +52,8 @@ EXPOSE 8000
 # ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
 # CMD ["sh", "-c", "echo 'Looking for manage.py:' && find / -name 'manage.py' -type f && echo '---' && ls -la /app && echo '---' && sleep infinity"]
 # CMD ["sh", "-c", "echo 'Looking for manage.py:' && ls -la /app/manage.py && echo '---' && ls -la /app && echo '---' && sleep infinity"]
-CMD ["sh", "-c", "echo 'Searching for manage.py inside / volume...' && find / -name 'manage.py' -type f && echo '--- Showing top level of / ---' && ls -la / && echo '--- Sleeping for debugging ---' && sleep infinity"]
-
+# CMD ["sh", "-c", "echo 'Searching for manage.py inside / volume...' && find / -name 'manage.py' -type f && echo '--- Showing top level of / ---' && ls -la / && echo '--- Sleeping for debugging ---' && sleep infinity"]
+CMD ["sleep", "infinity"]
 # Tunnel service stage
 # FROM base AS tunnel
 # ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
