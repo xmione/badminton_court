@@ -17,7 +17,7 @@ networks:
     driver: bridge
 
 services:
-  # Development Database (only for dev profile)
+  # Development Database (web-dev depends on this)
   db:
     container_name: db
     image: postgres:14
@@ -39,24 +39,7 @@ services:
       timeout: 5s
       retries: 5
   
-  # Test Database (only for test profile)
-  db-test:
-    container_name: db-test
-    image: postgres:14
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data/
-    ports:
-      - "5433:5432"
-    networks:
-      - app-network
-    profiles:
-      - test
-  
-  # Redis (shared by all profiles including tunnel)
+  # Redis (web-dev depends on this)
   redis:
     container_name: redis
     image: redis:7-alpine
@@ -70,7 +53,36 @@ services:
       - presentation
       - tunnel  
   
-  # Development Web Service (dev and tunnel profiles only)
+  # Mail server (web-dev depends on this)
+  mail-test:
+    container_name: mail-test
+    image: analogic/poste.io
+    restart: unless-stopped
+    ports:
+      - "8443:443"
+      - "25:25"
+      - "587:587"
+      - "465:465"
+    environment:
+      - HTTPS=ON
+    volumes:
+      - poste_data:/data
+      - ./certs/posteio-cert.pem:/data/ssl/server.crt
+      - ./certs/posteio-key.pem:/data/ssl/server.key
+      - ./certs/ca.pem:/data/ssl/ca.crt
+    networks:
+      - app-network
+    profiles:
+      - dev
+      - test
+    healthcheck:
+      test: ["CMD", "nc", "-zv", "localhost", "587"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  # Development Web Service (depends on redis, db, and mail-test)
   web-dev:
     container_name: web-dev
     build: 
@@ -102,190 +114,176 @@ services:
       mail-test:
         condition: service_started
     # Add this debug command
-    command: ["sh", "-c", "ls -la /app && echo '---' && find /app -name 'manage.py' && echo '---' && sleep infinity"]
+    command: ["sh", "-c", "echo 'Looking for manage.py:' && find /app -name 'manage.py' -type f && echo '---' && ls -la /app && echo '---' && sleep infinity"]
 
+  # Test Database (only for test profile)
+  # db-test:
+  #   container_name: db-test
+  #   image: postgres:14
+  #   environment:
+  #     POSTGRES_DB: ${POSTGRES_DB}
+  #     POSTGRES_USER: ${POSTGRES_USER}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #   volumes:
+  #     - postgres_test_data:/var/lib/postgresql/data/
+  #   ports:
+  #     - "5433:5432"
+  #   networks:
+  #     - app-network
+  #   profiles:
+  #     - test
+  
   # Test Web Service (only for test profile)
-  web-test:
-    container_name: web-test
-    build: 
-      context: .
-      target: web
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes: *app-volumes
-    ports:
-      - "8001:8000"
-    environment:
-      - CYPRESS=true
-    env_file:
-      - .env.docker
-    networks:
-      - app-network
-    profiles:
-      - test
-    depends_on:
-      - redis
+  # web-test:
+  #   container_name: web-test
+  #   build: 
+  #     context: .
+  #     target: web
+  #   command: python manage.py runserver 0.0.0.0:8000
+  #   volumes: *app-volumes
+  #   ports:
+  #     - "8001:8000"
+  #   environment:
+  #     - CYPRESS=true
+  #   env_file:
+  #     .env.docker
+  #   networks:
+  #     - app-network
+  #   profiles:
+  #     - test
+  #   depends_on:
+  #     - redis
   
   # Celery Worker (dev profile only)
-  celery:
-    container_name: celery
-    build: 
-      context: .
-      target: web
-    entrypoint: ["celery"]
-    command: ["-A", "badminton_court", "worker", "--loglevel=info"] 
-    volumes: *app-volumes
-    depends_on:
-      - redis
-    env_file:
-      - .env.docker
-    networks:
-      - app-network
-    profiles:
-      - dev
+  # celery:
+  #   container_name: celery
+  #   build: 
+  #     context: .
+  #     target: web
+  #   entrypoint: ["celery"]
+  #   command: ["-A", "badminton_court", "worker", "--loglevel=info"] 
+  #   volumes: *app-volumes
+  #   depends_on:
+  #     - redis
+  #   env_file:
+  #     .env.docker
+  #   networks:
+  #     - app-network
+  #   profiles:
+  #     - dev
 
   # Celery Beat Scheduler (dev profile only)
-  celery-beat:
-    container_name: celery-beat
-    build: 
-      context: .
-      target: web
-    entrypoint: ["celery"]
-    command: ["-A", "badminton_court", "beat", "--loglevel=info"]  
-    volumes: *app-volumes
-    depends_on:
-      - redis
-    env_file:
-      - .env.docker
-    networks:
-      - app-network
-    profiles:
-      - dev
-
-  # --- START: NEW SIMPLE MAIL SERVER ---
-  mail-test:
-    container_name: mail-test
-    image: analogic/poste.io
-    restart: unless-stopped
-    ports:
-      - "8443:443"
-      - "25:25"
-      - "587:587"
-      - "465:465"
-    environment:
-      - HTTPS=ON
-    volumes:
-      - poste_data:/data
-      - ./certs/posteio-cert.pem:/data/ssl/server.crt
-      - ./certs/posteio-key.pem:/data/ssl/server.key
-      - ./certs/ca.pem:/data/ssl/ca.crt
-    networks:
-      - app-network
-    profiles:
-      - dev
-      - test
-    healthcheck:
-      test: ["CMD", "nc", "-zv", "localhost", "587"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 30s
-
-  # --- END: NEW SIMPLE MAIL SERVER ---
+  # celery-beat:
+  #   container_name: celery-beat
+  #   build: 
+  #     context: .
+  #     target: web
+  #   entrypoint: ["celery"]
+  #   command: ["-A", "badminton_court", "beat", "--loglevel=info"]  
+  #   volumes: *app-volumes
+  #   depends_on:
+  #     - redis
+  #   env_file:
+  #     .env.docker
+  #   networks:
+  #     - app-network
+  #   profiles:
+  #     - dev
  
   # Ngrok Tunnel Service (depends on dev web service)
-  tunnel:
-    container_name: ngrok_tunnel
-    build: 
-      context: .
-      target: tunnel
-    command: python tunnel.py
-    volumes: *app-volumes
-    depends_on:
-      - web-dev
-    environment:
-      - NGR_AUTHTOKEN=${NGR_AUTHTOKEN}
-      - APP_PORT=${APP_PORT}
-    env_file:
-      - .env.docker
-    networks:
-      - app-network
-    profiles:
-      - tunnel
+  # tunnel:
+  #   container_name: ngrok_tunnel
+  #   build: 
+  #     context: .
+  #     target: tunnel
+  #   command: python tunnel.py
+  #   volumes: *app-volumes
+  #   depends_on:
+  #     - web-dev
+  #   environment:
+  #     - NGR_AUTHTOKEN=${NGR_AUTHTOKEN}
+  #     - APP_PORT=${APP_PORT}
+  #   env_file:
+  #     .env.docker
+  #   networks:
+  #     - app-network
+  #   profiles:
+  #     - tunnel
 
   # Cypress Testing 
-  cypress:
-    container_name: cypress
-    build:
-      context: .
-      dockerfile: Dockerfile.cypress 
-    volumes:
-      - ./cypress:/e2e/cypress
-      - ./cypress.config.js:/e2e/cypress.config.js
-      - ./cypress/videos:/e2e/cypress/videos
-      - ./cypress/screenshots:/e2e/cypress/screenshots
-      - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
-      - ./scripts:/e2e/scripts
-      - ./certs:/certs:ro  # Mount the entire certs directory
-    environment:
-      - CYPRESS_baseUrl=http://web-test:8000
-      - CYPRESS_headed=${CYPRESS_headed}
-      - POSTE_API_HOST=${POSTE_PROTOCOL}://${POSTE_HOSTNAME}:${POSTE_PORT}
-      - POSTE_API_USER=${POSTE_API_USER}
-      - POSTE_API_PASSWORD=${POSTE_API_PASSWORD}
-    env_file:
-      - .env.docker
-    depends_on:
-      - web-test
-    profiles:
-      - test
-    networks:
-      - app-network
+  # cypress:
+  #   container_name: cypress
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.cypress 
+  #   volumes:
+  #     - ./cypress:/e2e/cypress
+  #     - ./cypress.config.js:/e2e/cypress.config.js
+  #     - ./cypress/videos:/e2e/cypress/videos
+  #     - ./cypress/screenshots:/e2e/cypress/screenshots
+  #     - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
+  #     - ./scripts:/e2e/scripts
+  #     - ./certs:/certs:ro
+  #   environment:
+  #     - CYPRESS_baseUrl=http://web-test:8000
+  #     - CYPRESS_headed=${CYPRESS_headed}
+  #     - POSTE_API_HOST=${POSTE_PROTOCOL}://${POSTE_HOSTNAME}:${POSTE_PORT}
+  #     - POSTE_API_USER=${POSTE_API_USER}
+  #     - POSTE_API_PASSWORD=${POSTE_API_PASSWORD}
+  #   env_file:
+  #     .env.docker
+  #   depends_on:
+  #     - web-test
+  #   profiles:
+  #     - test
+  #   networks:
+  #     - app-network
 
   # Presentation Video Creation Service 
-  presentation:
-    container_name: presentation
-    build:
-      context: .
-      dockerfile: Dockerfile.cypress 
-    volumes:
-      - ./cypress:/e2e/cypress
-      - ./cypress.config.js:/e2e/cypress.config.js
-      - ./scripts:/e2e/scripts
-      - ./cypress/videos:/e2e/cypress/videos
-      - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
-      - ./certs:/certs:ro  # Mount the entire certs directory
-    environment:
-      - CYPRESS_baseUrl=${CYPRESS_baseUrl}
-      - DISPLAY=:99
-    env_file:
-      - .env.docker
-    depends_on:
-      - web-dev
-    profiles:
-      - presentation
-    networks:
-      - app-network
+  # presentation:
+  #   container_name: presentation
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.cypress 
+  #   volumes:
+  #     - ./cypress:/e2e/cypress
+  #     - ./cypress.config.js:/e2e/cypress.config.js
+  #     - ./scripts:/e2e/scripts
+  #     - ./cypress/videos:/e2e/cypress/videos
+  #     - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
+  #     - ./certs:/certs:ro
+  #   environment:
+  #     - CYPRESS_baseUrl=${CYPRESS_baseUrl}
+  #     - DISPLAY=:99
+  #   env_file:
+  #     .env.docker
+  #   depends_on:
+  #     - web-dev
+  #   profiles:
+  #     - presentation
+  #   networks:
+  #     - app-network
 
   # Test Data Setup (depends on test web service)
-  test-setup:
-    container_name: test-setup
-    build: 
-      context: .
-      target: web
-    command: python manage.py load_test_data
-    volumes: *app-volumes
-    depends_on:
-      - db-test
-      - redis
-      - web-test
-    environment:
-      - DEBUG=${DEBUG}
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-test:5432/${POSTGRES_DB}
-      - REDIS_URL=${REDIS_URL}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
-    env_file:
-      - .env.docker
-    profiles:
-      - test
-    networks:
-      - app-network
+  # test-setup:
+  #   container_name: test-setup
+  #   build: 
+  #     context: .
+  #     target: web
+  #   command: python manage.py load_test_data
+  #   volumes: *app-volumes
+  #   depends_on:
+  #     - db-test
+  #     - redis
+  #     - web-test
+  #   environment:
+  #     - DEBUG=${DEBUG}
+  #     - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-test:5432/${POSTGRES_DB}
+  #     - REDIS_URL=${REDIS_URL}
+  #     - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+  #   env_file:
+  #     .env.docker
+  #   profiles:
+  #     - test
+  #   networks:
+  #     - app-network

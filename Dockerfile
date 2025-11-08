@@ -9,36 +9,37 @@ ENV DOCKER=true
 WORKDIR /app
 
 # Install system dependencies and clean up in the same layer
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    postgresql-client \
-    build-essential \
-    curl \
-    ca-certificates \
-    && pip install --no-cache-dir --upgrade pip \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && \
+#     apt-get install -y --no-install-recommends \
+#     postgresql-client \
+#     build-essential \
+#     curl \
+#     ca-certificates \
+#     && pip install --no-cache-dir --upgrade pip \
+#     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
 RUN useradd --create-home --shell /bin/bash appuser
 
 # Copy and install Python dependencies FIRST to leverage Docker cache
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+# COPY requirements.txt /app/
+# RUN pip install --no-cache-dir -r requirements.txt
 
 # Set environment variable to point to the system CA bundle
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+# ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+# ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
 # Create a script to handle certificate setup at runtime
-RUN echo '#!/bin/bash\n\
-if [ -f /certs/ca.pem ]; then\n\
-    cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt\n\
-    update-ca-certificates\n\
-fi\n\
-# Fix ownership after volume mount\n\
-chown -R appuser:appuser /app\n\
-exec "$@"' > /usr/local/bin/setup-certs.sh && \
-    chmod +x /usr/local/bin/setup-certs.sh
+# RUN echo '#!/bin/bash\n\
+# if [ -f /certs/ca.pem ]; then\n\
+#     cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt\n\
+#     update-ca-certificates\n\
+# fi\n\
+# \n\
+# # Fix ownership after volume mount\n\
+# chown -R appuser:appuser /app\n\
+# exec "$@"' > /usr/local/bin/setup-certs.sh && \
+#     chmod +x /usr/local/bin/setup-certs.sh
 
 # Switch to appuser
 USER appuser
@@ -47,10 +48,10 @@ USER appuser
 FROM base AS web
 EXPOSE 8000
 # Use the setup script before starting the server
-ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
-CMD ["sh", "-c", "echo 'Looking for manage.py:' && find /app -name 'manage.py' -type f && echo '---' && ls -la /app && echo '---' && python manage.py migrate && python manage.py shell -c 'from django.contrib.sites.models import Site; import os; site, created = Site.objects.get_or_create(id=1); site.domain = os.getenv(\"DOMAIN_NAME\"); site.name = os.getenv(\"SITE_HEADER\"); site.save(); print(\"✅ Site domain set to:\", site.domain)' && python manage.py runserver 0.0.0.0:8000"]
+# ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
+CMD ["sh", "-c", "echo 'Looking for manage.py:' && find /app -name 'manage.py' -type f && echo '---' && ls -la /app && echo '---' && sleep infinity"]
 
 # Tunnel service stage
-FROM base AS tunnel
-ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
-CMD ["python", "tunnel.py"]
+# FROM base AS tunnel
+# ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
+# CMD ["python", "tunnel.py"]
