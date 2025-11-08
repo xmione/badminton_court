@@ -2,7 +2,7 @@
 # Exclude large archive files
 *.tgz
 *.zip
-*.tar.gz
+*.tar*
 *.rar
 
 # --- MEDIA & LARGE FILES ---
