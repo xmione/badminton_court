@@ -29,17 +29,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
-# Copy project files AFTER dependencies are installed
-COPY --chown=appuser:appuser ./badminton_court /app/badminton_court
-COPY --chown=appuser:appuser manage.py /app/
-COPY --chown=appuser:appuser tunnel.py /app/
-
 # Create a script to handle certificate setup at runtime
 RUN echo '#!/bin/bash\n\
 if [ -f /certs/ca.pem ]; then\n\
     cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt\n\
     update-ca-certificates\n\
 fi\n\
+# Fix ownership after volume mount\n\
+chown -R appuser:appuser /app\n\
 exec "$@"' > /usr/local/bin/setup-certs.sh && \
     chmod +x /usr/local/bin/setup-certs.sh
 
