@@ -51,7 +51,8 @@ EXPOSE 8000
 ENTRYPOINT []
 # Use the setup script before starting the server
 # ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
-CMD ["sh", "-c", "echo 'Looking for manage.py:' && find / -name 'manage.py' -type f && echo '---' && ls -la /app && echo '---' && sleep infinity"]
+# CMD ["sh", "-c", "echo 'Looking for manage.py:' && find / -name 'manage.py' -type f && echo '---' && ls -la /app && echo '---' && sleep infinity"]
+CMD ["sh", "-c", "echo 'Looking for manage.py:' && ls -la /app/manage.py && echo '---' && ls -la /app && echo '---' && sleep infinity"]
 
 # Tunnel service stage
 # FROM base AS tunnel
