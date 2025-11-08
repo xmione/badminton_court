@@ -88,6 +88,7 @@ services:
     build: 
       context: .
       target: web
+    command: ["sleep", "infinity"] 
     volumes: *app-volumes
     ports:
       - "8000:8000"
