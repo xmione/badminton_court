@@ -34,12 +34,14 @@ COPY --chown=appuser:appuser ./badminton_court /app/badminton_court
 COPY --chown=appuser:appuser manage.py /app/
 COPY --chown=appuser:appuser tunnel.py /app/
 
-# Copy the certs directory (which already contains the mail-test certificates)
-COPY --chown=appuser:appuser ./certs /certs
-
-# Set up certificates as root before switching to appuser
-RUN cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt && \
-    update-ca-certificates
+# Create a script to handle certificate setup at runtime
+RUN echo '#!/bin/bash\n\
+if [ -f /certs/ca.pem ]; then\n\
+    cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt\n\
+    update-ca-certificates\n\
+fi\n\
+exec "$@"' > /usr/local/bin/setup-certs.sh && \
+    chmod +x /usr/local/bin/setup-certs.sh
 
 # Switch to appuser
 USER appuser
@@ -47,9 +49,11 @@ USER appuser
 # Web service stage
 FROM base AS web
 EXPOSE 8000
-# Use a direct command that handles migrations and site domain setup before starting the server
-ENTRYPOINT ["sh", "-c", "python manage.py migrate && python manage.py shell -c 'from django.contrib.sites.models import Site; import os; site, created = Site.objects.get_or_create(id=1); site.domain = os.getenv(\"DOMAIN_NAME\"); site.name = os.getenv(\"SITE_HEADER\"); site.save(); print(\"✅ Site domain set to:\", site.domain)' && python manage.py runserver 0.0.0.0:8000"]
+# Use the setup script before starting the server
+ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
+CMD ["sh", "-c", "python manage.py migrate && python manage.py shell -c 'from django.contrib.sites.models import Site; import os; site, created = Site.objects.get_or_create(id=1); site.domain = os.getenv(\"DOMAIN_NAME\"); site.name = os.getenv(\"SITE_HEADER\"); site.save(); print(\"✅ Site domain set to:\", site.domain)' && python manage.py runserver 0.0.0.0:8000"]
 
 # Tunnel service stage
 FROM base AS tunnel
+ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
 CMD ["python", "tunnel.py"]
