@@ -1,7 +1,6 @@
 # docker-compose.yml
 
 x-app-volumes: &app-volumes
-  - .:/app
   - /app/node_modules
   - /app/venv
   - ./certs:/certs:ro
