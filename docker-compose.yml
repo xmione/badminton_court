@@ -9,9 +9,8 @@ x-app-volumes: &app-volumes
 volumes:
   postgres_data:
   postgres_test_data:
-  # postal_data: # This is no longer needed with poste.io
   mariadb_data:
-  poste_data: # New volume for the simple mail server
+  poste_data:
 
 networks:
   app-network:
@@ -77,11 +76,7 @@ services:
     build: 
       context: .
       target: web
-    volumes:
-      - /badminton_court:/app  # Explicitly mount the badminton_court directory
-      - /app/node_modules
-      - /app/venv
-      - ./certs:/certs:ro
+    volumes: *app-volumes
     ports:
       - "8000:8000"
     env_file:
@@ -116,9 +111,9 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes: *app-volumes
     ports:
-      - "8001:8000"  # Different port to avoid conflict
+      - "8001:8000"
     environment:
-      - CYPRESS=true  # Only set for test environment
+      - CYPRESS=true
     env_file:
       - .env.docker
     networks:
@@ -134,7 +129,7 @@ services:
     build: 
       context: .
       target: web
-    entrypoint: ["celery"] # <-- SET ENTRYPOINT TO CELERY
+    entrypoint: ["celery"]
     command: ["-A", "badminton_court", "worker", "--loglevel=info"] 
     volumes: *app-volumes
     depends_on:
@@ -152,7 +147,7 @@ services:
     build: 
       context: .
       target: web
-    entrypoint: ["celery"] # <-- SET ENTRYPOINT TO CELERY
+    entrypoint: ["celery"]
     command: ["-A", "badminton_court", "beat", "--loglevel=info"]  
     volumes: *app-volumes
     depends_on:
@@ -165,22 +160,19 @@ services:
       - dev
 
   # --- START: NEW SIMPLE MAIL SERVER ---
-  # This replaces the complex Postal/MariaDB setup
   mail-test:
     container_name: mail-test
     image: analogic/poste.io
     restart: unless-stopped
     ports:
-      #- "8080:80" # Web UI if HTTPS=OFF
-      - "8443:443" # Web UI if HTTPS=ON
-      # The following mail ports are now free since Postal is commented out
-      - "25:25"   # SMTP
-      - "587:587"  # Submission
-      - "465:465"  # SMTPS
+      - "8443:443"
+      - "25:25"
+      - "587:587"
+      - "465:465"
     environment:
       - HTTPS=ON
     volumes:
-      - poste_data:/data # Persist mail data
+      - poste_data:/data
       - ./certs/posteio-cert.pem:/data/ssl/server.crt
       - ./certs/posteio-key.pem:/data/ssl/server.key
       - ./certs/ca.pem:/data/ssl/ca.crt
@@ -190,13 +182,11 @@ services:
       - dev
       - test
     healthcheck:
-      # This uses netcat (nc) to check if the SMTP port 587 is actually open and listening.
-      # It will only be marked 'healthy' when the SMTP service is ready.
       test: ["CMD", "nc", "-zv", "localhost", "587"]
       interval: 5s
       timeout: 3s
       retries: 10
-      start_period: 30s # Reduced from 60s to 30s
+      start_period: 30s
 
   # --- END: NEW SIMPLE MAIL SERVER ---
  
@@ -209,7 +199,7 @@ services:
     command: python tunnel.py
     volumes: *app-volumes
     depends_on:
-      - web-dev  # Changed from web to web-dev
+      - web-dev
     environment:
       - NGR_AUTHTOKEN=${NGR_AUTHTOKEN}
       - APP_PORT=${APP_PORT}
@@ -233,19 +223,15 @@ services:
       - ./cypress/screenshots:/e2e/cypress/screenshots
       - ./cypress/presentation-videos:/e2e/cypress/presentation-videos
       - ./scripts:/e2e/scripts
-      - ./certs/ca.pem:/etc/ssl/certs/ca-posteio.crt # Don't forget this!
+      - ./certs/ca.pem:/etc/ssl/certs/ca-posteio.crt
     environment:
-      # This is the default for your Django tests
       - CYPRESS_baseUrl=http://web-test:8000
       - CYPRESS_headed=${CYPRESS_headed}
-      
-      # Explicitly pass ALL Poste.io variables to the Cypress container
       - POSTE_API_HOST=${POSTE_PROTOCOL}://${POSTE_HOSTNAME}:${POSTE_PORT}
       - POSTE_API_USER=${POSTE_API_USER}
       - POSTE_API_PASSWORD=${POSTE_API_PASSWORD}
     env_file:
       - .env.docker
-    # Add an entrypoint to install the cert before running Cypress
     entrypoint: ["/bin/sh", "-c", "update-ca-certificates && npx cypress"]
     depends_on:
       - web-test
@@ -289,7 +275,7 @@ services:
     depends_on:
       - db-test
       - redis
-      - web-test  # Changed from web to web-test
+      - web-test
     environment:
       - DEBUG=${DEBUG}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-test:5432/${POSTGRES_DB}
