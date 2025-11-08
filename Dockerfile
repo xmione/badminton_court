@@ -48,7 +48,6 @@ USER appuser
 FROM base AS web
 EXPOSE 8000
 # Override the ENTRYPOINT from base stage
-ENTRYPOINT []
 # Use the setup script before starting the server
 # ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
 # CMD ["sh", "-c", "echo 'Looking for manage.py:' && find / -name 'manage.py' -type f && echo '---' && ls -la /app && echo '---' && sleep infinity"]
