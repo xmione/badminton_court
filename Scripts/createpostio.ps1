@@ -1,3 +1,4 @@
+# Scripts/createpostio.ps1
 docker stop mail-test
 docker rm mail-test
 docker run -d `

@@ -136,6 +136,7 @@ do {
     Write-Host "   12.5. List backup files" -ForegroundColor White
     Write-Host "   12.6. List backup contents" -ForegroundColor White
     Write-Host "   12.7. List backup image names" -ForegroundColor White
+    Write-Host "   12.8. Save running containers to Docker Hub" -ForegroundColor White
     Write-Host ""
     Write-Host "13. UTILITIES" -ForegroundColor Cyan
     Write-Host "   13.1. Create SSL certificates for development" -ForegroundColor White
@@ -146,10 +147,16 @@ do {
     Write-Host "   13.6. Decrypt .env files" -ForegroundColor White
     Write-Host "   13.7. Create PostIO container" -ForegroundColor White
     Write-Host ""
-    Write-Host "14. Exit" -ForegroundColor Red
+    Write-Host "14. DOCKER COMPOSE MANAGEMENT" -ForegroundColor Cyan
+    Write-Host "   14.1. Stop all docker compose containers" -ForegroundColor White
+    Write-Host "   14.2. Remove all docker compose containers" -ForegroundColor White
+    Write-Host "   14.3. Remove all docker compose images" -ForegroundColor White
+    Write-Host "   14.4. System prune all related compose file objects" -ForegroundColor White
+    Write-Host ""
+    Write-Host "15. Exit" -ForegroundColor Red
     Write-Host ""
 
-    $choice = Read-Host "Select an option (e.g., 1.1, 2.3, or 14)"
+    $choice = Read-Host "Select an option (e.g., 1.1, 2.3, or 15)"
 
     switch ($choice) {
         # Local Development
@@ -670,7 +677,38 @@ do {
             Read-Host
         }
         
-        "14" { 
+        # Docker Compose Management
+        "14.1" { 
+            Write-Host "Stopping all Docker Compose containers..." -ForegroundColor Yellow
+            docker-compose --env-file .env.docker down
+            Write-Host "All containers stopped successfully!" -ForegroundColor Green
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }
+        "14.2" { 
+            Write-Host "Removing all Docker Compose containers..." -ForegroundColor Yellow
+            docker-compose --env-file .env.docker down -v
+            Write-Host "All containers removed successfully!" -ForegroundColor Green
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }
+        "14.3" { 
+            Write-Host "Removing all Docker Compose images..." -ForegroundColor Yellow
+            docker-compose --env-file .env.docker down -v --rmi all
+            Write-Host "All images removed successfully!" -ForegroundColor Green
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }
+        "14.4" { 
+            Write-Host "System pruning all Docker Compose related objects..." -ForegroundColor Yellow
+            docker-compose --env-file .env.docker down -v --rmi all
+            docker system prune -a --volumes -f
+            Write-Host "System prune completed successfully!" -ForegroundColor Green
+            Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+            Read-Host
+        }
+        
+        "15" { 
             Write-Host "Exiting..." -ForegroundColor Green
             exit
         }
@@ -679,4 +717,4 @@ do {
             Read-Host
         }
     }
-} while ($choice -ne "14")
+} while ($choice -ne "15")
