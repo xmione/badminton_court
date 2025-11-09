@@ -680,28 +680,28 @@ do {
         # Docker Compose Management
         "14.1" { 
             Write-Host "Stopping all Docker Compose containers..." -ForegroundColor Yellow
-            docker-compose --env-file .env.docker down
+            docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation down
             Write-Host "All containers stopped successfully!" -ForegroundColor Green
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
         "14.2" { 
             Write-Host "Removing all Docker Compose containers..." -ForegroundColor Yellow
-            docker-compose --env-file .env.docker down -v
+            docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation down -v
             Write-Host "All containers removed successfully!" -ForegroundColor Green
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
         "14.3" { 
             Write-Host "Removing all Docker Compose images..." -ForegroundColor Yellow
-            docker-compose --env-file .env.docker down -v --rmi all
+            docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation down -v --rmi all
             Write-Host "All images removed successfully!" -ForegroundColor Green
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow
             Read-Host
         }
         "14.4" { 
             Write-Host "System pruning all Docker Compose related objects..." -ForegroundColor Yellow
-            docker-compose --env-file .env.docker down -v --rmi all
+            docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation down -v --rmi all
             docker system prune -a --volumes -f
             Write-Host "System prune completed successfully!" -ForegroundColor Green
             Write-Host "Press Enter to continue..." -ForegroundColor Yellow

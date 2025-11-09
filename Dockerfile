@@ -35,6 +35,8 @@ ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 RUN echo '#!/bin/bash\n\
 set -e  # Exit on any error\n\
 \n\
+echo "=== Starting setup script ==="\n\
+\n\
 echo "=== Setting up certificates ==="\n\
 if [ -f /certs/ca.pem ]; then\n\
     cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt\n\
@@ -63,19 +65,19 @@ python manage.py shell -c "from django.contrib.sites.models import Site; import 
 \n\
 echo "=== Starting server ==="\n\
 exec "$@"' > /usr/local/bin/setup-certs.sh && \
-    chmod +x /usr/local/bin/setup-certs.sh
-
-# Switch to appuser
-USER appuser
+    chmod +x /usr/local/bin/setup-certs.sh && \
+    echo "Setup script created successfully"
 
 # Web service stage
 FROM base AS web
 EXPOSE 8000
 # Use the setup script before starting the server
+USER root
 ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 # Tunnel service stage
 FROM base AS tunnel
+USER root
 ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
 CMD ["python", "tunnel.py"]
