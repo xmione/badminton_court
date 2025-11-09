@@ -23,13 +23,8 @@ RUN useradd --create-home --shell /bin/bash appuser
 
 # Copy and install Python dependencies FIRST to leverage Docker cache
 COPY requirements.txt /app/
-
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of your application code
-COPY . .
-
-# RUN ls -la
 # Set environment variable to point to the system CA bundle
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
@@ -40,7 +35,6 @@ if [ -f /certs/ca.pem ]; then\n\
     cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt\n\
     update-ca-certificates\n\
 fi\n\
-\n\
 # Fix ownership after volume mount\n\
 chown -R appuser:appuser /app\n\
 exec "$@"' > /usr/local/bin/setup-certs.sh && \
@@ -52,13 +46,10 @@ USER appuser
 # Web service stage
 FROM base AS web
 EXPOSE 8000
-# Override the ENTRYPOINT from base stage
 # Use the setup script before starting the server
 ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
-# CMD ["sh", "-c", "echo 'Looking for manage.py:' && find / -name 'manage.py' -type f && echo '---' && ls -la /app && echo '---' && sleep infinity"]
-# CMD ["sh", "-c", "echo 'Looking for manage.py:' && ls -la /app/manage.py && echo '---' && ls -la /app && echo '---' && sleep infinity"]
-# CMD ["sh", "-c", "echo 'Searching for manage.py inside / volume...' && find / -name 'manage.py' -type f && echo '--- Showing top level of / ---' && ls -la / && echo '--- Sleeping for debugging ---' && sleep infinity"]
-CMD ["sleep", "infinity"]
+CMD ["sh", "-c", "echo 'Looking for manage.py:' && find /app -name 'manage.py' -type f && echo '---' && ls -la /app && echo '---' && python manage.py migrate && python manage.py shell -c 'from django.contrib.sites.models import Site; import os; site, created = Site.objects.get_or_create(id=1); site.domain = os.getenv(\"DOMAIN_NAME\"); site.name = os.getenv(\"SITE_HEADER\"); site.save(); print(\"✅ Site domain set to:\", site.domain)' && python manage.py runserver 0.0.0.0:8000"]
+
 # Tunnel service stage
 FROM base AS tunnel
 ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
