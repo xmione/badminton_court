@@ -48,7 +48,7 @@ FROM base AS web
 EXPOSE 8000
 # Use the setup script before starting the server
 ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
-CMD ["sh", "-c", "echo 'Looking for manage.py:' && find /app -name 'manage.py' -type f && echo '---' && ls -la /app && echo '---' && python manage.py migrate && python manage.py shell -c 'from django.contrib.sites.models import Site; import os; site, created = Site.objects.get_or_create(id=1); site.domain = os.getenv(\"DOMAIN_NAME\"); site.name = os.getenv(\"SITE_HEADER\"); site.save(); print(\"✅ Site domain set to:\", site.domain)' && python manage.py runserver 0.0.0.0:8000"]
+CMD ["python manage.py runserver 0.0.0.0:8000"]
 
 # Tunnel service stage
 FROM base AS tunnel
