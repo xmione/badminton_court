@@ -32,6 +32,7 @@ services:
       - app-network
     profiles:
       - dev
+      - test
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -113,6 +114,42 @@ services:
       mail-test:
         condition: service_started
 
+  # Celery Worker (dev profile only)
+  celery:
+    container_name: celery
+    build: 
+      context: .
+      target: web
+    entrypoint: ["celery"]
+    command: ["-A", "badminton_court", "worker", "--loglevel=info"] 
+    volumes: *app-volumes
+    depends_on:
+      - redis
+    env_file:
+      .env.docker
+    networks:
+      - app-network
+    profiles:
+      - dev
+
+  # Celery Beat Scheduler (dev profile only)
+  celery-beat:
+    container_name: celery-beat
+    build: 
+      context: .
+      target: web
+    entrypoint: ["celery"]
+    command: ["-A", "badminton_court", "beat", "--loglevel=info"]  
+    volumes: *app-volumes
+    depends_on:
+      - redis
+    env_file:
+      .env.docker
+    networks:
+      - app-network
+    profiles:
+      - dev
+ 
   # Test Database (only for test profile)
   db-test:
     container_name: db-test
@@ -151,42 +188,6 @@ services:
     depends_on:
       - redis
   
-  # Celery Worker (dev profile only)
-  celery:
-    container_name: celery
-    build: 
-      context: .
-      target: web
-    entrypoint: ["celery"]
-    command: ["-A", "badminton_court", "worker", "--loglevel=info"] 
-    volumes: *app-volumes
-    depends_on:
-      - redis
-    env_file:
-      .env.docker
-    networks:
-      - app-network
-    profiles:
-      - dev
-
-  # Celery Beat Scheduler (dev profile only)
-  celery-beat:
-    container_name: celery-beat
-    build: 
-      context: .
-      target: web
-    entrypoint: ["celery"]
-    command: ["-A", "badminton_court", "beat", "--loglevel=info"]  
-    volumes: *app-volumes
-    depends_on:
-      - redis
-    env_file:
-      .env.docker
-    networks:
-      - app-network
-    profiles:
-      - dev
- 
   # Ngrok Tunnel Service (depends on dev web service)
   tunnel:
     container_name: ngrok_tunnel
