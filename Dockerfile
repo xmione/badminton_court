@@ -35,8 +35,8 @@ if [ -f /certs/ca.pem ]; then\n\
     cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt\n\
     update-ca-certificates\n\
 fi\n\
-# Fix ownership after volume mount\n\
-chown -R appuser:appuser /app\n\
+# Fix ownership after volume mount, ignore errors for mounted volumes\n\
+chown -R appuser:appuser /app 2>/dev/null || true\n\
 exec "$@"' > /usr/local/bin/setup-certs.sh && \
     chmod +x /usr/local/bin/setup-certs.sh
 
@@ -48,7 +48,7 @@ FROM base AS web
 EXPOSE 8000
 # Use the setup script before starting the server
 ENTRYPOINT ["/usr/local/bin/setup-certs.sh"]
-CMD ["python manage.py runserver 0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 # Tunnel service stage
 FROM base AS tunnel
