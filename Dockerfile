@@ -33,16 +33,35 @@ ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
 # Create a script to handle certificate setup and migrations at runtime
 RUN echo '#!/bin/bash\n\
+set -e  # Exit on any error\n\
+\n\
+echo "=== Setting up certificates ==="\n\
 if [ -f /certs/ca.pem ]; then\n\
     cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt\n\
     update-ca-certificates\n\
+    echo "Certificates updated"\n\
+else\n\
+    echo "No certificates found"\n\
 fi\n\
+\n\
+echo "=== Fixing ownership ==="\n\
 # Fix ownership after volume mount, ignore errors for mounted volumes\n\
 chown -R appuser:appuser /app 2>/dev/null || true\n\
-# Run migrations\n\
+\n\
+echo "=== Running migrations ==="\n\
+# Wait for database to be ready\n\
+until python manage.py dbshell --command="SELECT 1;" > /dev/null 2>&1; do\n\
+  echo "Waiting for database to be ready..."\n\
+  sleep 2\n\
+done\n\
+echo "Database is ready, running migrations..."\n\
 python manage.py migrate\n\
+\n\
+echo "=== Setting up site ==="\n\
 # Set up the site\n\
-python manage.py shell -c "from django.contrib.sites.models import Site; import os; site, created = Site.objects.get_or_create(id=1); site.domain = os.getenv(\"DOMAIN_NAME\"); site.name = os.getenv(\"SITE_HEADER\"); site.save(); print(\"✅ Site domain set to:\", site.domain)"\n\
+python manage.py shell -c "from django.contrib.sites.models import Site; import os; site, created = Site.objects.get_or_create(id=1); site.domain = os.getenv(\"DOMAIN_NAME\", \"localhost\"); site.name = os.getenv(\"SITE_HEADER\", \"Badminton Court Management\"); site.save(); print(\"✅ Site domain set to:\", site.domain)"\n\
+\n\
+echo "=== Starting server ==="\n\
 exec "$@"' > /usr/local/bin/setup-certs.sh && \
     chmod +x /usr/local/bin/setup-certs.sh
 
