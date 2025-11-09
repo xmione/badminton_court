@@ -25,6 +25,8 @@ RUN useradd --create-home --shell /bin/bash appuser
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY . .
+
 # Set environment variable to point to the system CA bundle
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
