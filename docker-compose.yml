@@ -108,6 +108,7 @@ services:
     profiles:
       - dev
       - tunnel  
+      - presentation
     depends_on:
       redis:
         condition: service_started
