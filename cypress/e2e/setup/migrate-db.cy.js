@@ -5,28 +5,24 @@ describe('Database Migration', { testIsolation: false }, () => {
 
   before(() => {
     // Show initial status message for this test
-    cy.showStatusMessage('Database Migration', {
+    cy.showStatusMessage('Database Setup', {
       showSpinner: true,
-      subText: 'Please be patient while migrations run...'
+      subText: 'Waiting for server to be ready...'
     }).then(id => {
       testStatusId = id; // Assign the ID returned by showStatusMessage
     });
   });
 
-  it('should run database migrations successfully', () => {
-    cy.log('Running database migrations...');
-    cy.updateStatusMessage(testStatusId, 'Running database migrations...', 'This may take a moment...');
+  it('should verify the server is running', () => {
+    cy.log('Verifying server is running...');
+    cy.updateStatusMessage(testStatusId, 'Verifying server is running...', 'This may take a moment...');
 
-    // Run Django migrations inside the Docker container
-    cy.exec('docker exec web-dev python manage.py migrate', { timeout: 60000 })
-      .then((result) => {
-        if (result.code !== 0) {
-          cy.log(`Migration failed: ${result.stderr}`);
-          throw new Error('Migration failed. Check the logs for details.');
-        } else {
-          cy.log('Migrations completed successfully');
-          cy.updateStatusMessage(testStatusId, 'Migrations completed successfully.', '');
-        }
+    // Check if the server is responding
+    cy.request('http://web-dev:8000/')
+      .then((response) => {
+        expect(response.status).to.eq(200);
+        cy.log('Server is running successfully');
+        cy.updateStatusMessage(testStatusId, 'Server is ready.', '');
       });
   });
 

@@ -31,7 +31,7 @@ COPY . .
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
-# Create a script to handle certificate setup at runtime
+# Create a script to handle certificate setup and migrations at runtime
 RUN echo '#!/bin/bash\n\
 if [ -f /certs/ca.pem ]; then\n\
     cp /certs/ca.pem /usr/local/share/ca-certificates/ca-posteio.crt\n\
@@ -39,6 +39,10 @@ if [ -f /certs/ca.pem ]; then\n\
 fi\n\
 # Fix ownership after volume mount, ignore errors for mounted volumes\n\
 chown -R appuser:appuser /app 2>/dev/null || true\n\
+# Run migrations\n\
+python manage.py migrate\n\
+# Set up the site\n\
+python manage.py shell -c "from django.contrib.sites.models import Site; import os; site, created = Site.objects.get_or_create(id=1); site.domain = os.getenv(\"DOMAIN_NAME\"); site.name = os.getenv(\"SITE_HEADER\"); site.save(); print(\"✅ Site domain set to:\", site.domain)"\n\
 exec "$@"' > /usr/local/bin/setup-certs.sh && \
     chmod +x /usr/local/bin/setup-certs.sh
 
