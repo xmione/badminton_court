@@ -33,7 +33,6 @@ services:
     profiles:
       - dev
       - test
-      - tunnel
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -76,7 +75,6 @@ services:
     profiles:
       - dev
       - test
-      - tunnel
     healthcheck:
       test: ["CMD", "nc", "-zv", "localhost", "587"]
       interval: 5s
@@ -108,7 +106,6 @@ services:
     profiles:
       - dev
       - tunnel  
-      - presentation
     depends_on:
       redis:
         condition: service_started
