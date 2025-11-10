@@ -49,9 +49,9 @@ function decryptEnvFile(encryptedFile, outputFile = null) {
 }
 
 // Decrypt the files
-decryptEnvFile('.e.env.dev', '.env.dev');
-decryptEnvFile('.e.env.docker', '.env.docker');
-decryptEnvFile('.e.cypress.env.json', 'cypress.env.json');
+decryptEnvFile('.e.env.dev.gpg', '.env.dev');
+decryptEnvFile('.e.env.docker.gpg', '.env.docker');
+// decryptEnvFile('.e.cypress.env.json', 'cypress.env.json');
 
 // Clear the plain text passphrase from memory
 const passphrase = null;
