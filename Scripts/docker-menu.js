@@ -11,6 +11,14 @@ const isWindows = os.platform() === 'win32';
 const isMac = os.platform() === 'darwin';
 const isLinux = os.platform() === 'linux';
 
+function sleep(seconds) {
+  if (os.platform() === 'win32') {
+    execSync(`timeout /t ${seconds}`, { stdio: 'pipe' });
+  } else {
+    execSync(`sleep ${seconds}`, { stdio: 'pipe' });
+  }
+}
+
 // Helper function to execute commands
 function runCommand(command, options = {}) {
   try {
@@ -481,13 +489,13 @@ async function executeMenuOption(choice) {
       } else {
         runCommand('pkill -f "Docker Desktop"');
         console.log('\x1b[33mWaiting for Docker Desktop to fully terminate...\x1b[0m');
-        runCommand('sleep 10');
+        sleep(10);
         console.log('\x1b[33mCleaning up Docker resources...\x1b[0m');
         runCommand('docker system prune -a --volumes');
         console.log('\x1b[33mStarting Docker Desktop...\x1b[0m');
         runCommand('open -a Docker Desktop');
         console.log('\x1b[33mWaiting for Docker Desktop to initialize...\x1b[0m');
-        runCommand('sleep 30');
+        sleep(30);
         console.log('\x1b[32mDocker Desktop should be starting up. Please wait for it to fully initialize.\x1b[0m');
       }
       await pause();
@@ -522,13 +530,13 @@ async function executeMenuOption(choice) {
       } else {
         runCommand('pkill -f "Docker Desktop"');
         console.log('\x1b[33mWaiting for Docker Desktop to fully terminate...\x1b[0m');
-        runCommand('sleep 10');
+        sleep(10);
         console.log('\x1b[33mCleaning up Docker resources...\x1b[0m');
         runCommand('docker system prune -a --volumes');
         console.log('\x1b[33mStarting Docker Desktop...\x1b[0m');
         runCommand('open -a Docker Desktop');
         console.log('\x1b[33mWaiting for Docker Desktop to initialize...\x1b[0m');
-        runCommand('sleep 30');
+        sleep(30);
         console.log('\x1b[32mDocker Desktop should be starting up. Please wait for it to fully initialize.\x1b[0m');
       }
       await pause();
