@@ -1,56 +1,105 @@
 // Scripts/pfs.js
-// Print project folder structure
+// This script prints the folder structure of the project, excluding certain directories.
 
-const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
-function printFolderStructure() {
-  // Get the script's directory to determine project root
-  const scriptPath = process.argv[1] || __dirname;
-  let projectRoot;
+// Determine the script's directory and project root
+const scriptPath = __filename;
+const scriptDir = path.dirname(scriptPath);
+const projectRoot = path.dirname(scriptDir);
+
+console.log(`Project root is: ${projectRoot}`);
+
+// Define folders to exclude
+const excludeFolders = [
+  "dist",
+  ".next",
+  ".gi",
+  ".github",
+  "node_modules",
+  "__pycache",
+  "court_management/__pycache",
+  "court_management/management/commands/__pycache__",
+  "court_management/management/migrations/__pycache__",
+  "court_management/templatetags/__pycache__",
+  "venv"
+].map(folder => path.join(projectRoot, folder));
+
+console.log("Excluded folders:", excludeFolders);
+
+/**
+ * Print folder structure recursively
+ * @param {string} dirPath - The directory path to traverse
+ * @param {string[]} excludeFolders - Array of folder paths to exclude
+ * @param {number} maxDepth - Maximum depth to traverse
+ * @param {number} currentDepth - Current depth level
+ * @param {string} prefix - Prefix for tree structure visualization
+ * @returns {string} - The folder structure as a string
+ */
+function printFolderStructure(dirPath, excludeFolders, maxDepth = 3, currentDepth = 0, prefix = '') {
+  let output = '';
   
-  if (scriptPath) {
-    // Get the directory containing the script (i.e., "Scripts")
-    const scriptDir = path.dirname(scriptPath);
-    // Then get its parent (i.e., project root)
-    projectRoot = path.dirname(scriptDir);
-  } else {
-    // Fallback to current directory
-    projectRoot = process.cwd();
+  if (currentDepth >= maxDepth) {
+    return output;
   }
-  
-  console.log(`Project root is: ${projectRoot}`);
-  
-  const excludeFolders = [
-    'dist',
-    '.next',
-    '.github',
-    'node_modules',
-    '__pycache__',
-    'court_management/__pycache__',
-    'court_management/management/commands/__pycache__',
-    'court_management/templates/__pycache__',
-    'venv'
-  ];
-  
-  // Create exclude arguments for the tree command
-  const excludeArgs = excludeFolders.map(folder => `-I '${folder}'`).join(' ');
-  
+
   try {
-    // Use tree if available, otherwise fallback to ls
-    try {
-      execSync('tree --version', { stdio: 'pipe' });
-      execSync(`tree ${projectRoot} ${excludeArgs} -L 3 > folderstructure.txt`, { stdio: 'pipe' });
-      console.log('Folder structure saved to folderstructure.txt');
-    } catch (error) {
-      // Fallback to ls command
-      execSync(`ls -la ${projectRoot} ${excludeArgs} | head -n 50 > folderstructure.txt`, { stdio: 'pipe' });
-      console.log('Folder structure saved to folderstructure.txt');
-    }
-  } catch (error) {
-    console.error('ERROR: Failed to generate folder structure:', error.message);
-    }
+    const items = fs.readdirSync(dirPath);
+    
+    items.forEach((item, index) => {
+      const fullPath = path.join(dirPath, item);
+      
+      // Check if this path should be excluded
+      if (excludeFolders.some(excluded => fullPath.startsWith(excluded))) {
+        return;
+      }
+
+      const isLast = index === items.length - 1;
+      const connector = isLast ? '└── ' : '├── ';
+      const newPrefix = isLast ? '    ' : '│   ';
+
+      try {
+        const stats = fs.statSync(fullPath);
+        
+        if (stats.isDirectory()) {
+          output += `${prefix}${connector}${item}/\n`;
+          output += printFolderStructure(
+            fullPath,
+            excludeFolders,
+            maxDepth,
+            currentDepth + 1,
+            prefix + newPrefix
+          );
+        } else {
+          output += `${prefix}${connector}${item}\n`;
+        }
+      } catch (err) {
+        // Skip files/folders that can't be accessed
+        console.error(`Error accessing ${fullPath}:`, err.message);
+      }
+    });
+  } catch (err) {
+    console.error(`Error reading directory ${dirPath}:`, err.message);
+  }
+
+  return output;
 }
 
-printFolderStructure();
+// Generate the folder structure
+const folderStructure = `${path.basename(projectRoot)}/\n` + 
+  printFolderStructure(projectRoot, excludeFolders, 4);
+
+// Write to file
+const outputFile = path.join(projectRoot, 'folderstructure.txt');
+fs.writeFileSync(outputFile, folderStructure, 'utf8');
+
+console.log(`\nFolder structure written to: ${outputFile}`);
+
+// Open the file with VS Code (if available)
+try {
+  execSync(`code "${outputFile}"`, { stdio: 'inherit' });
+} catch (err) {
+  console.log('Could not open file with VS Code. Please open manually.');
+}
