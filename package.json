@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Badminton Court Management System",
   "scripts": {
-    "docker:menu": "echo '📋 Showing Docker menu...' && node scripts/docker-menu.js",
+    "menu": "echo '📋 Showing Commands Menu...' && node scripts/docker-menu.js",
     "dev": "echo '🚀 Starting local development environment...' && cross-env ENVIRONMENT=development python manage.py runserver 0.0.0.0:8000",
     "dev:detached": "echo '🚀 Starting local development environment in detached mode...' && node scripts/run-detached.js",
     "dev:stop": "echo '🛑 Stopping local dev server development...' && node scripts/stop-server.js",

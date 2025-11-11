@@ -64,14 +64,14 @@ module.exports = defineConfig({
         config.baseUrl = config.env.CYPRESS_INTERNAL_baseUrl || config.env.CYPRESS_baseUrl || "http://localhost:8000";
 
         // Validate required environment variables
-        const requiredEnvVars = ['DOMAIN_NAME'];
+        const requiredEnvVars = ['APP_DOMAIN'];
         const missingVars = requiredEnvVars.filter(varName => !config.env[varName]);
         
         if (missingVars.length > 0) {
           throw new Error(`Missing required environment variables: ${missingVars.join(', ')}. Please add them to your ${envFile} file.`);
         }
         
-        console.log(`Cypress: DOMAIN_NAME loaded from env file: ${config.env.DOMAIN_NAME}`);
+        console.log(`Cypress: APP_DOMAIN loaded from env file: ${config.env.APP_DOMAIN}`);
 
       } catch (error) {
         console.error(`Could not load environment file: ${envFile}`, error);

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load django_bootstrap5 %}
+{% load socialaccount %}  <!-- Make sure to load this tag library -->
 
 {% block content %}
 <div class="container">
@@ -48,20 +49,27 @@
                     
                     <hr>
                     
-                    <!-- Social Media Login Section (without icons) -->
+                    <!-- Social Media Login Section (Robust Version) -->
                     <div class="text-center">
                         <h5>Or login with</h5>
                         <div class="mt-3">
-                            <!-- These will work once social media is configured -->
-                            <a href="{% url 'account_login' %}" class="btn btn-danger me-2">Google</a>
-                            <a href="{% url 'account_login' %}" class="btn btn-primary me-2">Facebook</a>
-                            <a href="{% url 'account_login' %}" class="btn btn-info">Twitter</a>
+                            {% get_providers as socialaccount_providers %}
+                            {% for provider in socialaccount_providers %}
+                                {% if provider.id == 'google' %}
+                                    <a href="/accounts/google/login/" class="btn btn-danger me-2">Google</a>
+                                {% elif provider.id == 'facebook' %}
+                                    <a href="/accounts/facebook/login/" class="btn btn-primary me-2">Facebook</a>
+                                {% else %}
+                                    <!-- A default style for other providers -->
+                                    <a href="/accounts/twitter/login/" class="btn btn-info me-2">{{ provider.name }}</a>
+                                {% endif %}
+                            {% endfor %}
                         </div>
                     </div>
                     
                     <div class="mt-3 text-center">
                         <p>Don't have an account? <a href="{% url 'account_signup' %}">Sign up</a></p>
-                        <p><a href="{% url 'account_reset_password' %}">Forgot your password?</a></p>
+    <p><a href="{% url 'account_reset_password' %}">Forgot your password?</a></p>
                         
                         <!-- Admin Login Link -->
                         <p class="mt-3">

@@ -1,9 +1,8 @@
-# court_management/forms.py
+# court_management/components/forms/bookingForm.py
 
 from django import forms
-from .models import (
-    Booking, Payment, Customer, Court, 
-    Employee, WorkSchedule, TimeEntry
+from ..models import (
+    Booking, Customer, Court, TimeEntry
 )
 
 class BookingForm(forms.ModelForm):
@@ -59,65 +58,7 @@ class BookingForm(forms.ModelForm):
         
         return cleaned_data
 
-class PaymentForm(forms.ModelForm):
-    payment_method = forms.ChoiceField(choices=Payment.PAYMENT_METHOD_CHOICES)
-    
-    class Meta:
-        model = Payment
-        fields = ['amount', 'payment_method', 'transaction_id', 'notes']
-        widgets = {
-            'amount': forms.NumberInput(attrs={'step': '0.01'}),
-            'notes': forms.Textarea(attrs={'rows': 3}),
-        }
 
-class CustomerForm(forms.ModelForm):
-    class Meta:
-        model = Customer
-        fields = ['name', 'email', 'phone', 'address', 'active']
-        widgets = {
-            'address': forms.Textarea(attrs={'rows': 3}),
-        }
-
-class CourtForm(forms.ModelForm):
-    class Meta:
-        model = Court
-        fields = ['name', 'description', 'hourly_rate', 'active']
-        widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
-        }
-
-class EmployeeForm(forms.ModelForm):
-    class Meta:
-        model = Employee
-        fields = ['name', 'position', 'email', 'phone', 'address', 'hire_date', 'hourly_rate', 'active']
-        widgets = {
-            'hire_date': forms.DateInput(attrs={'type': 'date'}),
-            'address': forms.Textarea(attrs={'rows': 3}),
-        }
-
-class WorkScheduleForm(forms.ModelForm):
-    class Meta:
-        model = WorkSchedule
-        fields = ['employee', 'date', 'start_time', 'end_time', 'notes']
-        widgets = {
-            'date': forms.DateInput(attrs={'type': 'date'}),
-            'start_time': forms.TimeInput(attrs={'type': 'time'}),
-            'end_time': forms.TimeInput(attrs={'type': 'time'}),
-            'notes': forms.Textarea(attrs={'rows': 3}),
-        }
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        start_time = cleaned_data.get('start_time')
-        end_time = cleaned_data.get('end_time')
-        
-        if start_time and end_time:
-            if start_time >= end_time:
-                raise forms.ValidationError("End time must be after start time.")
-        
-        return cleaned_data
-
-class TimeEntryForm(forms.ModelForm):
     class Meta:
         model = TimeEntry
         fields = ['employee', 'clock_in', 'clock_out', 'notes']
@@ -137,3 +78,4 @@ class TimeEntryForm(forms.ModelForm):
                 raise forms.ValidationError("Clock out time must be after clock in time.")
         
         return cleaned_data
+    

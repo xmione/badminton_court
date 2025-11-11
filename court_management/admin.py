@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.utils.html import format_html
 from django.urls import reverse
 from django.http import HttpResponseRedirect
-from .models import Customer, Court, Booking, Employee, WorkSchedule, TimeEntry, Payment
+from .components.models import Customer, Court, Booking, Employee, WorkSchedule, TimeEntry, Payment
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):

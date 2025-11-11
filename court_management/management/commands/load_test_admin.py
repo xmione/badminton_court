@@ -39,7 +39,7 @@ class Command(BaseCommand):
         password = options['password']
         
         # Get domain from settings or use default
-        domain = getattr(settings, 'DOMAIN_NAME')
+        domain = getattr(settings, 'POSTE_DOMAIN')
         
         # Set email based on provided email or construct from username and domain
         if options['email']:

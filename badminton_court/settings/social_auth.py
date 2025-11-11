@@ -1,0 +1,73 @@
+# badminton_court/settings/social_auth.py
+"""
+Social authentication (django-allauth) configuration
+"""
+
+import os
+
+# Django Allauth Configuration
+ACCOUNT_LOGIN_METHODS = {'email'}  # Allow login with email only
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Required fields for signup
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_PREVENT_ENUMERATION = False
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 7 
+ACCOUNT_EMAIL_CONFIRMATION_HMAC = False
+ACCOUNT_EMAIL_CONFIRMATION_COOLDOWN_SECONDS = 0
+ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = '/accounts/login/'
+ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = '/'
+ACCOUNT_USERNAME_BLACKLIST = ['admin', 'staff', 'root']
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+LOGIN_REDIRECT_URL = '/'  # Redirect to dashboard after login
+LOGOUT_REDIRECT_URL = '/accounts/login/'  # Redirect to login after logout
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = True
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_STORE_TOKENS = False
+
+# Custom adapter
+ACCOUNT_ADAPTER = 'court_management.adapters.CustomEmailAdapter'
+
+# Social Media Credentials
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
+FACEBOOK_CLIENT_ID = os.getenv('FACEBOOK_CLIENT_ID', '')
+FACEBOOK_CLIENT_SECRET = os.getenv('FACEBOOK_CLIENT_SECRET', '')
+TWITTER_CLIENT_ID = os.getenv('TWITTER_CLIENT_ID', '')
+TWITTER_CLIENT_SECRET = os.getenv('TWITTER_CLIENT_SECRET', '')
+
+# Social Media Provider Configuration
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        }
+    },
+    'facebook': {
+        'METHOD': 'oauth2',
+        'SCOPE': ['email', 'public_profile'],
+        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'INITIAL_PARAMS': {'cookie': True},
+        'FIELDS': [
+            'id',
+            'email',
+            'name',
+            'first_name',
+            'last_name',
+            'verified',
+            'locale',
+            'timezone',
+            'link',
+            'gender',
+            'updated_time',
+        ],
+        'VERIFIED_EMAIL': False,
+    },
+    'twitter': {
+        'SCOPE': ['tweet.read', 'users.read'],
+    }
+}

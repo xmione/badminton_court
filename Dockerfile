@@ -61,7 +61,7 @@ python manage.py migrate\n\
 \n\
 echo "=== Setting up site ==="\n\
 # Set up the site\n\
-python manage.py shell -c "from django.contrib.sites.models import Site; import os; site, created = Site.objects.get_or_create(id=1); site.domain = os.getenv(\"DOMAIN_NAME\", \"localhost\"); site.name = os.getenv(\"SITE_HEADER\", \"Badminton Court Management\"); site.save(); print(\"✅ Site domain set to:\", site.domain)"\n\
+python manage.py shell -c "from django.contrib.sites.models import Site; import os; site, created = Site.objects.get_or_create(id=1); site.domain = os.getenv(\"APP_DOMAIN\", \"localhost\"); site.name = os.getenv(\"SITE_HEADER\", \"Badminton Court Management\"); site.save(); print(\"✅ Site domain set to:\", site.domain)"\n\
 \n\
 echo "=== Starting server ==="\n\
 exec "$@"' > /usr/local/bin/setup-certs.sh && \

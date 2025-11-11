@@ -3,7 +3,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
-from court_management.models import Customer, Court, Booking, Employee, Payment
+from court_management.components.models import Customer, Court, Booking, Employee, Payment
 
 class Command(BaseCommand):
     help = 'Set up user groups and permissions'
