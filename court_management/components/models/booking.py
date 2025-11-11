@@ -3,7 +3,6 @@
 from django.db import models
 from django.utils import timezone
 from django.urls import reverse
-from . import Customer, Court
 
 class Booking(models.Model):
     STATUS_CHOICES = [
@@ -20,8 +19,8 @@ class Booking(models.Model):
         ('refunded', 'Refunded'),
     ]
     
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    court = models.ForeignKey(Court, on_delete=models.CASCADE)
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE)
+    court = models.ForeignKey('Court', on_delete=models.CASCADE)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

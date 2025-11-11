@@ -1,10 +1,9 @@
 # court_management/components/models/WorkSchedule.py
 
 from django.db import models
-from employee import Employee
 
 class WorkSchedule(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE)
     date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()

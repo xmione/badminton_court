@@ -2,7 +2,6 @@
 
 from django.db import models
 from django.contrib.auth.models import User
-from . import Booking
 
 class Payment(models.Model):
     PAYMENT_METHOD_CHOICES = [
@@ -12,7 +11,7 @@ class Payment(models.Model):
         ('other', 'Other'),
     ]
     
-    booking = models.ForeignKey(Booking, on_delete=models.CASCADE)
+    booking = models.ForeignKey('Booking', on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES)
     transaction_id = models.CharField(max_length=100, blank=True)

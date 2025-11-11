@@ -1,10 +1,9 @@
 # court_management/components/models/TimeEntry.py
 
 from django.db import models
-from employee import Employee
 
 class TimeEntry(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE)
     clock_in = models.DateTimeField()
     clock_out = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)

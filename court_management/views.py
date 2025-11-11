@@ -7,7 +7,7 @@ from django.template.loader import get_template
 from django.contrib.auth import get_user_model
 
 # Import models from the models package
-from .models import Customer, Court, Booking, Employee
+from .components.models import Customer, Court, Booking, Employee
 
 User = get_user_model()
 
