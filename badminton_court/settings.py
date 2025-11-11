@@ -302,6 +302,13 @@ SOCIALACCOUNT_STORE_TOKENS = False
 SITE_ID = 1
 ACCOUNT_ADAPTER = 'court_management.adapters.CustomEmailAdapter'
 
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
+FACEBOOK_CLIENT_ID = os.getenv('FACEBOOK_CLIENT_ID', '')
+FACEBOOK_CLIENT_SECRET = os.getenv('FACEBOOK_CLIENT_SECRET', '')
+TWITTER_CLIENT_ID = os.getenv('TWITTER_CLIENT_ID', '')
+TWITTER_CLIENT_SECRET = os.getenv('TWITTER_CLIENT_SECRET', '')
+
 # Social Media Provider Configuration (single definition)
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
