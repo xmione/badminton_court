@@ -4,7 +4,7 @@ from django.db import transaction
 from django.utils import timezone  # Import timezone utility
 from django.conf import settings  # Import settings to access environment variables
 from datetime import timedelta
-from court_management.models import Customer, Court, Booking
+from court_management.components.models import Customer, Court, Booking
 
 class Command(BaseCommand):
     help = 'Create test data for bookings (customers, courts, and bookings)'
@@ -18,7 +18,7 @@ class Command(BaseCommand):
                 Booking.objects.filter(customer__name__in=["John Doe", "Jane Smith"]).delete()
                 
                 # Get domain from settings 
-                domain = getattr(settings, 'DOMAIN_NAME')
+                domain = getattr(settings, 'POSTE_DOMAIN')
                 
                 # Create test customers
                 john_doe = Customer.objects.create(

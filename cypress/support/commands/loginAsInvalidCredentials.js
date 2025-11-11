@@ -2,7 +2,7 @@
 export const loginAsInvalidCredentials = () => {
     Cypress.Commands.add('loginAsInvalidCredentials', (options = {}) => {
         // Get domain from environment variables
-        const domain = Cypress.env('DOMAIN_NAME');
+        const domain = Cypress.env('POSTE_DOMAIN');
 
         // Visit login page
         cy.visit('/accounts/login/')

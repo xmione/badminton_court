@@ -10,7 +10,7 @@ class Command(BaseCommand):
     
     def handle(self, *args, **options):
         # Get domain from settings or use default
-        domain = getattr(settings, 'DOMAIN_NAME')
+        domain = getattr(settings, 'POSTE_DOMAIN')
         
         # Create admin user if it doesn't exist
         admin_user, created = User.objects.get_or_create(

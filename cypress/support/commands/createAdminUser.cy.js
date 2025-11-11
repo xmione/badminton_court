@@ -31,7 +31,7 @@ try:
     print('Admin user updated successfully')
 except User.DoesNotExist:
     # Get domain from settings or use default
-    domain = getattr(settings, 'DOMAIN_NAME')
+    domain = getattr(settings, 'POSTE_DOMAIN')
     User.objects.create_superuser('${username}', f'${username}@{domain}', '${password}')
     print('Admin user created successfully')
 "`, { timeout: 30000 })

@@ -22,7 +22,7 @@ def test_create_admin_group(request):
     try:
         from django.contrib.auth.models import Group, Permission
         from django.contrib.contenttypes.models import ContentType
-        from court_management.models import (
+        from ..models import (
             Customer, Court, Booking, Payment, 
             Employee, WorkSchedule, TimeEntry
         )

@@ -1,4 +1,4 @@
-# court_management/components/models/Customer.py
+# court_management/components/models/customer.py
 
 from django.db import models
 from django.contrib.auth.models import User

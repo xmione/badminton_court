@@ -20,6 +20,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from court_management import views
 
 # Admin site customization using environment variables
 admin.site.site_header = settings.SITE_HEADER
@@ -29,6 +30,8 @@ admin.site.index_title = settings.SITE_INDEX_TITLE
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),  # Django Allauth URLs
+    path('debug-social/', views.debug_social_providers, name='debug-social'),
+    path('clear-cache/', views.clear_cache_view, name='clear-cache'),
     path('', include('court_management.urls')),  # Include app URLs
 ]
 

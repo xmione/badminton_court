@@ -18,7 +18,7 @@ class Command(BaseCommand):
                 Booking.objects.filter(customer__name__in=["John Doe", "Jane Smith"]).delete()
                 
                 # Get domain from settings or use default
-                domain = getattr(settings, 'DOMAIN_NAME')
+                domain = getattr(settings, 'POSTE_DOMAIN')
                 
                 # Create test customers
                 john_doe = Customer.objects.create(

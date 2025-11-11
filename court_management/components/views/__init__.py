@@ -23,6 +23,8 @@ from .test_create_regular_users_group import test_create_regular_users_group
 from .test_delete_regular_users_group import test_delete_regular_users_group
 from .debug_check_user import debug_check_user
 from .test_set_user_staff import test_set_user_staff
+from .debug_social_providers import debug_social_providers
+from .clear_cache import clear_cache_view
 
 # Explicitly define what gets imported with `from . import *`
 __all__ = [
@@ -34,6 +36,7 @@ __all__ = [
     'test_cleanup_user', 'debug_confirmation_status', 'debug_check_confirmation', 'update_site_domain',
     'update_all_site_domains', 'check_pending_emails', 'send_pending_emails', 'debug_site_config',
     'debug_email_content', 'test_create_admin_group', 'test_delete_admin_group', 'test_create_regular_users_group',
-    'test_delete_regular_users_group', 'debug_check_user', 'test_set_user_staff'
+    'test_delete_regular_users_group', 'debug_check_user', 'test_set_user_staff', 'debug_social_providers',
+    'clear_cache_view'
 
 ]
