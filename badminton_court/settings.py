@@ -311,11 +311,6 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
         'AUTH_PARAMS': {
             'access_type': 'online',
-        },
-        'APP': {
-            'client_id': os.getenv('GOOGLE_CLIENT_ID', 'YOUR_GOOGLE_CLIENT_ID'),
-            'secret': os.getenv('GOOGLE_CLIENT_SECRET', 'YOUR_GOOGLE_CLIENT_SECRET'),
-            'key': ''
         }
     },
     'facebook': {
@@ -337,19 +332,11 @@ SOCIALACCOUNT_PROVIDERS = {
             'updated_time',
         ],
         'VERIFIED_EMAIL': False,
-        'APP': {
-            'client_id': os.getenv('FACEBOOK_CLIENT_ID', 'YOUR_FACEBOOK_CLIENT_ID'),
-            'secret': os.getenv('FACEBOOK_CLIENT_SECRET', 'YOUR_FACEBOOK_APP_SECRET'),
-            'key': ''
-        }
+        
     },
     'twitter': {
         'SCOPE': ['tweet.read', 'users.read'],
-        'APP': {
-            'client_id': os.getenv('TWITTER_CLIENT_ID', 'YOUR_TWITTER_API_KEY'),
-            'secret': os.getenv('TWITTER_CLIENT_SECRET', 'YOUR_TWITTER_API_SECRET'),
-            'key': ''
-        }
+        
     }
 }
 
