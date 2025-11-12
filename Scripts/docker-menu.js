@@ -22,17 +22,43 @@ function sleep(seconds) {
 // Helper function to execute commands
 function runCommand(command, options = {}) {
   try {
-    const { stdout, stderr, error } = execSync(command, { 
+    // Default to inheriting stdio so output shows in real-time
+    const defaultOptions = {
+      encoding: 'utf8',
+      stdio: 'inherit', // This allows output to display in real-time
+      ...options
+    };
+    
+    execSync(command, defaultOptions);
+    return { success: true };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error.message, 
+      stdout: error.stdout, 
+      stderr: error.stderr 
+    };
+  }
+}
+
+// If you need to capture output for some commands, create a separate function
+function runCommandWithCapture(command, options = {}) {
+  try {
+    const result = execSync(command, { 
       encoding: 'utf8', 
       stdio: ['pipe', 'pipe', 'pipe'],
       ...options 
     });
-    return { success: true, stdout, stderr };
+    return { success: true, stdout: result };
   } catch (error) {
-    return { success: false, error: error.message, stdout: error.stdout, stderr: error.stderr };
+    return { 
+      success: false, 
+      error: error.message, 
+      stdout: error.stdout, 
+      stderr: error.stderr 
+    };
   }
 }
-
 // =================================================================
 // CORRECTED: checkEnvFile now accepts a parameter to skip the check
 // This is CRITICAL for the 'decrypt' command to work when .env.docker is missing.
