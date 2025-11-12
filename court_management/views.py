@@ -132,7 +132,8 @@ from .components.views import (
     update_all_site_domains, check_pending_emails, send_pending_emails, 
     debug_site_config, debug_email_content, test_create_admin_group,
     test_delete_admin_group, test_create_regular_users_group, test_delete_regular_users_group,
-    debug_check_user, test_set_user_staff, debug_social_providers, clear_cache_view
+    debug_check_user, test_set_user_staff, debug_social_providers, clear_cache_view,
+    reset_django_database, reset_posteio_database, reset_all_databases, test_user_count
     )
 
 # ============================================================================

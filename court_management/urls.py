@@ -59,7 +59,10 @@ urlpatterns = [
 
     # Test API endpoints (only available in DEBUG mode)
     path('api/test-reset-database/', views.test_reset_database, name='test-reset-database'),
+    path('api/test/reset-django-db/', views.reset_django_database, name='reset_django_db'),
+    path('api/test/reset-posteio-db/', views.reset_posteio_database, name='reset_posteio_db'),
     path('api/test-create-user/', views.test_create_user, name='test-create-user'),
+    path('api/test/user-count/', views.test_user_count, name='test_user_count'),
     path('api/test-verify-user/', views.test_verify_user, name='test-verify-user'),
     path('api/test-setup-admin/', views.test_setup_admin, name='test-setup-admin'),
     path('api/test-cleanup-user/', views.test_cleanup_user, name='test-cleanup-user'), 

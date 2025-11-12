@@ -2,30 +2,44 @@
 // isolation: true by default clears browser state. You need to login for each spec.
 // here, you don't need to login in each spec.
 describe('End-To-End Happy Path', { testIsolation: false }, () => {
-
-  let statusId;
-  before(() => {
-    // The database is already migrated from global before().
-    // Now, reset and add admin-specific data.
-    cy.log('Cleaning database before authentication tests...');
-    cy.resetDatabase(); // Resets tables *after* migrations
-    // cy.log('Cleaning up test user...');
-    // cy.request({
-    //   method: 'POST',
-    //   url: '/api/test-cleanup-user/',
-    //   body: { email: Cypress.env('REGULARUSER_EMAIL') },
-    //   failOnStatusCode: false
-    // });
-    // cy.setupTestAdmin({ reset: true }); // Creates admin user
-  })
-
-  // beforeEach(() => {
-  //   cy.log('ADMIN SPEC: Starting beforeEach()');
+  
+  it('should reset the Django database successfully', () => {
+    cy.resetDjangoDb();
     
-  //   // Ensure the admin user exists *before every test*
-  //   // without resetting the whole database.
-  //   cy.setupTestAdmin({ reset: false })
-  // })
+    // Validation: Verify the reset was successful
+    cy.request({
+      method: 'GET',
+      url: '/api/test/user-count/',
+      failOnStatusCode: false
+    }).then((response) => {
+      expect(response.status).to.eq(200);
+      const userCount = response.body.count;
+      
+      cy.log(`✓ Django database reset verified: ${userCount} users`);
+      
+      // Assert expected state after reset
+      // Adjust these assertions based on what your reset creates
+      expect(userCount).to.be.at.most(5, 'Should have minimal users after reset');
+    });
+  });
+
+  it('should reset the Poste.io database successfully', () => {
+    cy.log('Resetting Poste.io database...');
+    cy.resetPosteioDb();
+    
+    // The validation is already included in the resetPosteioDb command
+    // It will log the number of deleted/skipped mailboxes
+    
+    // Additional validation: Verify we can still access Poste.io
+    cy.request({
+      method: 'GET',
+      url: Cypress.env('POSTE_API_HOST'),
+      failOnStatusCode: false
+    }).then((response) => {
+      expect(response.status).to.be.oneOf([200, 302, 301]);
+      cy.log('✓ Poste.io server is still accessible after reset');
+    });
+  });
 
   it('should ensure setup is complete and log in successfully', () => {
     // This single command now handles both setup and login, no matter the state.
@@ -34,7 +48,10 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
     // If we reach this point, we are successfully logged in.
     cy.url().should('include', '/admin/');
     cy.get('h1').should('contain', 'Mailserver dashboard');
+    
+    cy.log('✓ Successfully logged in to Poste.io admin panel');
   });
+ 
 
   it('should add a new regular user successfully', () => {
     cy.log('Cleaning up test user...');

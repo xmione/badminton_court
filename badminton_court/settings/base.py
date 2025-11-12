@@ -161,3 +161,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Site Configuration
 SITE_ID = 1
+
+# Poste.io configuration - using individual components like Cypress
+POSTE_PROTOCOL = os.getenv('POSTE_PROTOCOL')
+POSTE_HOSTNAME = os.getenv('POSTE_HOSTNAME')
+POSTE_PORT = os.getenv('POSTE_PORT')
+
+# Construct the full API host URL
+POSTE_API_HOST = f"{POSTE_PROTOCOL}://{POSTE_HOSTNAME}:{POSTE_PORT}"
+POSTE_API_USER = os.getenv('POSTE_API_USER')
+POSTE_API_PASSWORD = os.getenv('POSTE_API_PASSWORD')

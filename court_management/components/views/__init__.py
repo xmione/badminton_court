@@ -25,6 +25,8 @@ from .debug_check_user import debug_check_user
 from .test_set_user_staff import test_set_user_staff
 from .debug_social_providers import debug_social_providers
 from .clear_cache import clear_cache_view
+from .test_database import reset_django_database, reset_posteio_database, reset_all_databases
+from .test_user_count import test_user_count
 
 # Explicitly define what gets imported with `from . import *`
 __all__ = [
@@ -37,6 +39,6 @@ __all__ = [
     'update_all_site_domains', 'check_pending_emails', 'send_pending_emails', 'debug_site_config',
     'debug_email_content', 'test_create_admin_group', 'test_delete_admin_group', 'test_create_regular_users_group',
     'test_delete_regular_users_group', 'debug_check_user', 'test_set_user_staff', 'debug_social_providers',
-    'clear_cache_view'
+    'clear_cache_view', 'reset_django_database', 'reset_posteio_database', 'reset_all_databases', 'test_user_count'
 
 ]

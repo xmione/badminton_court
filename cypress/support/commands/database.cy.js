@@ -39,57 +39,46 @@ Cypress.Commands.add('resetDjangoDb', () => {
 // Reset Poste.io database
 Cypress.Commands.add('resetPosteioDb', () => {
   cy.log('Resetting Poste.io database...');
-  
-  cy.request({
-    method: 'POST',
-    url: '/api/test/reset-posteio-db/',
-    failOnStatusCode: false,
-    timeout: 30000  // Increase timeout to 30 seconds
-  }).then((response) => {
-    if (response.status !== 200) {
-      cy.log(`Warning: Poste.io DB reset failed: ${JSON.stringify(response.body)}`);
-      if (response.body && response.body.message) {
-        cy.log(`Message: ${response.body.message}`);
+    cy.log('Resetting Poste.io by recreating its volume...');
+    
+    // Define the volume name from your docker-compose.yml
+    const volumeName = 'badminton_court_poste_data'; // get this by running `docker volume ls`
+
+    // Execute commands to stop, remove volume, and restart
+    cy.exec(`docker-compose --env-file .env.docker down mail-test`).then(() => {
+      cy.log('Container stopped.');
+    });
+    
+    cy.exec(`docker volume rm ${volumeName}`).then(() => {
+      cy.log('Old volume removed.');
+    });
+
+    cy.exec('docker-compose --env-file .env.docker up -d mail-test').then(() => {
+      cy.log('New container started with a fresh volume.');
+    });
+    
+    // Wait for container to fully restart and initialize.
+    // This might need to be longer than 15 seconds for a fresh start.
+    cy.log('Waiting for Poste.io to initialize on a fresh volume...');
+    cy.wait(30000); // Wait 30 seconds for a full first-time initialization
+    
+    // Now, verify it's accessible
+    cy.log('Verifying Poste.io is accessible...');
+    cy.request({
+      method: 'GET',
+      url: Cypress.env('POSTE_API_HOST'),
+      failOnStatusCode: false,
+      timeout: 10000
+    }).then((response) => {
+      // A fresh install might redirect to a setup page, so we allow a wider range of success codes
+      if (response.status >= 200 && response.status < 400) {
+        cy.log(`✓ Poste.io is accessible (status: ${response.status})`);
+      } else {
+        // Log the body for debugging if it fails
+        cy.log(`Response body: ${response.body}`);
+        throw new Error(`Poste.io returned unexpected status ${response.status}`);
       }
-    } else {
-      cy.log('Poste.io database reset successfully');
-      
-      // Log the output from the management command
-      if (response.body && response.body.output) {
-        cy.log(`Reset output: ${response.body.output}`);
-      }
-      
-      // Validate: Parse the output to check deletion counts
-      if (response.body && response.body.output) {
-        const output = response.body.output;
-        
-        // Check for deleted count in output
-        const deletedMatch = output.match(/(\d+)\s+deleted/);
-        const skippedMatch = output.match(/(\d+)\s+skipped/);
-        
-        if (deletedMatch) {
-          const deletedCount = parseInt(deletedMatch[1]);
-          cy.log(`✓ Validation: ${deletedCount} mailboxes deleted`);
-        }
-        
-        if (skippedMatch) {
-          const skippedCount = parseInt(skippedMatch[1]);
-          cy.log(`✓ Validation: ${skippedCount} mailboxes skipped (admin)`);
-          
-          // Admin should always be skipped
-          expect(skippedCount).to.be.at.least(1, 'Admin account should be skipped');
-        }
-        
-        // Check if authentication failed
-        if (output.includes('Authentication failed') || output.includes('may not exist')) {
-          cy.log('⚠ Warning: Admin account does not exist in Poste.io');
-          cy.log('This is normal after first reset - setupPosteio will create it');
-        } else if (output.includes('completed')) {
-          cy.log('✓ Poste.io reset completed successfully');
-        }
-      }
-    }
-  });
+    });
 });
 
 // Reset both databases
