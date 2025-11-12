@@ -660,6 +660,11 @@ async function executeMenuOption(choice) {
       runCommand('npm run createpostio');
       await pause();
       break;
+    case '13.8':
+      console.log('\x1b[33mUninstalling Docker...\x1b[0m');
+      runCommand('npm run uninstall-docker');
+      await pause();
+      break;
       
     // Docker Compose Management
     case '14.1':
@@ -823,6 +828,7 @@ async function showMenu() {
     console.log('   13.5. Encrypt .env files');
     console.log('   13.6. Decrypt .env files');
     console.log('   13.7. Create PostIO container');
+    console.log('   13.8. Uninstall Docker');
     console.log('');
     console.log('\x1b[36m14. DOCKER COMPOSE MANAGEMENT\x1b[0m');
     console.log('   14.1. Stop all docker compose containers');

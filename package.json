@@ -74,6 +74,7 @@
     "encryptenvfiles": "echo 'Encrypting .env files...' && node scripts/encryptenvfiles.js",
     "decryptenvfiles": "echo 'Decrypting .env files...' && node scripts/decryptenvfiles.js",
     "createpostio": "echo 'Creating PostIO container...' && node scripts/createpostio.js",
+    "uninstall-docker": "echo 'Uninstalling Docker...' && node scripts/uninstall-docker.js",
     "docker:backup-images": "echo '📦 Backing up all available Docker images into a single archive (all-images.tar)...' && node scripts/backupImages.js",
     "docker:restore-images": "echo '📦 Restoring all Docker images from a single archive (all-images.tar)...' && node scripts/restoreImages.js",
     "docker:backup-individual": "echo '➕ Adding one or more images to the all-images.tar archive (e.g.: npm run docker:backup-individual -- web-dev)...' && node scripts/backupIndividual.js",
