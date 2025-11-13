@@ -2,7 +2,6 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
-from django.apps import apps
 from django.core.management import call_command
 
 class Command(BaseCommand):
@@ -14,22 +13,11 @@ class Command(BaseCommand):
         
         self.stdout.write('Resetting Django database...')
         
-        # Get all models
-        all_models = apps.get_models()
-        
-        # Sort models by name to ensure consistent deletion order
-        sorted_models = sorted(all_models, key=lambda model: model._meta.label)
-        
-        # Delete all instances of each model
-        for model in sorted_models:
-            try:
-                count = model.objects.count()
-                model.objects.all().delete()
-                self.stdout.write(f'  Deleted {count} {model._meta.model_name} objects')
-            except Exception as e:
-                self.stdout.write(self.style.WARNING(f'  Error deleting {model._meta.label}: {str(e)}'))
-        
-        # Reset migration history
-        call_command('migrate', fake=True, verbosity=0)
-        
-        self.stdout.write(self.style.SUCCESS('Django database reset successfully'))
+        # The correct way to reset the database for testing.
+        # It deletes all data but keeps migrations and content types intact.
+        try:
+            call_command('flush', verbosity=0, interactive=False)
+            self.stdout.write(self.style.SUCCESS('Django database flushed successfully'))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'Error flushing database: {str(e)}'))
+            raise CommandError(f'Error flushing database: {str(e)}')

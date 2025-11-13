@@ -12,10 +12,7 @@ describe('Create/Update Regular Users Group', () => {
         cy.setupTestAdmin({ reset: false });
         
         // Log in via browser to establish session
-        cy.visit('/admin/login/');
-        cy.get('#id_username').type(Cypress.env('ADMIN_EMAIL'));
-        cy.get('#id_password').type(Cypress.env('ADMIN_PASSWORD'));
-        cy.get('input[type="submit"]').click();
+        cy.loginToAdminPage();
         
         // Verify we're logged in
         cy.url().should('not.include', '/login');
