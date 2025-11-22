@@ -1,41 +1,53 @@
 // cypress/support/commands/createBookingTestData.cy.js
+const path = require('path');
+
 export const createBookingTestData = () => {
-    // Command to create test data for bookings (customers and courts)
     Cypress.Commands.add('createBookingTestData', () => {
         cy.log('Creating test data for bookings')
 
-        // Check if we're running in Docker or local development
-        const isDocker = Cypress.env('ENVIRONMENT') === 'docker';
-
-        // Use the appropriate Python command based on the environment
         const pythonCommand = Cypress.platform === 'win32' ? 'python' : 'python3';
+        const projectRoot = path.resolve(__dirname, '..', '..', '..');
 
-        // Set the environment variables for the command
-        const envVars = {
-            ENVIRONMENT: Cypress.env('ENVIRONMENT') || 'development',
-            CYPRESS: 'true'  // Ensure we're using test database
-        };
+        // Determine which environment we're in
+        const environment = Cypress.env('ENVIRONMENT') || 'development';
+        
+        cy.log(`Using environment: ${environment}`);
 
-        // Execute Django management command with the correct environment
+        // Execute Django management command with environment variables
         cy.exec(`${pythonCommand} manage.py create_test_booking_data`, {
+            cwd: projectRoot,
+            env: {
+                // Pass the ENVIRONMENT variable so Django knows which .env file to load
+                ENVIRONMENT: environment,
+                
+                // Also pass database credentials explicitly from Cypress env
+                POSTGRES_USER: Cypress.env('POSTGRES_USER') || 'dbuser',
+                POSTGRES_PASSWORD: Cypress.env('POSTGRES_PASSWORD') || 'P@ssw0rd123',
+                POSTGRES_DB: Cypress.env('POSTGRES_DB') || 'badminton_court',
+                POSTGRES_HOST: Cypress.env('POSTGRES_HOST') || 'localhost',
+                POSTGRES_PORT: Cypress.env('POSTGRES_PORT') || '5432',
+                
+                // Other important variables
+                PYTHONIOENCODING: 'utf-8',
+                POSTE_DOMAIN: Cypress.env('POSTE_DOMAIN') || 'aeropace.com',
+            },
             timeout: 30000,
             failOnNonZeroExit: false,
-            env: envVars
         }).then((result) => {
             // Log all output for debugging
             cy.log('Command exit code:', result.code)
             cy.log('Command stdout:', result.stdout)
             cy.log('Command stderr:', result.stderr)
 
-            // Check if the command succeeded based on output or exit code
+            // Check if the command succeeded
             const successMessage = 'Successfully created test booking data'
             const commandSucceeded =
                 (result.code === 0) ||
                 (result.stdout && result.stdout.includes(successMessage))
 
             if (commandSucceeded) {
-                cy.log('Test booking data created successfully')
-                return; // Exit successfully
+                cy.log('✓ Test booking data created successfully')
+                return;
             }
 
             // If we get here, the command failed
@@ -53,18 +65,6 @@ export const createBookingTestData = () => {
                 errorMessage += `: ${result.stdout}`
             } else {
                 errorMessage += ': Command failed with no output'
-                
-                // Try to get more debugging information
-                cy.log('Attempting to debug the management command...')
-                cy.exec('python manage.py help', { timeout: 10000, failOnNonZeroExit: false })
-                    .then((helpResult) => {
-                        cy.log('Django manage.py help output:', helpResult.stdout)
-                    })
-                
-                cy.exec('python manage.py help create_test_booking_data', { timeout: 10000, failOnNonZeroExit: false })
-                    .then((helpResult) => {
-                        cy.log('Management command help output:', helpResult.stdout)
-                    })
             }
 
             cy.log(errorMessage)

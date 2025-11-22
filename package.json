@@ -4,6 +4,8 @@
   "description": "Badminton Court Management System",
   "scripts": {
     "menu": "echo '📋 Showing Commands Menu...' && call Scripts\\menu.bat",
+    "certs:create": "echo 'Creating openssl certificates...' && node Scripts/generate-certs.js",
+    "certs:create:admin": "echo 'Run this in an Administrator terminal!' && node Scripts/generate-certs.js --elevated",
     "dev": "echo '🚀 Starting local development environment...' && cross-env ENVIRONMENT=development python manage.py runserver 0.0.0.0:8000",
     "dev:detached": "echo '🚀 Starting local development environment in detached mode...' && node scripts/run-detached.js",
     "dev:stop": "echo '🛑 Stopping local dev server development...' && node scripts/stop-server.js",

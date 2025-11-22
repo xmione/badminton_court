@@ -20,16 +20,49 @@ function sleep(seconds) {
 }
 
 // Helper function to execute commands
+// Helper function to execute commands
 function runCommand(command, options = {}) {
   try {
+    // Check if this is a Python/Django command that needs venv
+    const needsVenv = command.includes('python') || 
+                      command.includes('manage.py') || 
+                      command.includes('django-admin');
+    
+    let finalCommand = command;
+    
+    if (needsVenv) {
+      const venvPath = path.join(__dirname, '..', 'venv');
+      const isVenvActivated = process.env.VIRTUAL_ENV !== undefined;
+      
+      if (!isVenvActivated) {
+        // Check if venv exists
+        if (!fs.existsSync(venvPath)) {
+          console.log('\x1b[31m✗ Virtual environment not found at: ' + venvPath + '\x1b[0m');
+          console.log('\x1b[33mPlease create a virtual environment first by running: python -m venv venv\x1b[0m');
+          return { success: false, error: 'Virtual environment not found' };
+        }
+        
+        // Prepend activation command based on platform
+        if (isWindows) {
+          finalCommand = `"${path.join(venvPath, 'Scripts', 'activate.bat')}" && ${command}`;
+        } else {
+          finalCommand = `source "${path.join(venvPath, 'bin', 'activate')}" && ${command}`;
+        }
+        
+        console.log('\x1b[33m⚠ Activating virtual environment automatically...\x1b[0m');
+      } else {
+        console.log('\x1b[32m✓ Virtual environment already activated\x1b[0m');
+      }
+    }
+    
     // Default to inheriting stdio so output shows in real-time
     const defaultOptions = {
       encoding: 'utf8',
-      stdio: 'inherit', // This allows output to display in real-time
+      stdio: 'inherit',
       ...options
     };
     
-    execSync(command, defaultOptions);
+    execSync(finalCommand, defaultOptions);
     return { success: true };
   } catch (error) {
     return { 
@@ -631,36 +664,41 @@ async function executeMenuOption(choice) {
       await pause();
       break;
     case '13.2':
+      console.log('\x1b[33mCreating SSL certificates for development...\x1b[0m');
+      runCommand('npm run certs:create');
+      await pause();
+      break;  
+    case '13.3':
       const utilityServiceName = await ask('Enter service name: ');
       runCommand(`npm run shell -- ${utilityServiceName}`);
       await pause();
       break;
-    case '13.3':
+    case '13.4':
       console.log('\x1b[33mPrinting project folder structure...\x1b[0m');
       runCommand('npm run pfs');
       await pause();
       break;
-    case '13.4':
+    case '13.5':
       console.log('\x1b[33mRunning PSQL...\x1b[0m');
       runCommand('npm run psql');
       await pause();
       break;
-    case '13.5':
+    case '13.6':
       console.log('\x1b[33mEncrypting .env files...\x1b[0m');
       runCommand('npm run encryptenvfiles');
       await pause();
       break;
-    case '13.6':
+    case '13.7':
       console.log('\x1b[33mDecrypting .env files...\x1b[0m');
       runCommand('npm run decryptenvfiles');
       await pause();
       break;
-    case '13.7':
+    case '13.8':
       console.log('\x1b[33mCreating PostIO container...\x1b[0m');
       runCommand('npm run createpostio');
       await pause();
       break;
-    case '13.8':
+    case '13.9':
       console.log('\x1b[33mUninstalling Docker...\x1b[0m');
       runCommand('npm run uninstall-docker');
       await pause();
@@ -822,13 +860,14 @@ async function showMenu() {
     console.log('');
     console.log('\x1b[36m13. UTILITIES\x1b[0m');
     console.log('   13.1. Create SSL certificates for development');
-    console.log('   13.2. Open shell in service container');
-    console.log('   13.3. Print project folder structure');
-    console.log('   13.4. Run PSQL');
-    console.log('   13.5. Encrypt .env files');
-    console.log('   13.6. Decrypt .env files');
-    console.log('   13.7. Create PostIO container');
-    console.log('   13.8. Uninstall Docker');
+    console.log('   13.2. Create SSL certificates for development (Administrator)');
+    console.log('   13.3. Open shell in service container');
+    console.log('   13.4. Print project folder structure');
+    console.log('   13.5. Run PSQL');
+    console.log('   13.6. Encrypt .env files');
+    console.log('   13.7. Decrypt .env files');
+    console.log('   13.8. Create PostIO container');
+    console.log('   13.9. Uninstall Docker');
     console.log('');
     console.log('\x1b[36m14. DOCKER COMPOSE MANAGEMENT\x1b[0m');
     console.log('   14.1. Stop all docker compose containers');
