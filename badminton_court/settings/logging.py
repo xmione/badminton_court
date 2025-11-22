@@ -44,6 +44,12 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        # Add email-specific logging
+        'django.core.mail': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
 

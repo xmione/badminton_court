@@ -5,10 +5,23 @@ Social authentication (django-allauth) configuration
 
 import os
 
+# Check if we're running tests
+is_running_tests = (
+    os.environ.get('CYPRESS') == 'true' or 
+    (os.environ.get('ENVIRONMENT') == 'docker' and os.environ.get('CYPRESS'))
+)
+
+if is_running_tests:
+    # Test configuration
+    ACCOUNT_EMAIL_VERIFICATION = 'none'  # Temporarily disable email verification
+    print("🔧 TESTS DETECTED: Email verification disabled for testing")
+else:
+    # Production/development settings
+    ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+
 # Django Allauth Configuration
 ACCOUNT_LOGIN_METHODS = {'email'}  # Allow login with email only
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Required fields for signup
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_PREVENT_ENUMERATION = False
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 7 

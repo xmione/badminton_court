@@ -1,3 +1,4 @@
+// Scripts/run-detached.js
 const { spawn } = require('child_process');
 const path = require('path');
 

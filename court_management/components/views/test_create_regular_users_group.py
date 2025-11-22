@@ -21,7 +21,7 @@ def test_create_regular_users_group(request):
     try:
         from django.contrib.auth.models import Group, Permission
         from django.contrib.contenttypes.models import ContentType
-        from court_management.models import (
+        from court_management.components.models import (  # ✅ FIXED: Added .components
             Customer, Court, Booking, Payment, 
             Employee, WorkSchedule, TimeEntry
         )

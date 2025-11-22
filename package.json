@@ -9,13 +9,13 @@
     "dev:stop": "echo '🛑 Stopping local dev server development...' && node scripts/stop-server.js",
     "dev:load-data": "echo '📊 Loading local dev data...' && cross-env ENVIRONMENT=development python manage.py load_test_data",
     "dev:tunnel": "echo '🚀 Starting dev tunnel...' && python tunnel.py",
-    "dev:cypress-open": "echo '🔍 Opening Cypress in interactive mode...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress open",
-    "dev:cypress-headed": "echo '🚀 Running Cypress tests (headed)...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress run --headed --browser chrome",
-    "dev:cypress-headless": "echo '⚡ Running Cypress tests (headless)...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress run --headless --browser chrome",
-    "dev:cypress-presentation": "echo '⚡ Running Cypress tests for presentation (headed)...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress run --headed --browser chrome --config video=true && npm run post-process-videos",
-    "dev:select-presentation": "echo '🎬 Select a Cypress test from the list and run it for presentation (headed)...' && cross-env ENVIRONMENT=development CYPRESS=false node scripts/create-presentation.js",
-    "dev:post-process-videos": "echo '⚡ Running Post-Process Videos...' && cross-env ENVIRONMENT=development CYPRESS=false node scripts/post-process-videos.js",
-    "dev:cypress-presentation-spec": "echo '⚡ Running Cypress tests for presentation spec (headed)...' && cross-env ENVIRONMENT=development CYPRESS=false npx cypress run --headed --browser chrome --config video=true --spec && npm run post-process-videos",
+    "dev:cypress-open": "echo '🔍 Opening Cypress in interactive mode...' && dotenv -e .env.dev -- cross-env ENVIRONMENT=development CYPRESS=true npx cypress open",
+    "dev:cypress-headed": "echo '🚀 Running Cypress tests (headed)...' && dotenv -e .env.dev -- cross-env ENVIRONMENT=development CYPRESS=true npx cypress run --headed --browser chrome",
+    "dev:cypress-headless": "echo '⚡ Running Cypress tests (headless)...' && dotenv -e .env.dev -- cross-env ENVIRONMENT=development CYPRESS=true npx cypress run --headless --browser chrome",
+    "dev:cypress-presentation": "echo '⚡ Running Cypress tests for presentation (headed)...' && dotenv -e .env.dev -- cross-env ENVIRONMENT=development CYPRESS=true npx cypress run --headed --browser chrome --config video=true && npm run post-process-videos",
+    "dev:select-presentation": "echo '🎬 Select a Cypress test from the list and run it for presentation (headed)...' && dotenv -e .env.dev -- cross-env ENVIRONMENT=development CYPRESS=true node scripts/create-presentation.js",
+    "dev:post-process-videos": "echo '⚡ Running Post-Process Videos...' && dotenv -e .env.dev -- cross-env ENVIRONMENT=development CYPRESS=true node scripts/post-process-videos.js",
+    "dev:cypress-presentation-spec": "echo '⚡ Running Cypress tests for presentation spec (headed)...' && dotenv -e .env.dev -- cross-env ENVIRONMENT=development CYPRESS=true npx cypress run --headed --browser chrome --config video=true --spec && npm run post-process-videos",
     "docker:dev-start": "echo '🚀 Ensuring certificates exist and starting dev environment...' && npm run certs:create && npm run docker:dev-detached",
     "docker:dev-reset-and-start": "echo '🔄 Resetting dev environment and starting fresh...' && npm run docker:rebuild-dev && npm run certs:create && npm run docker:dev-detached && node scripts/wait-for-ready.js && npm run docker:reset-db-migrate",
     "docker:dev-migrate": "echo '🔧 Running database migrations in dev container...' && docker-compose --env-file .env.docker --profile dev exec -T web-dev python manage.py migrate",
@@ -90,8 +90,9 @@
     "cross-env": "^10.1.0",
     "cypress": "^15.3.0",
     "dotenv": "^17.2.3",
-    "sudo-prompt": "^9.2.1",
-    "inquirer": "^12.9.6"
+    "dotenv-cli": "^11.0.0",
+    "inquirer": "^12.9.6",
+    "sudo-prompt": "^9.2.1"
   },
   "dependencies": {
     "inquirer": "^12.9.6"

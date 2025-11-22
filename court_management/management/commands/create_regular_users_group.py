@@ -3,7 +3,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
-from court_management.models import (
+from court_management.components.models import (
     Customer, Court, Booking, Payment, 
     Employee, WorkSchedule, TimeEntry
 )

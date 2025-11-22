@@ -50,11 +50,11 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
     cy.loginToAdminPageWithInvalidCredentials();
   })
 
-  // it('should successfully register a new user', () => {
-  //   cy.createRegularUsersGroup();
-  //   cy.signUp();
-  //   cy.signOut();
-  // })
+  it('should successfully register a new user', () => {
+    cy.createRegularUsersGroup();
+    cy.signUp();
+    cy.signOut();
+  })
 
   // it('should successfully login with registered user', () => {
   //   cy.loginAsRegistered();
