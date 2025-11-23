@@ -2,40 +2,46 @@
 
 export const deletePaidBooking = () => {
   Cypress.Commands.add('deletePaidBooking', () => {
-
-    cy.showWaitMessage('This Test will try to delete Paid Booking but the System should not allow it...', 10000);
+    cy.showWaitMessage('This Test will try to delete a Paid Booking but the System should not allow it...', 10000);
     
     // Navigate to bookings list
     cy.get('.navbar-nav .nav-link').contains('Bookings').clickWithHighlight();
     cy.wait(1000);
     
-    // Find the row for Jane Smith's booking
-    cy.contains('Jane Smith')
-      .parent('tr') // Get the parent row
-      .as('bookingRow'); // Create an alias for the row
-
-    // Assert that the booking is marked as paid
-    cy.get('@bookingRow')
-      .find('.badge.bg-success') // Find the paid badge
+    // Find the row for John Doe's paid booking
+    cy.get('.badge.bg-success')
       .contains('paid')
-      .should('be.visible');
+      .parents('tr')
+      .contains('Jane Smith')
+      .parents('tr')
+      .as('bookingRow');
 
-    // *** THIS IS THE KEY CHANGE ***
-    // Assert that the delete link is NOT present in the row
+    // Navigate to the booking detail page
     cy.get('@bookingRow')
-      .find('a[href$="/delete/"]')
-      .should('not.exist');
-
-    // Optional: Navigate to the booking detail page to confirm there's no delete option there either
-    cy.get('@bookingRow').find('a').contains('View').clickWithHighlight(); // Assuming there's a "View" link
+      .find('a')
+      .first()
+      .clickWithHighlight();
     
     // Verify we're on the booking detail page
     cy.url().should('match', /\/bookings\/\d+\/$/);
     
-    // Assert that the delete button is not present on the detail page
-    cy.contains('button', 'Delete').should('not.exist');
-    // Or if it's a link:
-    // cy.contains('a', 'Delete').should('not.exist');
+    // Click the Delete link to go to the confirmation page
+    cy.contains('a', 'Delete').should('be.visible').click();
+    
+    // *** KEY CHANGE: Verify we are ON THE DELETE PAGE and it shows the correct error ***
+    cy.url().should('match', /\/bookings\/\d+\/delete\/$/);
+    
+    // Check for the blocking reason text that your view should be showing in the template
+    cy.contains('Cannot Delete Booking').should('be.visible');
+    cy.contains('This booking has been paid for and cannot be deleted.').should('be.visible');
+
+    // *** KEY CHANGE: Verify the delete button is NOT PRESENT ***
+    // This is a much more reliable check than checking for a redirect
+    cy.get('button[type="submit"]').should('not.exist');
+
+    // Let's go back to the detail page to clean up for other tests
+    cy.go('back');
+    cy.url().should('match', /\/bookings\/\d+\/$/);
 
     cy.log('✓ Verified that paid booking cannot be deleted!');
     cy.showWaitMessage('Verified that paid booking cannot be deleted!', 3000);

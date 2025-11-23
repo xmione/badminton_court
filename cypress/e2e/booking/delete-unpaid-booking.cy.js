@@ -1,4 +1,4 @@
-// cypress/e2e/booking/delete-booking.cy.js
+// cypress/e2e/booking/delete-unpaid-booking.cy.js
 
 describe('Booking Management', () => {
 
@@ -21,6 +21,9 @@ describe('Booking Management', () => {
     cy.updateStatusMessage(statusId, 'Creating test data for Bookings...', 'Please be patient...');
 
     cy.wait(1000) // Add a small wait
+    cy.setupTestAdmin();
+    
+    cy.wait(1000) // Add a small wait
     cy.createBookingTestData();
 
     // Login as a regular user
@@ -37,7 +40,7 @@ describe('Booking Management', () => {
 
   it('should allow the deletion of an unpaid booking', () => {
     cy.createDeleteBookingData();     
-    cy.deleteBooking();
+    cy.deleteUnpaidBooking();
   });
 });
 

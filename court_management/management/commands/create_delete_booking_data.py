@@ -1,8 +1,9 @@
 # court_management/management/commands/create_delete_booking_data.py
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.utils import timezone  # Import timezone utility
-from django.conf import settings  # Import settings to access environment variables
+from django.utils import timezone
+from django.conf import settings
+from django.db import connection
 from datetime import timedelta
 from court_management.components.models import Customer, Court, Booking
 
@@ -11,6 +12,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
+            # Ensure we're using the correct database connection
+            db_settings = settings.DATABASES['default']
+            self.stdout.write(f"Using database: {db_settings['NAME']} on {db_settings['HOST']}:{db_settings['PORT']}")
+            
             with transaction.atomic():
                 # Delete existing test data to ensure clean state
                 Customer.objects.filter(name__in=["John Doe", "Jane Smith"]).delete()
@@ -18,7 +23,7 @@ class Command(BaseCommand):
                 Booking.objects.filter(customer__name__in=["John Doe", "Jane Smith"]).delete()
                 
                 # Get domain from settings 
-                domain = getattr(settings, 'POSTE_DOMAIN')
+                domain = getattr(settings, 'POSTE_DOMAIN', 'aeropace.com')
                 
                 # Create test customers
                 john_doe = Customer.objects.create(
@@ -51,7 +56,7 @@ class Command(BaseCommand):
                 )
                 
                 # Create a test booking for John Doe with timezone-aware datetimes
-                tomorrow = timezone.now() + timedelta(days=1)  # Use timezone.now() instead of datetime.now()
+                tomorrow = timezone.now() + timedelta(days=1)
                 tomorrow = tomorrow.replace(hour=10, minute=0, second=0, microsecond=0)
                 end_time = tomorrow.replace(hour=11, minute=0)
                 

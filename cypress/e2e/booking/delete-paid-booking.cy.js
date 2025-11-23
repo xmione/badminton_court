@@ -21,6 +21,9 @@ describe('Booking Management', () => {
     cy.updateStatusMessage(statusId, 'Creating test data for Bookings...', 'Please be patient...');
 
     cy.wait(1000) // Add a small wait
+    cy.setupTestAdmin();
+    
+    cy.wait(1000) // Add a small wait
     cy.createBookingTestData();
 
     // Login as a regular user

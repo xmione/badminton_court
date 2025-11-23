@@ -22,6 +22,9 @@ describe('Booking Management', { testIsolation: false }, () => {
     cy.updateStatusMessage(statusId, 'Creating test data for Bookings...', 'Please be patient...');
 
     cy.wait(1000) // Add a small wait
+    cy.setupTestAdmin();
+
+    cy.wait(1000) // Add a small wait
     cy.createBookingTestData();
 
     // Login as a regular user
@@ -56,7 +59,7 @@ describe('Booking Management', { testIsolation: false }, () => {
 
   it('should allow the deletion of an unpaid booking', () => {
     cy.createDeleteBookingData();     
-    cy.deleteBooking();
+    cy.deleteUnpaidBooking();
   });
 
   it('should not allow deletion of a paid booking', () => {

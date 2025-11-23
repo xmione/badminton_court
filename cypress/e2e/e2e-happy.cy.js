@@ -80,7 +80,7 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
     cy.showWaitMessage('This will process the Happy Path Booking Test.', 10000);
     cy.showStatusMessage('Creating Test data for Bookings...', {
       showSpinner: true,
-      subText: 'Please be wait...'
+      subText: 'Please be patient...'
     }).then(id => {
       statusId = id;
       
@@ -117,7 +117,6 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
   });
 
   it('should allow the deletion of an unpaid booking', () => {
-    cy.pause();
     cy.createDeleteBookingData();     
     cy.deleteBooking();
   });
