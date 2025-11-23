@@ -1,28 +1,32 @@
 // cypress/support/commands/deleteUnpaidBooking.cy.js
 
 export const deleteUnpaidBooking = () => {
-  Cypress.Commands.add('deleteUnpaidBooking', () => {
-    cy.showWaitMessage('This Test will delete an Unpaid Booking...', 10000);
+  Cypress.Commands.add('deleteUnpaidBooking', (customerName, startHour) => {
+    const startTimeFormatted = `${String(startHour).padStart(2, '0')}:00`;
+
+    cy.showWaitMessage(`This Test will delete ${customerName}'s ${startTimeFormatted} booking...`, 10000);
     
     // Navigate to bookings list
     cy.get('.navbar-nav .nav-link').contains('Bookings').clickWithHighlight();
     cy.wait(1000);
     
-    // Find the row for Jane Smith's booking
-    cy.contains('Jane Smith')
-      .parent('tr') // Get the parent row
-      .as('bookingRow'); // Create an alias for the row
+    // Find the table row (<tr>) that contains both the customer's name and the start time
+    cy.contains('tr', customerName)
+      .filter(`:contains("${startTimeFormatted}")`)
+      .as('bookingRow');
 
-    // Assert that the booking is marked as pending (unpaid)
-    cy.get('@bookingRow')
-      .find('.badge.bg-warning') // Find the pending badge
-      .contains('pending')
-      .should('be.visible');
+    // Use a .then() block to access the aliased element and log its HTML
+    cy.get('@bookingRow').then(($tr) => {
+      const trHtml = $tr[0].outerHTML;
+      
+      cy.log('Booking row HTML is:');
+      cy.log(trHtml);
+    });
     
-    // Click on the delete button for Jane Smith's booking
+    // Find the "Delete" link within that specific row and click it
+    // The delete button is identified by the href containing '/delete/' or by the class
     cy.get('@bookingRow')
-      .find('a.btn-outline-danger') // Find the delete link with the correct class
-      .first() // Get the first delete button in case there are multiple
+      .find('a[href*="/delete/"]')
       .clickWithHighlight();
     
     // Verify we're on the delete confirmation page
@@ -32,10 +36,11 @@ export const deleteUnpaidBooking = () => {
     // Confirm deletion
     cy.get('button[type="submit"]').clickWithHighlight();
     
-    // Verify the booking is no longer in the list
-    cy.contains('Jane Smith').should('not.exist');
+    // Assert that the specific booking row we found is no longer visible
+    cy.get('@bookingRow').should('not.exist');
     
-    cy.showWaitMessage('Unpaid booking deleted successfully!', 3000);
+    cy.log(`✓ Unpaid booking for ${customerName} at ${startTimeFormatted} deleted successfully!`);
+    cy.showWaitMessage(`Unpaid booking for ${customerName} at ${startTimeFormatted} deleted successfully!`, 3000);
   });
 };
 

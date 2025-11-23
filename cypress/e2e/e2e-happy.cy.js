@@ -99,11 +99,10 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
   });
 
   it('should create a new booking', () => {
-        cy.createNewBooking();
+      cy.createNewBooking();
   });
 
   it('should view booking details', () => {
-    cy.createNewBooking();
     cy.viewBookingDetails();
   });
 
@@ -112,7 +111,6 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
   });
 
   it('should allow the editing of an existing booking', () => {
-    cy.createBookingTestData(); 
     cy.editBooking();
   });
 

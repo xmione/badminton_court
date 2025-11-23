@@ -1,4 +1,4 @@
-# court_management/components/forms/bookingForm.py
+# court_management/components/forms/bookings.py
 
 from django import forms
 from ..models import (
@@ -42,19 +42,26 @@ class BookingForm(forms.ModelForm):
             if start_time >= end_time:
                 raise forms.ValidationError("End time must be after start time.")
             
-            # Check for overlapping bookings
+            # *** THIS IS THE FIX ***
+            # Check for overlapping bookings, including 'pending' ones
             overlapping_bookings = Booking.objects.filter(
                 court=court,
                 start_time__lt=end_time,
                 end_time__gt=start_time,
-                status__in=['confirmed', 'in_progress']
+                status__in=['pending', 'confirmed', 'in_progress']  # <-- ADD 'pending' HERE
             )
             
             if self.instance:
                 overlapping_bookings = overlapping_bookings.exclude(pk=self.instance.pk)
             
             if overlapping_bookings.exists():
-                raise forms.ValidationError("This court is already booked for the selected time period.")
+                # Provide a more helpful error message
+                conflicting_booking = overlapping_bookings.first()
+                raise forms.ValidationError(
+                    f"This court is already booked from {conflicting_booking.start_time.strftime('%Y-%m-%d %H:%M')} "
+                    f"to {conflicting_booking.end_time.strftime('%Y-%m-%d %H:%M')}. "
+                    "Please choose a different time or court."
+                )
         
         return cleaned_data
 
