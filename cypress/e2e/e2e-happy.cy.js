@@ -78,15 +78,11 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
   it('should set up the database before running the Booking Happy Path Test', () => {
     cy.log('BOOKING HAPPY PATH SPEC: Starting admin-login.cy.js before()');
     cy.showWaitMessage('This will process the Happy Path Booking Test.', 10000);
-    cy.pause();
-    cy.showStatusMessage('Resetting Database...', {
+    cy.showStatusMessage('Creating Test data for Bookings...', {
       showSpinner: true,
       subText: 'Please be wait...'
     }).then(id => {
       statusId = id;
-      
-      // Reset the database
-      cy.resetDatabase();
       
       // Create test data for bookings (customers and courts)
       cy.updateStatusMessage(statusId, 'Creating test data for Bookings...', 'Please be patient...');

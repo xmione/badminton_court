@@ -58,7 +58,8 @@ class BookingForm(forms.ModelForm):
         
         return cleaned_data
 
-
+# Separate TimeEntry form
+class TimeEntryForm(forms.ModelForm):
     class Meta:
         model = TimeEntry
         fields = ['employee', 'clock_in', 'clock_out', 'notes']
@@ -78,4 +79,3 @@ class BookingForm(forms.ModelForm):
                 raise forms.ValidationError("Clock out time must be after clock in time.")
         
         return cleaned_data
-    

@@ -1,3 +1,4 @@
+// cypress/support/commands.cy.js
 // ***********************************************
 // This example commands.js shows you how to
 // create various custom commands and overwrite
@@ -53,7 +54,6 @@ import './commands/createVerifiedUser.cy.js'
 import './commands/verifyUser.cy.js'
 import './commands/setupTestAdmin.cy.js'
 import './commands/adminLogin.cy.js'
-import './commands/createAdminUser.cy.js'
 import './commands/createBookingTestData.cy.js'
 import './commands/createDeleteBookingData.cy.js'
 import './commands/highlightWithArrow.cy.js'

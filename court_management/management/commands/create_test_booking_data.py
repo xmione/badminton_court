@@ -9,17 +9,32 @@ from court_management.components.models import Customer, Court, Booking
 
 class Command(BaseCommand):
     help = 'Create test data for bookings (customers, courts, and bookings)'
-
+    
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--reset',
+            action='store_true',
+            help='Delete existing test data before creating new data',
+        )
+    
     def handle(self, *args, **options):
+        reset = options['reset']
+        
         try:
             with transaction.atomic():
-                # Delete existing test data to ensure clean state
-                Customer.objects.filter(name__in=["John Doe", "Jane Smith"]).delete()
-                Court.objects.filter(name__in=["Court 1", "Court 2"]).delete()
-                Booking.objects.filter(customer__name__in=["John Doe", "Jane Smith"]).delete()
+                # Define test data identifiers
+                test_customer_names = ["John Doe", "Jane Smith"]
+                test_court_names = ["Court 1", "Court 2"]
+                
+                # Delete existing test data if reset flag is provided
+                if reset:
+                    self.stdout.write('Deleting existing test booking data...')
+                    # Delete bookings first to avoid foreign key constraint issues
+                    Booking.objects.filter(customer__name__in=test_customer_names).delete()
+                    Customer.objects.filter(name__in=test_customer_names).delete()
+                    Court.objects.filter(name__in=test_court_names).delete()
                 
                 # Get domain from environment variable or settings
-                # Try multiple possible sources for the domain
                 domain = (
                     os.environ.get('POSTE_DOMAIN') or 
                     getattr(settings, 'POSTE_DOMAIN', None) or
@@ -27,33 +42,41 @@ class Command(BaseCommand):
                 )
                 
                 # Create test customers
-                john_doe = Customer.objects.create(
+                john_doe, created = Customer.objects.get_or_create(
                     name="John Doe",
-                    phone="1234567890",
-                    email=f"john@{domain}",
-                    active=True
+                    defaults={
+                        'phone': "1234567890",
+                        'email': f"john@{domain}",
+                        'active': True
+                    }
                 )
                 
-                jane_smith = Customer.objects.create(
+                jane_smith, created = Customer.objects.get_or_create(
                     name="Jane Smith",
-                    phone="9876543210",
-                    email=f"jane@{domain}",
-                    active=True
+                    defaults={
+                        'phone': "9876543210",
+                        'email': f"jane@{domain}",
+                        'active': True
+                    }
                 )
                 
                 # Create test courts
-                court_1 = Court.objects.create(
+                court_1, created = Court.objects.get_or_create(
                     name="Court 1",
-                    hourly_rate=20.00,
-                    description="Main court",
-                    active=True
+                    defaults={
+                        'hourly_rate': 20.00,
+                        'description': "Main court",
+                        'active': True
+                    }
                 )
                 
-                court_2 = Court.objects.create(
+                court_2, created = Court.objects.get_or_create(
                     name="Court 2",
-                    hourly_rate=25.00,
-                    description="Premium court",
-                    active=True
+                    defaults={
+                        'hourly_rate': 25.00,
+                        'description': "Premium court",
+                        'active': True
+                    }
                 )
                 
                 # Create a test booking for John Doe with timezone-aware datetimes
@@ -61,12 +84,14 @@ class Command(BaseCommand):
                 tomorrow = tomorrow.replace(hour=10, minute=0, second=0, microsecond=0)
                 end_time = tomorrow.replace(hour=11, minute=0)
                 
-                Booking.objects.create(
+                booking, created = Booking.objects.get_or_create(
                     customer=john_doe,
                     court=court_1,
                     start_time=tomorrow,
-                    end_time=end_time,
-                    fee=20.00
+                    defaults={
+                        'end_time': end_time,
+                        'fee': 20.00
+                    }
                 )
                 
                 self.stdout.write(self.style.SUCCESS(f'Successfully created test booking data with domain: {domain}'))

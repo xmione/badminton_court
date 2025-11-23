@@ -14,7 +14,7 @@ export const createBookingTestData = () => {
         cy.log(`Using environment: ${environment}`);
 
         // Execute Django management command with environment variables
-        cy.exec(`${pythonCommand} manage.py create_test_booking_data`, {
+        cy.exec(`${pythonCommand} manage.py create_test_booking_data --reset`, {
             cwd: projectRoot,
             env: {
                 // Pass the ENVIRONMENT variable so Django knows which .env file to load
