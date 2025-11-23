@@ -14,7 +14,7 @@ is_running_tests = (
 if is_running_tests:
     # Test configuration
     ACCOUNT_EMAIL_VERIFICATION = 'none'  # Temporarily disable email verification
-    print("🔧 TESTS DETECTED: Email verification disabled for testing")
+    print("TESTS DETECTED: Email verification disabled for testing")
 else:
     # Production/development settings
     ACCOUNT_EMAIL_VERIFICATION = 'mandatory'

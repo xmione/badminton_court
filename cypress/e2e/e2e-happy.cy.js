@@ -99,12 +99,10 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
   });
 
   it('should create a new booking', () => {
-    cy.pause();
-    cy.createNewBooking();
+        cy.createNewBooking();
   });
 
   it('should view booking details', () => {
-    cy.pause();
     cy.createNewBooking();
     cy.viewBookingDetails();
   });
@@ -119,12 +117,13 @@ describe('End-To-End Happy Path', { testIsolation: false }, () => {
   });
 
   it('should allow the deletion of an unpaid booking', () => {
+    cy.pause();
     cy.createDeleteBookingData();     
     cy.deleteBooking();
   });
 
   it('should not allow deletion of a paid booking', () => {
-    
+    cy.pause();
     cy.processPayment();     
     cy.deletePaidBooking();
     
