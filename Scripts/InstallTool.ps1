@@ -631,9 +631,13 @@ function Get-OpenSSHVersion {
     try {
         $sshPath = "C:\Windows\System32\OpenSSH\ssh.exe"
         if (Test-Path $sshPath) {
-            $version = & $sshPath -V 2>&1
-            if ($version -match "OpenSSH_([\d.]+)") {
-                return "OpenSSH_$($matches[1]) for Windows"
+            # Convert the stream to a string immediately
+            $rawOutput = (& $sshPath -V 2>&1) | Out-String
+            
+            # Use [^, ]+ to capture EVERYTHING until the first comma or space
+            if ($rawOutput -match "OpenSSH_for_Windows_([^, ]+)") {
+                $versionNum = $matches[1] # This will be "9.5p2"
+                return "OpenSSH_$versionNum for Windows"
             }
         }
         return $null

@@ -9,6 +9,10 @@
 #
 #=================================================================================
 
+param (
+    [string]$Version = "latest"
+)
+
 # Log function to write messages to a log file and console
 function Write-Log {
     param (
@@ -54,8 +58,15 @@ Write-Log "pnpm prefix: $pnpmConfig"
 
 Write-Log "Installing Vercel CLI..."
 
-# Install vercel using pnpm
-pnpm add -g vercel@37.14.0
+# Install vercel using pnpm (old version)
+# pnpm add -g vercel@37.14.0
+
+# Install vercel using the passed version
+if ($Version -eq "latest") {
+    pnpm add -g vercel
+} else {
+    pnpm add -g "vercel@$Version"
+}
 
 # Refresh the environment variables
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::User)

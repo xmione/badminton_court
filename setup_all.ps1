@@ -304,24 +304,40 @@ if (RelaunchAsAdmin) {
             $currentTool++
             $appName = $tool.appName
             $targetVersion = $tool.version
+            
             Write-Progress-Step "Processing $appName" $currentTool ($totalTools + 1)
             
-            # --- VERSION MISMATCH LOGIC ---
+            # --- FLEXIBLE INSTALLATION LOGIC ---
             $shouldInstall = $false
             $vFunc = if ($tool.versionFunction) { $tool.versionFunction } else { "Get-$($appName.Replace(' ', ''))Version" }
             $currentVersion = $null
 
-            if (Get-Command $vFunc -ErrorAction SilentlyContinue) {
+            # 1. Check if the tool exists using the tool's own checkCommand logic
+            $toolExists = $false
+            if ($tool.checkCommand) {
+                # Execute the checkCommand as a script block
+                $checkScript = [scriptblock]::Create($tool.checkCommand)
+                $toolExists = & $checkScript
+            } else {
+                # Fallback to standard Get-Command if no specific script is provided
+                $exeName = $appName.Replace(' ', '')
+                $toolExists = [bool](Get-Command $exeName -ErrorAction SilentlyContinue)
+            }
+
+            # 2. Try to get the version if it was found
+            if ($toolExists -and (Get-Command $vFunc -ErrorAction SilentlyContinue)) {
                 $vResult = & $vFunc
                 $currentVersion = if ($vResult -is [hashtable]) { $vResult.version } else { $vResult }
             }
 
-            if ($null -eq $currentVersion) {
+            # 3. Decision Tree
+            if (-not $toolExists) {
+                Write-Log "$appName not detected by checkCommand. Proceeding with installation." -Level "INFO"
                 $shouldInstall = $true
             } elseif ($Force) {
                 Write-Log "Force flag active. Reinstalling $appName." -Level "WARNING"
                 $shouldInstall = $true
-            } elseif ($currentVersion -ne $targetVersion) {
+            } elseif ($currentVersion -and ($currentVersion -ne $targetVersion)) {
                 Write-Log "Version mismatch for $appName (System: $currentVersion, Target: $targetVersion)" -Level "WARNING"
                 $title = "Update $appName?"
                 $msg = "Would you like to install the version from config ($targetVersion)?"
@@ -330,7 +346,11 @@ if (RelaunchAsAdmin) {
                     (New-Object System.Management.Automation.Host.ChoiceDescription "&No", "Skip and keep current.")
                 )
                 if ($host.ui.PromptForChoice($title, $msg, $choices, 1) -eq 0) { $shouldInstall = $true }
+            } else {
+                $displayVersion = if ($currentVersion) { $currentVersion } else { "Existing version" }
+                Write-Log "Skipping $appName ($displayVersion already present)." -Level "SUCCESS"
             }
+            # -----------------------------------
 
             if ($shouldInstall) {
                 $progressCallback = {
@@ -351,7 +371,6 @@ if (RelaunchAsAdmin) {
             
                 if ($results[$tool.appName]) { $needRestart = $true }
             } else {
-                Write-Log "Skipping $appName (Current Version: $currentVersion)." -Level "INFO"
                 $results[$appName] = $true
             }
         }
@@ -397,9 +416,12 @@ if (RelaunchAsAdmin) {
     catch {
         Write-Log "Fatal error during setup: $($_.Exception.Message)" -Level "ERROR"
         Write-Log "Stack trace: $($_.ScriptStackTrace)" -Level "ERROR"
-        exit 1
     }
     finally {
         Write-Log "=== SETUP COMPLETED ===" -Level "INFO"
+        if (-not $needRestart) {
+            Write-Host "`nPress any key to close this window..." -ForegroundColor Cyan
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
     }
 }

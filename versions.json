@@ -36,13 +36,14 @@
                              "manualInstallUrl": null,
                              "manualInstallPath": null,
                              "isCoreTool": false,
-                             "maxRetries": 2
+                             "maxRetries": 2,
+                             "version": "10.0.22621.1"
                          },
                          {
                              "appName": "Docker Desktop",
                              "versionFunction": "Get-DockerDesktopVersion",
                              "installCommand": "$version = \u00274.47.0.206054\u0027; $buildNumber = $version.Split(\u0027.\u0027)[-1]; $installerPath = Join-Path $env:TEMP \u0027DockerDesktopInstaller.exe\u0027; $downloadUrl = \"https://desktop.docker.com/win/main/amd64/$buildNumber/Docker%20Desktop%20Installer.exe\"; Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList \u0027install --quiet\u0027 -Wait; Remove-Item $installerPath -Force; Start-Sleep -Seconds 30",
-                             "checkCommand": "$dockerExe = Get-Command docker -ErrorAction SilentlyContinue; if (-not $dockerExe) { return $false }; try { $maxAttempts = 3; $attempt = 0; do { $attempt++; Start-Sleep -Seconds 20; $versionInfo = \u0026 docker version --format \u0027{{json .}}\u0027 2\u003e$null | ConvertFrom-Json 2\u003e$null; if ($versionInfo) { $installedVersion = $versionInfo.Client.Version; if ($installedVersion -like \u00274.47.0*\u0027) { return $true } } } while ($attempt -lt $maxAttempts); return $false } catch { return $false }",
+                             "checkCommand": "if (Get-Command docker -ErrorAction SilentlyContinue) { return $true } else { return (Test-Path \"${env:ProgramFiles}\\Docker\\Docker\\resources\\bin\\docker.exe\") }",
                              "envPath": "C:\\Program Files\\Docker\\Docker",
                              "manualInstallUrl": null,
                              "manualInstallPath": null,
@@ -60,7 +61,8 @@
                              "manualInstallUrl": null,
                              "manualInstallPath": null,
                              "isCoreTool": false,
-                             "maxRetries": 1
+                             "maxRetries": 1,
+                             "version": "15.2.0"
                          },
                          {
                              "appName": "nodejs",
@@ -107,7 +109,8 @@
                              "manualInstallUrl": null,
                              "manualInstallPath": null,
                              "isCoreTool": true,
-                             "maxRetries": 2
+                             "maxRetries": 2,
+                             "version": "2.89.0"
                          },
                          {
                              "appName": "nvm",
@@ -160,13 +163,14 @@
                          {
                              "appName": "Vercel CLI",
                              "versionFunction": "Get-VercelCLIVersion",
-                             "installCommand": "\u0026 \"$ScriptDir\\ivercel-win.ps1\"",
+                             "installCommand": ".\\Scripts\\ivercel-win.ps1 -Version 37.14.0",
                              "checkCommand": "Get-Command vercel -ErrorAction SilentlyContinue",
                              "envPath": "$env:APPDATA\\pnpm\\bin",
                              "manualInstallUrl": null,
                              "manualInstallPath": null,
-                             "isCoreTool": false,
-                             "maxRetries": 1
+                             "isCoreTool": true,
+                             "maxRetries": 1,
+                             "version": "37.14.0"
                          },
                          {
                              "appName": "Git Credential Manager",
@@ -205,7 +209,6 @@
                          {
                              "appName": "Python",
                              "versionFunction": "Get-PythonVersion",
-                             "version": "3.12.3",
                              "installer_url": "https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe",
                              "installCommand": "$installerUrl = \"https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe\"; $installerPath = \"$env:TEMP\\python-installer.exe\"; Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath; Start-Process -FilePath $installerPath -ArgumentList \"/quiet InstallAllUsers=1 PrependPath=1\" -Wait; Remove-Item $installerPath -Force",
                              "checkCommand": "$requiredVersion = \"3.12.3\"; $pythonPaths = @(\"$env:LocalAppData\\Programs\\Python\\Python312\\python.exe\", \"$env:ProgramFiles\\Python312\\python.exe\", \"$env:ProgramFiles\\Python39\\python.exe\"); foreach ($path in $pythonPaths) { if (Test-Path $path) { try { $installedVersion = \u0026 $path --version 2\u003e\u00261; if ($installedVersion -match $requiredVersion) { return $true } } catch { } } }; $pythonCmd = Get-Command python -ErrorAction SilentlyContinue; if ($pythonCmd) { try { $installedVersion = \u0026 $pythonCmd.Source --version 2\u003e\u00261; if ($installedVersion -match $requiredVersion) { return $true } } catch { } }; return $false",
@@ -213,7 +216,8 @@
                              "manualInstallUrl": null,
                              "manualInstallPath": null,
                              "isCoreTool": true,
-                             "maxRetries": 2
+                             "maxRetries": 2,
+                             "version": "3.12.3"
                          },
                          {
                              "appName": "ngrok",
@@ -224,7 +228,8 @@
                              "manualInstallUrl": "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip",
                              "manualInstallPath": "$env:TEMP\\ngrok.zip",
                              "isCoreTool": true,
-                             "maxRetries": 1
+                             "maxRetries": 1,
+                             "version": "3.22.1"
                          },
                          {
                              "appName": "FFmpeg",
