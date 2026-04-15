@@ -197,15 +197,6 @@ function SetupVCVars {
         if (Test-Path $candidate) {
             $vcvarsPath = $candidate
             Write-Log "Found vcvars64.bat at: $vcvarsPath" -Level "SUCCESS"
-            $vcvarsDir = Split-Path $vcvarsPath
-            # Add to PATH
-            $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-            if ($currentPath -notlike "*$vcvarsDir*") {
-                $newPath = "$currentPath;$vcvarsDir"
-                [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
-                $env:PATH = $newPath
-                Write-Log "Added to PATH: $vcvarsDir" -Level "SUCCESS"
-            }
             break
         }
     }
@@ -215,29 +206,46 @@ function SetupVCVars {
         return $false
     }
 
-    Write-Log "Applying vcvars64.bat environment variables..." -Level "INFO"
+    Write-Log "Extracting environment variables from vcvars64.bat..." -Level "INFO"
     try {
-        & cmd /c "`"$vcvarsPath`" && set" | ForEach-Object {
-            if ($_ -match "^(.*?)=(.*)$") {
+        # Capture the environment from CMD
+        $vcvarsEnv = & cmd /c "`"$vcvarsPath`" && set"
+        
+        # Track paths to add to session
+        $newPaths = @()
+
+        foreach ($line in $vcvarsEnv) {
+            if ($line -match "^(.*?)=(.*)$") {
                 $name = $matches[1]
                 $value = $matches[2]
 
                 if ($name -eq "PATH") {
-                    $pathsToAdd = ($value -split ';') | Where-Object { $_ -and ($_ -notin $env:PATH -split ';') }
-                    foreach ($p in $pathsToAdd) {
-                        $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-                        $newPath = "$currentPath;$p"
-                        [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
-                        $env:PATH = $newPath
-                        Write-Log "Added to PATH: $p" -Level "INFO"
+                    # Identify directories provided by vcvars that aren't in our current session yet
+                    $currentSessionPaths = $env:PATH -split ';'
+                    $vcvarsPaths = $value -split ';'
+                    foreach ($p in $vcvarsPaths) {
+                        if ($p -and ($p -notin $currentSessionPaths) -and (Test-Path $p)) {
+                            $newPaths += $p
+                        }
                     }
                 }
-                else {
+                elseif ($name -in @("INCLUDE", "LIB", "LIBPATH", "DevEnvDir", "VCINSTALLDIR", "WindowsSdkDir")) {
+                    # Save core build variables to the User scope so Python/Pip can see them
                     [System.Environment]::SetEnvironmentVariable($name, $value, "User")
+                    # Also apply to current session immediately
+                    Set-Content -Path "env:$name" -Value $value
                 }
             }
         }
-        Write-Log "vcvars64.bat environment applied successfully" -Level "SUCCESS"
+
+        # Apply new PATH entries to the current session only to prevent Registry corruption
+        if ($newPaths.Count -gt 0) {
+            $uniquePaths = $newPaths | Select-Object -Unique
+            $env:PATH = ($uniquePaths -join ';') + ";" + $env:PATH
+            Write-Log "Added $($uniquePaths.Count) Visual Studio directories to current session PATH." -Level "SUCCESS"
+        }
+
+        Write-Log "vcvars64.bat environment applied successfully." -Level "SUCCESS"
         return $true
     }
     catch {
@@ -275,7 +283,7 @@ if (RelaunchAsAdmin) {
         $results = @{}
         
         Write-Log "=== SYSTEM SETUP STARTED ===" -Level "INFO"
-        Write-Log "Script version: Enhanced v2.0" -Level "INFO"
+        Write-Log "Script version: Enhanced v2.1" -Level "INFO"
         Write-Log "Parameters: Force=$Force, NoRestart=$NoRestart, Verbose=$Verbose" -Level "INFO"
         Write-Log "Using version configuration from versions.json" -Level "INFO"
         
@@ -294,25 +302,58 @@ if (RelaunchAsAdmin) {
         # Install core tools
         foreach ($tool in $coreTools) {
             $currentTool++
-            Write-Progress-Step "Installing $($tool.appName)" $currentTool ($totalTools + 1)
+            $appName = $tool.appName
+            $targetVersion = $tool.version
+            Write-Progress-Step "Processing $appName" $currentTool ($totalTools + 1)
             
-            $progressCallback = {
-                param($Step, $Status)
-                Write-Progress-Step $Step $currentTool ($totalTools + 1)
+            # --- VERSION MISMATCH LOGIC ---
+            $shouldInstall = $false
+            $vFunc = if ($tool.versionFunction) { $tool.versionFunction } else { "Get-$($appName.Replace(' ', ''))Version" }
+            $currentVersion = $null
+
+            if (Get-Command $vFunc -ErrorAction SilentlyContinue) {
+                $vResult = & $vFunc
+                $currentVersion = if ($vResult -is [hashtable]) { $vResult.version } else { $vResult }
             }
+
+            if ($null -eq $currentVersion) {
+                $shouldInstall = $true
+            } elseif ($Force) {
+                Write-Log "Force flag active. Reinstalling $appName." -Level "WARNING"
+                $shouldInstall = $true
+            } elseif ($currentVersion -ne $targetVersion) {
+                Write-Log "Version mismatch for $appName (System: $currentVersion, Target: $targetVersion)" -Level "WARNING"
+                $title = "Update $appName?"
+                $msg = "Would you like to install the version from config ($targetVersion)?"
+                $choices = @(
+                    (New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Overwrite system version."),
+                    (New-Object System.Management.Automation.Host.ChoiceDescription "&No", "Skip and keep current.")
+                )
+                if ($host.ui.PromptForChoice($title, $msg, $choices, 1) -eq 0) { $shouldInstall = $true }
+            }
+
+            if ($shouldInstall) {
+                $progressCallback = {
+                    param($Step, $Status)
+                    Write-Progress-Step $Step $currentTool ($totalTools + 1)
+                }
             
-            $results[$tool.appName] = Install-Tool `
-                -appName $tool.appName `
-                -installCommand ([scriptblock]::Create($tool.installCommand)) `
-                -checkCommand ([scriptblock]::Create($tool.checkCommand)) `
-                -envPath $tool.envPath `
-                -manualInstallUrl $tool.manualInstallUrl `
-                -manualInstallPath $tool.manualInstallPath `
-                -ForceUpdate:$Force `
-                -MaxRetries $tool.maxRetries `
-                -ProgressCallback $progressCallback
+                $results[$tool.appName] = Install-Tool `
+                    -appName $tool.appName `
+                    -installCommand ([scriptblock]::Create($tool.installCommand)) `
+                    -checkCommand ([scriptblock]::Create($tool.checkCommand)) `
+                    -envPath $tool.envPath `
+                    -manualInstallUrl $tool.manualInstallUrl `
+                    -manualInstallPath $tool.manualInstallPath `
+                    -ForceUpdate:$true `
+                    -MaxRetries $tool.maxRetries `
+                    -ProgressCallback $progressCallback
             
-            if ($results[$tool.appName]) { $needRestart = $true }
+                if ($results[$tool.appName]) { $needRestart = $true }
+            } else {
+                Write-Log "Skipping $appName (Current Version: $currentVersion)." -Level "INFO"
+                $results[$appName] = $true
+            }
         }
         
         # Setup VCVars environment

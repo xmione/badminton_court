@@ -61,8 +61,8 @@ try {
         Write-Host "Verbose mode enabled" -ForegroundColor Yellow
     }
     
-    # Resolve the JSON path to ensure it's absolute
-    $JsonPath = Resolve-Path $JsonPath -ErrorAction Stop
+    # FIX 1: Resolve the JSON path to ensure it's absolute (extracted as string path)
+    $JsonPath = (Resolve-Path $JsonPath -ErrorAction Stop).Path
     Write-Verbose "JSON file path resolved to: $JsonPath"
     
     # Create backup if not skipped
@@ -227,7 +227,10 @@ try {
     }
     
     # Save updated JSON
-    $jsonContent | ConvertTo-Json -Depth 10 | Set-Content -Path $JsonPath
+    # FIX 2: Correcting the double space in JSON output
+    $finalJson = $jsonContent | ConvertTo-Json -Depth 10
+    $finalJson = $finalJson -replace '":\s+', '": '
+    $finalJson | Set-Content -Path $JsonPath
     
     # Display summary
     Write-Host "=== UPDATE SUMMARY ===" -ForegroundColor Cyan

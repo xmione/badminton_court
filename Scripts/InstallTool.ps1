@@ -677,6 +677,11 @@ function Get-VercelCLIVersion {
 
 # Function to get Git Credential Manager version
 function Get-GitCredentialManagerVersion {
+    # Methodical Step: Check if Git is available first to prevent GCM crash
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        return $null 
+    }
+
     try {
         $gcmPaths = @(
             "$env:ProgramFiles\Git\mingw64\bin\git-credential-manager.exe",
@@ -685,7 +690,8 @@ function Get-GitCredentialManagerVersion {
         
         foreach ($path in $gcmPaths) {
             if (Test-Path $path) {
-                $version = & $path --version
+                # Use 2>$null to catch any stray startup errors
+                $version = & $path --version 2>$null
                 if ($version -match "([\d.]+)") {
                     return $matches[1]
                 }
