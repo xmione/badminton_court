@@ -48,7 +48,7 @@ param (
 )
 
 # Get the script directory
- $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 # Import the InstallTool module from the same directory
 . "$PSScriptRoot\InstallTool.ps1"
@@ -64,7 +64,7 @@ if (-not ([System.IO.Path]::IsPathRooted($RequirementsPath))) {
 }
 
 # Log file path
- $logFileName = "install_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+$logFileName = "install_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 
 # Redirect all output to the log file
 Start-Transcript -Path $logFileName -Append
@@ -72,10 +72,10 @@ Start-Transcript -Path $logFileName -Append
 # Main script
 try {
     # Resolve the JSON path to ensure it's absolute
-    $JsonPath = Resolve-Path $JsonPath -ErrorAction Stop
+    $JsonPath = (Resolve-Path $JsonPath -ErrorAction Stop).Path
     
     # Resolve the requirements path to ensure it's absolute
-    $RequirementsPath = Resolve-Path $RequirementsPath -ErrorAction Stop
+    $RequirementsPath = (Resolve-Path $RequirementsPath -ErrorAction Stop).Path
     
     # Read JSON file
     $jsonContent = Get-Content -Path $JsonPath -Raw | ConvertFrom-Json
@@ -83,14 +83,47 @@ try {
     # Update system tools using Install-Tool function
     Write-Host "Updating system tools..." -ForegroundColor Cyan
     foreach ($tool in $jsonContent.system_tools) {
+
+        # --- NEW CORE TOOL CHECK ---
+        # Skip if the tool is explicitly marked as NOT a core tool
+        if ($tool.PSObject.Properties.Name.Contains("isCoreTool") -and $tool.isCoreTool -eq $false) {
+            Write-Host "Skipping non-core tool: $($tool.appName)" -ForegroundColor Gray
+            continue
+        }
+        
+        # --- PATH RESOLUTION FIX ---
+        # Detects if the installCommand is a local script (.\) and resolves it to an absolute path
+        $rawCommand = $tool.installCommand
+        if ($rawCommand -like ".\*") {
+            # Extract script name and arguments
+            $parts = $rawCommand -split " ", 2
+            $scriptName = $parts[0].Substring(2) # Remove .\
+            
+            # Use $scriptArgs instead of the reserved $args variable
+            $scriptArgs = if ($parts.Count -gt 1) { $parts[1] } else { "" }
+            
+            $absoluteScriptPath = Join-Path -Path $PSScriptRoot -ChildPath $scriptName
+            $finalCommand = "$absoluteScriptPath $scriptArgs".Trim()
+            $executableCommand = [scriptblock]::Create($finalCommand)
+        } else {
+            $executableCommand = [scriptblock]::Create($rawCommand)
+        }
+
+        # --- PRE-INSTALL ENVIRONMENT REFRESH ---
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+
         Install-Tool -appName $tool.appName `
-                    -installCommand ([scriptblock]::Create($tool.installCommand)) `
+                    -installCommand $executableCommand `
                     -checkCommand ([scriptblock]::Create($tool.checkCommand)) `
                     -envPath $tool.envPath `
                     -manualInstallUrl $tool.manualInstallUrl `
                     -manualInstallPath $tool.manualInstallPath `
                     -ForceUpdate:$ForceUpdate `
                     -MaxRetries $tool.maxRetries
+
+        # --- POST-INSTALL ENVIRONMENT REFRESH ---
+        # Refreshes the session path so the verification check (checkCommand) sees the new tool
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
     }
     
     # Update Python packages from requirements.txt
