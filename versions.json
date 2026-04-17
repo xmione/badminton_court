@@ -31,7 +31,7 @@
                             "appName": "Windows SDK",
                             "versionFunction": "Get-WindowsSDKVersion",
                             "installCommand": ". \"$PSScriptRoot\\Scripts\\Install-WindowsSDK.ps1\" -DisableEnter",
-                            "checkCommand": "Test-Path \"C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\x64\\sn.exe\"",
+                            "checkCommand": "Test-Path \"C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\x64\\signtool.exe\"",
                             "envPath": "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\x64",
                             "manualInstallUrl": "https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/",
                             "manualInstallPath": null,
