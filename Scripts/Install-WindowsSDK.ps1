@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Installs the Windows 11 24H2 SDK (Build 10.0.26100.0) and promotes binaries to the system Kits folder.        
+    Installs the Windows 11 24H2 SDK (Build 10.0.26100.0) and promotes binaries to the system Kits folder.         
 .DESCRIPTION
     This script performs the following steps:
     1. Checks for administrative privileges and relaunches itself with elevation if necessary.
@@ -135,11 +135,11 @@ function Install-WindowsSDK {
         DisplayVersion  = $version
         Publisher       = "Microsoft Corporation"
         InstallLocation = $systemPath
-        NoModify        = 1
-        NoRepair        = 1
+        NoModify         = 1
+        NoRepair         = 1
         UninstallString = "powershell.exe -Command ""Remove-Item '$regPath' -Force"""
     }
-    if (!(Test-Path $regPath)) { New-Item $regPath -Force }
+    if (!(Test-Path $regPath)) { New-Item $regPath -Force | Out-Null }
     foreach ($prop in $regProps.GetEnumerator()) { Set-ItemProperty $regPath $prop.Key $prop.Value }
 
     # Phase 5: Final Cleanup (Now including the unpack folder)

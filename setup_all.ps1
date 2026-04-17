@@ -80,11 +80,11 @@ param (
 . "$PSScriptRoot\Scripts\InstallTool.ps1"
 
 # Load version configuration
- $versions = Get-Content "$PSScriptRoot\versions.json" | ConvertFrom-Json
+$versions = Get-Content "$PSScriptRoot\versions.json" | ConvertFrom-Json
 
 # Enhanced logging and progress tracking
- $Global:SetupStartTime = Get-Date
- $Global:LogFile = $LogFile
+$Global:SetupStartTime = Get-Date
+$Global:LogFile = $LogFile
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
@@ -207,9 +207,15 @@ function SetupVCVars {
     }
 
     Write-Log "Extracting environment variables from vcvars64.bat..." -Level "INFO"
+    
+    # FIX: Bypass CMD length limit using a temporary batch file
+    $tempBat = Join-Path $env:TEMP "vc_capture.bat"
+    "@echo off`ncall `"$vcvarsPath`"`nset" | Set-Content -Path $tempBat -Encoding ASCII
+
     try {
         # Capture the environment from CMD
-        $vcvarsEnv = & cmd /c "`"$vcvarsPath`" && set"
+        $vcvarsEnv = & cmd /c $tempBat
+        if (Test-Path $tempBat) { Remove-Item $tempBat -Force -ErrorAction SilentlyContinue }
         
         # Track paths to add to session
         $newPaths = @()
@@ -353,6 +359,9 @@ if (RelaunchAsAdmin) {
             # -----------------------------------
 
             if ($shouldInstall) {
+                # FIX: Dynamically expand PSScriptRoot from JSON
+                $expandedCmd = $ExecutionContext.InvokeCommand.ExpandString($tool.installCommand)
+
                 $progressCallback = {
                     param($Step, $Status)
                     Write-Progress-Step $Step $currentTool ($totalTools + 1)
@@ -360,7 +369,7 @@ if (RelaunchAsAdmin) {
             
                 $results[$tool.appName] = Install-Tool `
                     -appName $tool.appName `
-                    -installCommand ([scriptblock]::Create($tool.installCommand)) `
+                    -installCommand ([scriptblock]::Create($expandedCmd)) `
                     -checkCommand ([scriptblock]::Create($tool.checkCommand)) `
                     -envPath $tool.envPath `
                     -manualInstallUrl $tool.manualInstallUrl `
