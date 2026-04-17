@@ -184,80 +184,53 @@ function RelaunchAsAdmin {
 }
 
 function SetupVCVars {
-    $vcvarsCandidates = @(
-        "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat",
-        "${env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat",
-        "${env:ProgramFiles}\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat",
-        "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat",
-        "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
-    )
-
-    $vcvarsPath = $null
-    foreach ($candidate in $vcvarsCandidates) {
-        if (Test-Path $candidate) {
-            $vcvarsPath = $candidate
-            Write-Log "Found vcvars64.bat at: $vcvarsPath" -Level "SUCCESS"
-            break
-        }
-    }
-
-    if (-not $vcvarsPath) {
-        Write-Log "vcvars64.bat not found. MSVC toolchain is not fully installed." -Level "ERROR"
+    # 1. Locate vswhere.exe (Standard VS locator)
+    $vsWherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (!(Test-Path $vsWherePath)) {
+        Write-Log "vswhere.exe not found. Cannot resolve VS paths." -Level "ERROR"
         return $false
     }
 
-    Write-Log "Extracting environment variables from vcvars64.bat..." -Level "INFO"
-    
-    # FIX: Bypass CMD length limit using a temporary batch file
-    $tempBat = Join-Path $env:TEMP "vc_capture.bat"
-    "@echo off`ncall `"$vcvarsPath`"`nset" | Set-Content -Path $tempBat -Encoding ASCII
+    # 2. Find the latest installation path
+    $vsInstallPath = & $vsWherePath -latest -products * -property installationPath
+    if (!$vsInstallPath) {
+        Write-Log "Visual Studio installation not found." -Level "ERROR"
+        return $false
+    }
+
+    Write-Log "Found VS at: $vsInstallPath" -Level "INFO"
 
     try {
-        # Capture the environment from CMD
-        $vcvarsEnv = & cmd /c $tempBat
-        if (Test-Path $tempBat) { Remove-Item $tempBat -Force -ErrorAction SilentlyContinue }
+        # 3. Resolve the MSVC Tools version directory
+        $toolsRoot = Join-Path $vsInstallPath "VC\Tools\MSVC"
+        if (!(Test-Path $toolsRoot)) { throw "MSVC Tools folder missing." }
         
-        # Track paths to add to session
-        $newPaths = @()
+        # Get the latest version folder (e.g., 14.40.33810)
+        $version = Get-ChildItem $toolsRoot | Sort-Object Name -Descending | Select-Object -First 1 -ExpandProperty Name
+        $msvcBinPath = Join-Path $toolsRoot "$version\bin\Hostx64\x64"
 
-        foreach ($line in $vcvarsEnv) {
-            if ($line -match "^(.*?)=(.*)$") {
-                $name = $matches[1]
-                $value = $matches[2]
-
-                if ($name -eq "PATH") {
-                    # Identify directories provided by vcvars that aren't in our current session yet
-                    $currentSessionPaths = $env:PATH -split ';'
-                    $vcvarsPaths = $value -split ';'
-                    foreach ($p in $vcvarsPaths) {
-                        if ($p -and ($p -notin $currentSessionPaths) -and (Test-Path $p)) {
-                            $newPaths += $p
-                        }
-                    }
-                }
-                elseif ($name -in @("INCLUDE", "LIB", "LIBPATH", "DevEnvDir", "VCINSTALLDIR", "WindowsSdkDir")) {
-                    # Save core build variables to the User scope so Python/Pip can see them
-                    [System.Environment]::SetEnvironmentVariable($name, $value, "User")
-                    # Also apply to current session immediately
-                    Set-Content -Path "env:$name" -Value $value
-                }
+        if (Test-Path $msvcBinPath) {
+            # 4. Inject into current session PATH
+            $currentPaths = $env:PATH -split ';'
+            if ($msvcBinPath -notin $currentPaths) {
+                $env:PATH = "$msvcBinPath;" + $env:PATH
+                Write-Log "Injected MSVC binaries into PATH." -Level "SUCCESS"
             }
-        }
 
-        # Apply new PATH entries to the current session only to prevent Registry corruption
-        if ($newPaths.Count -gt 0) {
-            $uniquePaths = $newPaths | Select-Object -Unique
-            $env:PATH = ($uniquePaths -join ';') + ";" + $env:PATH
-            Write-Log "Added $($uniquePaths.Count) Visual Studio directories to current session PATH." -Level "SUCCESS"
+            # 5. Set User-level variable to match your original script logic
+            $vcDir = Join-Path $vsInstallPath "VC\"
+            [System.Environment]::SetEnvironmentVariable("VCINSTALLDIR", $vcDir, "User")
+            Set-Content -Path "env:VCINSTALLDIR" -Value $vcDir
+            
+            Write-Log "VCVars environment resolved natively." -Level "SUCCESS"
+            return $true
         }
-
-        Write-Log "vcvars64.bat environment applied successfully." -Level "SUCCESS"
-        return $true
     }
     catch {
-        Write-Log "Failed to apply vcvars64.bat environment: $($_.Exception.Message)" -Level "ERROR"
+        Write-Log "Native resolution failed: $($_.Exception.Message)" -Level "ERROR"
         return $false
     }
+    return $false
 }
 
 function Show-Summary {
