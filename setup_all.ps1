@@ -420,8 +420,8 @@ if (RelaunchAsAdmin) {
     finally {
         Write-Log "=== SETUP COMPLETED ===" -Level "INFO"
         if (-not $needRestart) {
-            Write-Host "`nPress any key to close this window..." -ForegroundColor Cyan
-            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+            Write-Host "`nPress Enter key to close this window..." -ForegroundColor Cyan
+            Read-Host | Out-Null
         }
     }
 }

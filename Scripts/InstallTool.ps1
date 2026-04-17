@@ -290,6 +290,8 @@ function Get-WindowsSDKVersion {
         if (-not $installedSDKs) {
             # Try to find SDK by checking common paths
             $sdkPaths = @(
+                "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\10.0.26100.0\um\x64\kernel32.lib",
+                "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\10.0.22621.0\um\x64\kernel32.lib",
                 "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\10.0.22621.1\um\x64\kernel32.lib",
                 "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\10.0.20348.0\um\x64\kernel32.lib",
                 "${env:ProgramFiles(x86)}\Windows Kits\10\Lib\10.0.22000.0\um\x64\kernel32.lib"
