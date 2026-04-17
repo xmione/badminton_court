@@ -28,16 +28,16 @@
                              "version": "17.14.36518.9"
                          },
                          {
-                            "appName": "Windows SDK",
-                            "versionFunction": "Get-WindowsSDKVersion",
-                            "installCommand": "$url='https://go.microsoft.com/fwlink/?linkid=2208844'; $out=\"$env:TEMP\\winsdksetup.exe\"; $wc=New-Object System.Net.WebClient; $req=[System.Net.WebRequest]::Create($url); $res=$req.GetResponse(); $total=$res.ContentLength; $res.Close(); $wc.DownloadFileAsync($url, $out); while($wc.IsBusy){ $file=Get-Item $out -ErrorAction SilentlyContinue; if($file){ $cur=$file.Length; $pct=[Math]::Min(99, [Math]::Round(($cur/$total)*100, 0)); Write-Progress -Activity 'Installing Windows SDK' -Status \"Downloading: $([Math]::Round($cur/1MB, 2)) MB / $([Math]::Round($total/1MB, 2)) MB\" -PercentComplete $pct; Write-Host \"`rDownloading: $([Math]::Round($cur/1MB, 2)) MB / $([Math]::Round($total/1MB, 2)) MB ($pct%)\" -NoNewline }; Start-Sleep -Seconds 1 }; Write-Host \"`nDownload Complete. Starting Install...\"; Start-Process $out -ArgumentList '/quiet /norestart /features OptionId.DesktopCPPx64 OptionId.SigningTools' -Wait; Remove-Item $out",
-                            "checkCommand": "Test-Path \"C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22621.0\\x64\\sn.exe\"",
-                            "envPath": "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.22621.0\\x64",
-                            "manualInstallUrl": "https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/",
-                            "manualInstallPath": null,
-                            "isCoreTool": true,
-                            "maxRetries": 2,
-                            "version": "10.0.22621.2428"
+                             "appName": "Windows SDK",
+                             "versionFunction": "Get-WindowsSDKVersion",
+                             "installCommand": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"C:\\repo\\badminton_court\\Scripts\\Install-WindowsSDK.ps1\" -DisableEnter",
+                             "checkCommand": "Test-Path \"C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\x64\\sn.exe\"",
+                             "envPath": "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\x64",
+                             "manualInstallUrl": "https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/",
+                             "manualInstallPath": null,
+                             "isCoreTool": true,
+                             "maxRetries": 2,
+                             "version": "10.0.26100.0"
                          },
                          {
                             "appName": "Docker Desktop",
