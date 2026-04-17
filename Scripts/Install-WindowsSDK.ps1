@@ -64,14 +64,17 @@ function Install-WindowsSDK {
     Write-Host ("`rDownloading: {0:N2} MB / {0:N2} MB (100%)" -f ((Get-Item $installer).Length/1MB)) -ForegroundColor Green
     Write-Host "`nDownload Complete."
 
-    # Phase 2: Extracting Components (Layout)
+   # Phase 2: Extracting Components (Layout)
     Write-Host "`nPhase 2/3: Extracting Components (Layout Mode)..."
     $installProcess = Start-Process $installer -ArgumentList "/layout `"$installPath`" /quiet /norestart" -PassThru
     
+    # We estimate 1310MB for the bar, but we WAIT for the actual process to exit
     $totalEstSize = 1310MB 
     while (!$installProcess.HasExited) {
         $currentSize = (Get-ChildItem $installPath -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
         if ($null -eq $currentSize) { $currentSize = 0 }
+        
+        # Keep progress bar at 99% until the process actually finishes
         $pct = [Math]::Min(99, [Math]::Round(($currentSize / $totalEstSize) * 100, 0))
         Write-Host ("`rExtracting: {0:N2} MB / {1:N2} MB ({2}%)" -f ($currentSize/1MB), ($totalEstSize/1MB), $pct) -NoNewline
         Start-Sleep -Seconds 1
@@ -80,12 +83,35 @@ function Install-WindowsSDK {
 
     # --- Phase 3: Surgical Promotion to System Folder ---
     Write-Host "`nPhase 3/3: Promoting Binaries to System Path..." -ForegroundColor Cyan
+    
+    # Check if the folder even exists before searching
+    if (!(Test-Path $installPath)) {
+        Write-Host "ERROR: Layout folder $installPath is missing. You may need to run the script again to redownload." -ForegroundColor Red
+        if (-not $DisableEnter) { Read-Host "Press Enter to exit"; exit } else { exit }
+    }
+
+    # Search for the MSI
+    $msi = Get-ChildItem -Path "C:\SDK_24H2_Portable\Installers" -Filter "Windows SDK Desktop Tools x64-x86_en-us.msi" -Recurse | Select-Object -ExpandProperty FullName -First 1
+    $unpackPath = Join-Path $env:TEMP "SDK_Unpack"
+    
+    if ($null -ne $msi -and (Test-Path $msi)) {
+        Write-Host "Found MSI at: $msi" -ForegroundColor Gray
+        Write-Host "Unpacking build tools from MSI..." -ForegroundColor Gray
+        
+        if (Test-Path $unpackPath) { Remove-Item $unpackPath -Recurse -Force -ErrorAction SilentlyContinue }
+        Start-Process msiexec -ArgumentList "/a `"$msi`" /qb TARGETDIR=`"$unpackPath`"" -Wait
+    } else {
+        Write-Host "ERROR: Could not locate 'Windows SDK Desktop Tools-x86_en-us.msi' in $installPath" -ForegroundColor Red
+        Write-Host "The folder might be empty or corrupted." -ForegroundColor Yellow
+        if (-not $DisableEnter) { Read-Host "Press Enter to exit"; exit } else { exit }
+    }
+
     $kitFolders = @("bin", "Include", "Lib", "Platforms", "References", "UnionMetadata")
 
     if (!(Test-Path $systemPath)) { New-Item -ItemType Directory -Path $systemPath -Force | Out-Null }
 
     foreach ($folder in $kitFolders) {
-        $source = Join-Path $installPath $folder
+        $source = Join-Path $unpackPath "Windows Kits\10\$folder"
         $destination = Join-Path $systemPath $folder
         
         if (Test-Path $source) {
@@ -100,8 +126,9 @@ function Install-WindowsSDK {
         }
     }
 
-    # Phase 3: Register in "Installed Apps" List
+    # Phase 4: Register in "Installed Apps" List
     Write-Host "Registering in Windows Installed Apps..." -ForegroundColor Green
+    $version = "10.0.26100.0"
     $regPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\WindowsSDK_24H2_Manual"
     $regProps = @{
         DisplayName     = "Windows Software Development Kit - $version (Manual)"
@@ -115,9 +142,9 @@ function Install-WindowsSDK {
     if (!(Test-Path $regPath)) { New-Item $regPath -Force }
     foreach ($prop in $regProps.GetEnumerator()) { Set-ItemProperty $regPath $prop.Key $prop.Value }
 
-    # Final Cleanup of Clutter
+    # Phase 5: Final Cleanup (Now including the unpack folder)
     Write-Host "Cleaning temporary folders..." -ForegroundColor Gray
-    Remove-Item $downloadFolder, $installPath -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item $downloadFolder, $installPath, $unpackPath -Recurse -Force -ErrorAction SilentlyContinue
 
     Write-Host "SUCCESS: SDK is now 'Properly' installed and registered." -ForegroundColor Green
     if (-not $DisableEnter) { Read-Host "Press Enter to exit" }
