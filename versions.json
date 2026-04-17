@@ -35,7 +35,7 @@
                             "envPath": "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.26100.0\\x64",
                             "manualInstallUrl": "https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/",
                             "manualInstallPath": null,
-                            "isCoreTool": true,
+                            "isCoreTool": false,
                             "maxRetries": 2,
                             "version": "10.0.26100.0"
                         },
@@ -168,7 +168,7 @@
                              "envPath": "$env:APPDATA\\pnpm\\bin",
                              "manualInstallUrl": null,
                              "manualInstallPath": null,
-                             "isCoreTool": true,
+                             "isCoreTool": false,
                              "maxRetries": 1,
                              "version": "37.14.0"
                          },
