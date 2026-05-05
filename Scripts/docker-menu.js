@@ -351,7 +351,12 @@ async function executeMenuOption(choice) {
       runCommand('npm run docker:cypress-run-connectivity');
       await pause();
       break;
-      
+    case '5.8':
+      console.log('\x1b[33mInstalling Cypress...\x1b[0m');
+      runCommand('npx cypress install');
+      await pause();
+      break;
+
     // Docker Presentation Environment
     case '6.1':
       console.log('\x1b[33mSelect and run Cypress test for presentation...\x1b[0m');
@@ -802,6 +807,7 @@ async function showMenu() {
     console.log('   5.5. Run Cypress tests (headed) in new container');
     console.log('   5.6. Run Cypress tests (headless) in new container');
     console.log('   5.7. Run connectivity tests (headless)');
+    console.log('   5.8. Install Cypress');
     console.log('');
     console.log('\x1b[36m6. DOCKER PRESENTATION ENVIRONMENT\x1b[0m');
     console.log('   6.1. Select and run Cypress test for presentation');
