@@ -25,11 +25,11 @@ WORKDIR /e2e
 # Remove any existing cypress.json to avoid conflicts
 RUN rm -f cypress.json
 
-# Copy package.json and package-lock.json for dependencies
-COPY package*.json ./
+# Copy package.json and pnpm-lock.yaml for dependencies (NOT package-lock.json)
+COPY package.json pnpm-lock.yaml ./
 
-# Install Node.js dependencies
-RUN npm ci
+# Install pnpm globally then use it to install exact dependencies from lockfile
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 # Copy Cypress configuration and tests to the correct location
 COPY cypress/ ./cypress/

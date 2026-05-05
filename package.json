@@ -2,7 +2,7 @@
   "name": "badminton-court-management",
   "version": "1.0.0",
   "description": "Badminton Court Management System",
-  "scripts": {
+"scripts": {
     "menu": "echo '📋 Showing Commands Menu...' && call Scripts\\menu.bat",
     "certs:create": "echo 'Creating openssl certificates...' && node Scripts/generate-certs.js",
     "certs:create:admin": "echo 'Run this in an Administrator terminal!' && node Scripts/generate-certs.js --elevated",
@@ -42,33 +42,33 @@
     "docker:cypress-run-headed": "echo '🚀 Running Cypress tests (headed) in new container...' && docker-compose --env-file .env.docker --profile test run --rm cypress cypress run --headed",
     "docker:cypress-run-headless": "echo '⚡ Running Cypress tests (headless) in new container...' && docker-compose --env-file .env.docker --profile test run --rm cypress cypress run --headless $@",
     "docker:cypress-run-connectivity": "echo '⚡ Running connectivity tests (headless) in new container...' && docker-compose --env-file .env.docker --profile test run --rm cypress cypress run --headless --spec 'cypress/e2e/connectivity.cy.js'",
-    "docker:select-presentation": "echo '🎬 Select a Cypress test from the list and run it for presentation (headed) in Docker...' && docker-compose --env-file .env.docker --profile presentation run --rm presentation node scripts/create-presentation-docker.js",
-    "docker:post-process-videos": "echo '⚡ Running Post-Process Videos in Docker...' && docker-compose --env-file .env.docker --profile presentation run --rm presentation node scripts/post-process-videos-docker.js",
+    "docker:select-presentation": "echo '🎬 Select a Cypress test from the list and run it for presentation (headed) in Docker...' && docker-compose --env-file .env.docker --profile dev --profile presentation run --rm presentation node scripts/create-presentation-docker.js",
+    "docker:post-process-videos": "echo '⚡ Running Post-Process Videos in Docker...' && docker-compose --env-file .env.docker --profile dev --profile presentation run --rm presentation node scripts/post-process-videos-docker.js",
     "docker:cypress-presentation-spec": "echo '🚀 Running Docker Cypress tests for presentation spec...' && docker-compose --env-file .env.docker --profile test exec cypress run --headed --browser chrome --config video=true --spec && npm run docker:post-process-videos",
-    "docker:tunnel-build": "echo '🐳 Building tunnel service...' && docker-compose --env-file .env.docker --profile tunnel --progress=plain build tunnel",
-    "docker:tunnel-build-nocache": "echo '🐳 Building tunnel service (no cache)...' && docker-compose --env-file .env.docker --profile tunnel --progress=plain build tunnel --no-cache",
-    "docker:tunnel": "echo '🚀 Starting docker tunnel...' && docker-compose --env-file .env.docker --profile tunnel up tunnel",
-    "docker:tunnel-detached": "echo '🚀 Starting docker tunnel (detached)...' && docker-compose --env-file .env.docker --profile tunnel up -d tunnel",
-    "docker:tunnel-stop": "echo '🛑 Stopping docker tunnel...' && docker-compose --env-file .env.docker --profile tunnel stop tunnel",
-    "docker:tunnel-logs": "echo '📋 Showing tunnel logs...' && docker-compose --env-file .env.docker --profile tunnel logs -f tunnel",
+    "docker:tunnel-build": "echo '🐳 Building tunnel service...' && docker-compose --env-file .env.docker --profile dev --profile tunnel --progress=plain build tunnel",
+    "docker:tunnel-build-nocache": "echo '🐳 Building tunnel service (no cache)...' && docker-compose --env-file .env.docker --profile dev --profile tunnel --progress=plain build tunnel --no-cache",
+    "docker:tunnel": "echo '🚀 Starting docker tunnel...' && docker-compose --env-file .env.docker --profile dev --profile tunnel up tunnel",
+    "docker:tunnel-detached": "echo '🚀 Starting docker tunnel (detached)...' && docker-compose --env-file .env.docker --profile dev --profile tunnel up -d tunnel",
+    "docker:tunnel-stop": "echo '🛑 Stopping docker tunnel...' && docker-compose --env-file .env.docker --profile dev --profile tunnel stop tunnel",
+    "docker:tunnel-logs": "echo '📋 Showing tunnel logs...' && docker-compose --env-file .env.docker --profile dev --profile tunnel logs -f tunnel",
     "docker:build": "echo '🐳 Building all service images...' && docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation --progress=plain build",
     "docker:build-nocache": "echo '🐳 Building all service images (no cache)...' && docker-compose --env-file .env.docker --profile dev --profile test --profile tunnel --profile presentation --progress=plain build --no-cache",
     "docker:build-dev": "echo '🐳 Building dev service images...' && docker-compose --env-file .env.docker --profile dev --progress=plain build",
     "docker:build-dev-nocache": "echo '🐳 Building dev service images (no cache)...' && docker-compose --env-file .env.docker --profile dev --progress=plain build --no-cache",
     "docker:build-cypress": "echo '🐳 Building Cypress service image...' && docker-compose --env-file .env.docker --profile test --progress=plain build cypress",
     "docker:build-cypress-nocache": "echo '🐳 Building Cypress service image (no cache)...' && docker-compose --env-file .env.docker --profile test --progress=plain build cypress --no-cache",
-    "docker:build-presentation": "echo '🐳 Building presentation service images...' && docker-compose --env-file .env.docker --profile presentation --progress=plain build",
-    "docker:build-presentation-nocache": "echo '🐳 Building presentation service images (no cache)...' && docker-compose --env-file .env.docker --profile presentation --progress=plain build --no-cache",
-    "docker:rebuild": "echo '🐳 Completely rebuilding all services...' && docker-compose --env-file .env.docker --profile dev down -v --rmi all && docker-compose --env-file .env.docker --profile test down -v --rmi all && docker-compose --env-file .env.docker --profile presentation down -v --rmi all && docker-compose --env-file .env.docker --profile tunnel down -v --rmi all && npm run docker:build",
+    "docker:build-presentation": "echo '🐳 Building presentation service images...' && docker-compose --env-file .env.docker --profile dev --profile presentation --progress=plain build",
+    "docker:build-presentation-nocache": "echo '🐳 Building presentation service images (no cache)...' && docker-compose --env-file .env.docker --profile dev --profile presentation --progress=plain build --no-cache",
+    "docker:rebuild": "echo '🐳 Completely rebuilding all services...' && docker-compose --env-file .env.docker --profile dev down -v --rmi all && docker-compose --env-file .env.docker --profile test down -v --rmi all && docker-compose --env-file .env.docker --profile dev --profile presentation down -v --rmi all && docker-compose --env-file .env.docker --profile dev --profile tunnel down -v --rmi all && npm run docker:build",
     "docker:rebuild-dev": "echo '🐳 Rebuilding dev services...' && docker-compose --env-file .env.docker --profile dev down -v --rmi all && docker-compose --env-file .env.docker --profile dev build",
     "docker:rebuild-test": "echo '🐳 Rebuilding test services...' && docker-compose --env-file .env.docker --profile test down -v --rmi all && docker-compose --env-file .env.docker --profile test build",
-    "docker:rebuild-presentation": "echo '🐳 Rebuilding presentation services...' && docker-compose --env-file .env.docker --profile presentation down -v --rmi all && docker-compose --env-file .env.docker --profile presentation build",
-    "docker:logs": "echo '📋 Showing service logs...' && docker-compose logs -f",
+    "docker:rebuild-presentation": "echo '🐳 Rebuilding presentation services...' && docker-compose --env-file .env.docker --profile dev --profile presentation down -v --rmi all && docker-compose --env-file .env.docker --profile dev --profile presentation build",
+    "docker:logs": "echo '📋 Showing service logs...' && docker-compose --env-file .env.docker --profile dev logs -f",
     "docker:shell": "echo '🖥️  Opening shell in service container...' && docker-compose --profile dev exec",
-    "docker:down-volumes": "echo '🗑️  Stopping all services and removing volumes...' && docker-compose down -v",
+    "docker:down-volumes": "echo '🗑️  Stopping all services and removing volumes...' && docker-compose --env-file .env.docker --profile dev down -v",
     "docker:prune": "echo '🧹 Cleaning up unused Docker resources...' && docker system prune -f",
-    "docker:reset": "echo '🔄 Resetting environment...' && docker-compose --env-file .env.docker --profile dev down -v --rmi all && docker-compose --env-file .env.docker --profile test down -v --rmi all && docker-compose --env-file .env.docker --profile presentation down -v --rmi all && docker-compose --env-file .env.docker --profile tunnel down -v --rmi all && docker system prune -f",
-    "docker:reset-keep-images": "echo '🔄 Resetting environment (keeping base images)...' && docker-compose --env-file .env.docker --profile dev down -v && docker-compose --env-file .env.docker --profile test down -v && docker-compose --env-file .env.docker --profile presentation down -v && docker-compose --env-file .env.docker --profile tunnel down -v && docker system prune -f --filter 'until=24h'",
+    "docker:reset": "echo '🔄 Resetting environment...' && docker-compose --env-file .env.docker --profile dev down -v --rmi all && docker-compose --env-file .env.docker --profile test down -v --rmi all && docker-compose --env-file .env.docker --profile dev --profile presentation down -v --rmi all && docker-compose --env-file .env.docker --profile dev --profile tunnel down -v --rmi all && docker system prune -f",
+    "docker:reset-keep-images": "echo '🔄 Resetting environment (keeping base images)...' && docker-compose --env-file .env.docker --profile dev down -v && docker-compose --env-file .env.docker --profile test down -v && docker-compose --env-file .env.docker --profile dev --profile presentation down -v && docker-compose --env-file .env.docker --profile dev --profile tunnel down -v && docker system prune -f --filter 'until=24h'",
     "status": "echo '📊 Showing service status...' && docker-compose ps",
     "shell": "echo '🖥️  Opening shell in service container...' && docker-compose --profile dev exec",
     "pfs": "echo 'Prints Project Folder Structure..' && node scripts/pfs.js",
@@ -90,6 +90,7 @@
     "docker:desktop-reset-and-rebuild": "echo '🔄 COMPLETE Docker reset and rebuild everything...' && node scripts/docker-desktop-reset-and-rebuild.js"
   },
   "devDependencies": {
+    "@badeball/cypress-cucumber-preprocessor": "^24.0.1",
     "cross-env": "^10.1.0",
     "cypress": "^15.3.0",
     "cypress-cucumber-preprocessor": "^4.3.1",
@@ -100,5 +101,11 @@
   },
   "dependencies": {
     "inquirer": "^12.9.6"
+  },
+  "cypress-cucumber-preprocessor": {
+    "stepDefinitions": [
+      "cypress/e2e/**/*.cy.js",
+      "cypress/support/step_definitions/**/*.js"
+    ]
   }
 }

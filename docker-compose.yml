@@ -231,7 +231,7 @@ services:
     env_file:
       .env.docker
     depends_on:
-      web_test:
+      web-test:
         condition: service_started
       mail-test:
         condition: service_healthy  
