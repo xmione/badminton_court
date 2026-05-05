@@ -13,7 +13,26 @@ badminton_court/
 │   ├── celery.py
 │   ├── context_processors.py
 │   ├── email_backend.py
-│   ├── settings.py
+│   ├── settings/
+│   │   ├── base.py
+│   │   ├── celery.py
+│   │   ├── database.py
+│   │   ├── email.py
+│   │   ├── inventory.py
+│   │   ├── logging.py
+│   │   ├── security.py
+│   │   ├── social_auth.py
+│   │   ├── __init__.py
+│   │   └── __pycache__/
+│   │       ├── base.cpython-312.pyc
+│   │       ├── celery.cpython-312.pyc
+│   │       ├── database.cpython-312.pyc
+│   │       ├── email.cpython-312.pyc
+│   │       ├── inventory.cpython-312.pyc
+│   │       ├── logging.cpython-312.pyc
+│   │       ├── security.cpython-312.pyc
+│   │       ├── social_auth.cpython-312.pyc
+│   │       └── __init__.cpython-312.pyc
 │   ├── templates/
 │   │   ├── account/
 │   │   │   └── email/
@@ -39,41 +58,58 @@ badminton_court/
 │   ├── admin.py
 │   ├── apps.py
 │   ├── components/
-│   │   ├── bookings/
-│   │   │   ├── forms.py
-│   │   │   ├── urls.py
-│   │   │   ├── views.py
-│   │   │   └── __init__.py
-│   │   ├── courts/
-│   │   │   ├── forms.py
-│   │   │   ├── models.py
-│   │   │   ├── urls.py
-│   │   │   ├── views.py
-│   │   │   └── __init__.py
-│   │   ├── customers/
-│   │   │   ├── forms.py
-│   │   │   ├── models.py
-│   │   │   ├── urls.py
-│   │   │   ├── views.py
-│   │   │   └── __init__.py
-│   │   ├── employees/
-│   │   │   ├── forms.py
-│   │   │   ├── models.py
-│   │   │   ├── urls.py
-│   │   │   ├── views.py
-│   │   │   └── __init__.py
+│   │   ├── forms/
+│   │   │   ├── bookings.py
+│   │   │   ├── courts.py
+│   │   │   ├── customers.py
+│   │   │   ├── employees.py
+│   │   │   ├── mixins.py
+│   │   │   ├── payments.py
+│   │   │   ├── __init__.py
+│   │   │   └── __pycache__/
 │   │   ├── models/
-│   │   │   ├── Booking.py
-│   │   │   ├── Court.py
-│   │   │   ├── Customer.py
-│   │   │   ├── Employee.py
-│   │   │   ├── Payment.py
-│   │   │   ├── TimeEntry.py
-│   │   │   └── WorkSchedule.py
-│   │   └── reports/
-│   │       └── __init__.py
-│   ├── court_management/
-│   ├── forms.py
+│   │   │   ├── booking.py
+│   │   │   ├── court.py
+│   │   │   ├── customer.py
+│   │   │   ├── employee.py
+│   │   │   ├── payment.py
+│   │   │   ├── timeEntry.py
+│   │   │   ├── workSchedule.py
+│   │   │   ├── __init__.py
+│   │   │   └── __pycache__/
+│   │   └── views/
+│   │       ├── bookings.py
+│   │       ├── check_pending_emails.py
+│   │       ├── clear_cache.py
+│   │       ├── courts.py
+│   │       ├── customers.py
+│   │       ├── debug_check_confirmation.py
+│   │       ├── debug_check_user.py
+│   │       ├── debug_confirmation_status.py
+│   │       ├── debug_email_content.py
+│   │       ├── debug_site_config.py
+│   │       ├── debug_social_providers.py
+│   │       ├── employees.py
+│   │       ├── get_verification_token.py
+│   │       ├── reports.py
+│   │       ├── send_pending_emails.py
+│   │       ├── test_cleanup_user.py
+│   │       ├── test_create_admin_group.py
+│   │       ├── test_create_regular_users_group.py
+│   │       ├── test_create_user.py
+│   │       ├── test_database.py
+│   │       ├── test_delete_admin_group.py
+│   │       ├── test_delete_regular_users_group.py
+│   │       ├── test_reset_database.py
+│   │       ├── test_setup_admin.py
+│   │       ├── test_set_user_staff.py
+│   │       ├── test_user_count.py
+│   │       ├── test_verify_user.py
+│   │       ├── update_all_site_domains.py
+│   │       ├── update_site_domain.py
+│   │       ├── __init__.py
+│   │       └── __pycache__/
+│   ├── email_backend.py
 │   ├── management/
 │   │   └── commands/
 │   │       ├── create_delete_booking_data.py
@@ -82,10 +118,13 @@ badminton_court/
 │   │       ├── create_test_customer.py
 │   │       ├── delete_regular_users_group.py
 │   │       ├── fix_customer_permissions.py
-│   │       ├── load_test_admin.py
+│   │       ├── fix_social_providers.py
 │   │       ├── load_test_data.py
+│   │       ├── reset_django_db.py
+│   │       ├── reset_posteio_db.py
 │   │       ├── setup_permissions.py
 │   │       ├── setup_site.py
+│   │       ├── update_social_media_accounts.py
 │   ├── migrations/
 │   │   ├── 0001_initial.py
 │   │   ├── 0002_alter_booking_options_alter_court_options_and_more.py
@@ -94,7 +133,6 @@ badminton_court/
 │   │       ├── 0001_initial.cpython-312.pyc
 │   │       ├── 0002_alter_booking_options_alter_court_options_and_more.cpython-312.pyc
 │   │       └── __init__.cpython-312.pyc
-│   ├── models.py
 │   ├── signals.py
 │   ├── tasks.py
 │   ├── templates/
@@ -128,23 +166,13 @@ badminton_court/
 │   │   ├── __init__.py
 │   ├── tests.py
 │   ├── urls.py
-│   ├── views/
-│   │   └── __pycache__/
-│   │       ├── booking_views.cpython-312.pyc
-│   │       ├── chart_utils.cpython-312.pyc
-│   │       ├── court_views.cpython-312.pyc
-│   │       ├── customer_views.cpython-312.pyc
-│   │       ├── employee_views.cpython-312.pyc
-│   │       ├── report_views.cpython-312.pyc
-│   │       ├── social_views.cpython-312.pyc
-│   │       ├── test_views.cpython-312.pyc
-│   │       └── __init__.cpython-312.pyc
 │   ├── views.py
 │   ├── __init__.py
 ├── cypress/
 │   ├── downloads/
 │   ├── e2e/
 │   │   ├── admin/
+│   │   │   ├── admin-flow.cy.js
 │   │   │   ├── admin-login.cy.js
 │   │   │   ├── create-admin-group.cy.js
 │   │   │   ├── create-regularusers-group.cy.js
@@ -161,8 +189,8 @@ badminton_court/
 │   │   │   └── sign-up.cy.js
 │   │   ├── booking/
 │   │   │   ├── create-new-booking.cy.js
-│   │   │   ├── delete-booking.cy.js
 │   │   │   ├── delete-paid-booking.cy.js
+│   │   │   ├── delete-unpaid-booking.cy.js
 │   │   │   ├── edit-booking.cy.js
 │   │   │   ├── happy-path.cy.js
 │   │   │   ├── process-payment.cy.js
@@ -172,12 +200,14 @@ badminton_court/
 │   │   ├── headers-test.cy.js
 │   │   ├── posteio/
 │   │   │   ├── posteio-delete-regular-user.cy.js
+│   │   │   ├── posteio-reset.cy.js
 │   │   │   ├── posteio-setup.cy.js
 │   │   │   └── posteio-user-management.cy.js
 │   │   ├── reset-db.cy.js
 │   │   ├── runOneTest.js
 │   │   └── setup/
-│   │       └── migrate-db.cy.js
+│   │       ├── migrate-db.cy.js
+│   │       └── update-site-domain.cy.js
 │   ├── integration/
 │   │   ├── authentication/
 │   │   │   └── login_spec.js
@@ -192,11 +222,36 @@ badminton_court/
 │   │   └── preview_admin-login.cy.js.mp4
 │   ├── screenshots/
 │   │   ├── after-email-confirmation (1).png
+│   │   ├── after-email-confirmation (10).png
+│   │   ├── after-email-confirmation (11).png
+│   │   ├── after-email-confirmation (12).png
+│   │   ├── after-email-confirmation (13).png
+│   │   ├── after-email-confirmation (14).png
+│   │   ├── after-email-confirmation (15).png
+│   │   ├── after-email-confirmation (16).png
+│   │   ├── after-email-confirmation (17).png
+│   │   ├── after-email-confirmation (18).png
+│   │   ├── after-email-confirmation (19).png
 │   │   ├── after-email-confirmation (2).png
+│   │   ├── after-email-confirmation (20).png
+│   │   ├── after-email-confirmation (21).png
+│   │   ├── after-email-confirmation (22).png
+│   │   ├── after-email-confirmation (23).png
+│   │   ├── after-email-confirmation (24).png
+│   │   ├── after-email-confirmation (25).png
+│   │   ├── after-email-confirmation (26).png
+│   │   ├── after-email-confirmation (27).png
+│   │   ├── after-email-confirmation (28).png
+│   │   ├── after-email-confirmation (29).png
 │   │   ├── after-email-confirmation (3).png
+│   │   ├── after-email-confirmation (30).png
+│   │   ├── after-email-confirmation (31).png
 │   │   ├── after-email-confirmation (4).png
 │   │   ├── after-email-confirmation (5).png
 │   │   ├── after-email-confirmation (6).png
+│   │   ├── after-email-confirmation (7).png
+│   │   ├── after-email-confirmation (8).png
+│   │   ├── after-email-confirmation (9).png
 │   │   └── after-email-confirmation.png
 │   ├── support/
 │   │   ├── commands/
@@ -206,17 +261,17 @@ badminton_court/
 │   │   │   ├── checkEmails.cy.js
 │   │   │   ├── clickWithHighlight.cy.js
 │   │   │   ├── createAdminGroup.cy.js
-│   │   │   ├── createAdminUser.cy.js
 │   │   │   ├── createBookingTestData.cy.js
 │   │   │   ├── createDeleteBookingData.cy.js
 │   │   │   ├── createNewBooking.cy.js
 │   │   │   ├── createRegularUsersGroup.cy.js
 │   │   │   ├── createVerifiedUser.cy.js
+│   │   │   ├── database.cy.js
 │   │   │   ├── deleteAdminGroup.cy.js
-│   │   │   ├── deleteBooking.cy.js
 │   │   │   ├── deletePaidBooking.cy.js
 │   │   │   ├── deletePosteioRegularUser.cy.js
 │   │   │   ├── deleteRegularUsersGroup.cy.js
+│   │   │   ├── deleteUnpaidBooking.cy.js
 │   │   │   ├── editBooking.cy.js
 │   │   │   ├── hideStatusMessage.cy.js
 │   │   │   ├── highlightNavigation.cy.js
@@ -246,7 +301,8 @@ badminton_court/
 │   │   │   ├── updateStatusMessage.cy.js
 │   │   │   ├── verifyEmail.cy.js
 │   │   │   ├── verifyUser.cy.js
-│   │   │   └── viewBookingDetails.cy.js
+│   │   │   ├── viewBookingDetails.cy.js
+│   │   │   └── waitForUrl.cy.js
 │   │   ├── commands.js
 │   │   └── e2e.js
 │   └── videos/
@@ -259,26 +315,51 @@ badminton_court/
 ├── Dockerfile.cypress
 ├── Docs/
 │   ├── Development Environment Scripts Guide.md
+│   ├── Downloading Tools Using setup_all Script.md
+│   ├── Steps - Git Sync Master Branch with Feature Branch.md
 │   ├── Steps - How this application was created.md
 │   ├── Steps - How to Setup a Free GoCD Server on Render.com.md
+│   ├── Steps - Inventory Module Design & Integration Guide.md
 │   ├── Steps - Scenarios.md
 │   ├── Steps - Sols Methodical Steps for AI.md
-│   ├── Steps - Sync Master Branch with Feature Branch.md
 │   └── Usage.md
 ├── dotnet-install.ps1
 ├── entrypoint.sh
 ├── env.passphrase.txt
 ├── folderstructure.txt
 ├── init-mariadb.sql
+├── inventory/
+│   ├── admin.py
+│   ├── apps.py
+│   ├── migrations/
+│   │   ├── 0001_initial.py
+│   │   ├── __init__.py
+│   │   └── __pycache__/
+│   │       ├── 0001_initial.cpython-312.pyc
+│   │       └── __init__.cpython-312.pyc
+│   ├── models.py
+│   ├── signals.py
+│   ├── tasks.py
+│   ├── tests.py
+│   ├── views.py
+│   ├── __init__.py
+│   └── __pycache__/
+│       ├── admin.cpython-312.pyc
+│       ├── apps.cpython-312.pyc
+│       ├── models.cpython-312.pyc
+│       ├── signals.cpython-312.pyc
+│       └── __init__.cpython-312.pyc
 ├── logs/
 │   └── django.log
 ├── manage.py
 ├── package-lock.json
 ├── package.json
+├── README.md
 ├── requirements.txt
 ├── Scripts/
 │   ├── backupImages.js
 │   ├── backupIndividual.js
+│   ├── Cleanup-WindowsSDK.ps1
 │   ├── create-debug-package.ps1
 │   ├── create-presentation-docker.js
 │   ├── create-presentation.js
@@ -302,13 +383,18 @@ badminton_court/
 │   ├── Environment.ps1
 │   ├── generate-certs.js
 │   ├── Generate-VersionDocumentation.ps1
+│   ├── get-gh-variable.js
 │   ├── get-gh-variable.ps1
 │   ├── get-gh-variable.sh
 │   ├── GetLocalEnvVars.psm1
+│   ├── install-vercel.log
+│   ├── Install-WindowsSDK.ps1
 │   ├── InstallTool.ps1
+│   ├── ivercel-win.ps1
 │   ├── listBackupContents.js
 │   ├── listBackupImageNames.js
 │   ├── listBackups.js
+│   ├── menu.bat
 │   ├── pfs.js
 │   ├── pfs.ps1
 │   ├── post-process-videos-docker.js
@@ -323,6 +409,7 @@ badminton_court/
 │   ├── saveToDockerHub.js
 │   ├── stop-server.js
 │   ├── test-runner.sh
+│   ├── uninstall-docker.js
 │   ├── Update-JsonFromSetup.ps1
 │   ├── Update-SetupFromJson.ps1
 │   └── wait-docker.ps1
@@ -343,10 +430,13 @@ badminton_court/
 │   │   ├── logout.html
 │   │   ├── profile.html
 │   │   └── signup.html
-│   └── base.html
+│   ├── base.html
+│   └── socialaccount/
+│       └── snippets/
+│           └── provider_list.html
+├── Test-SetupVCVars.ps1
 ├── test_db.py
 ├── tunnel.py
-├── utils/
 ├── VERSION.md
 ├── versions.json
 └── web-entrypoint.sh

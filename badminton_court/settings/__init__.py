@@ -11,6 +11,7 @@ from .email import *
 from .social_auth import *
 from .celery import *
 from .logging import *
+from .inventory import *
 
 # SSL Certificate Configuration (for Windows compatibility)
 import os

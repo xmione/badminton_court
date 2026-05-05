@@ -161,6 +161,8 @@ async function executeMenuOption(choice) {
       if (localDevParam) {
         localDevCommand += ` -- ${localDevParam}`;
       }
+      runCommand("docker stop web-dev");
+      runCommand("docker stop web-test");
       runCommand(localDevCommand);
       await pause();
       break;
@@ -171,6 +173,8 @@ async function executeMenuOption(choice) {
       if (localDevDetachedParam) {
         localDevDetachedCommand += ` -- ${localDevDetachedParam}`;
       }
+      runCommand("docker stop web-dev");
+      runCommand("docker stop web-test");
       runCommand(localDevDetachedCommand);
       await pause();
       break;

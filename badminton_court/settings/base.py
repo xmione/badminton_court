@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     
     # Local apps
     'court_management',
+    'inventory',
 ]
 
 MIDDLEWARE = [

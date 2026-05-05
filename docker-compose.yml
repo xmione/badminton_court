@@ -79,8 +79,8 @@ services:
       test: ["CMD", "nc", "-zv", "localhost", "587"]
       interval: 5s
       timeout: 3s
-      retries: 10
-      start_period: 30s
+      retries: 15
+      start_period: 60s
 
   # Development Web Service (depends on redis, db, and mail-test)
   web-dev:
@@ -231,7 +231,10 @@ services:
     env_file:
       .env.docker
     depends_on:
-      - web-test
+      web_test:
+        condition: service_started
+      mail-test:
+        condition: service_healthy  
     profiles:
       - test
     networks:

@@ -6,6 +6,7 @@ export const setupPosteio = () => {
         const apiHost = Cypress.env('POSTE_API_HOST');
         const adminEmail = Cypress.env('POSTE_API_USER');
         const adminPassword = Cypress.env('POSTE_API_PASSWORD');
+        const posteioAdminUri = "/webmail/";
 
         if (!apiHost || !adminEmail || !adminPassword) {
             throw new Error('POSTE_API_HOST, POSTE_API_USER, and POSTE_API_PASSWORD must be set in Cypress environment.');
@@ -18,7 +19,8 @@ export const setupPosteio = () => {
 
         // --- Smart Logic: Check the URL to determine the state ---
         cy.url().then((url) => {
-            if (url.includes('/webmail/')) {
+            cy.log("posteioAdminUri:", posteioAdminUri);
+            if (url.includes(`${posteioAdminUri}`)) {
                 // We are on the webmail page, which means the server is set up.
                 cy.log('Poste.io is already set up. Navigating to admin login...');
                 // Navigate to the admin login page and then log in.
@@ -37,11 +39,21 @@ export const setupPosteio = () => {
     function performSetup(apiHost, adminEmail, adminPassword) {
         const hostname = new URL(apiHost).hostname;
 
-        cy.get('#install_hostname').clear().typeWithHighlight(hostname);
-        cy.get('#install_superAdmin').clear().typeWithHighlight(adminEmail);
-        cy.get('#install_superAdminPassword').clear().typeWithHighlight(adminPassword);
-        cy.get('button[type="submit"]', {timeout: 10000}).clickWithHighlight();
-
+        // cy.pause();
+        cy.get('#install_hostname').clear().typeWithHighlight(hostname); //cy.pause();
+        cy.get('#install_superAdmin').clear().typeWithHighlight(adminEmail); //cy.pause();
+        
+        // cy.get('#install_superAdmin').then($el => {
+        //     console.log('Element:', $el);
+        //     console.log('Tag:', $el.prop('tagName'));
+        //     console.log('Type:', $el.attr('type'));
+        //     console.log('Readonly:', $el.prop('readonly'));
+        //     console.log('Disabled:', $el.prop('disabled'));
+        //     console.log('Visible:', $el.is(':visible'));
+        //     }); cy.pause();
+        cy.get('#install_superAdminPassword').clear().typeWithHighlight(adminPassword); //cy.pause();
+        cy.get('button[type="submit"]', {timeout: 10000}).clickWithHighlight(); //cy.pause();
+        
         cy.wait(5000); // Wait for setup to process
         // After setup, it redirects to the webmail page. We need to go to the admin login.
         cy.url().should('include', '/admin/box/');

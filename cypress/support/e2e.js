@@ -18,9 +18,12 @@ import './commands'
 
 Cypress.on('uncaught:exception', (err, runnable) => {
   if (err.message.includes("Cannot read properties of null (reading 'addEventListener')")) {
-    // We return false to prevent Cypress from failing the test
     return false;
   }
+  if (err.message.includes('is not valid JSON')) {
+    return false;   // prevent failing the test because of the Poste.io installer’s broken check
+  }
+  return true; // all other errors still fail the test
 });
 
 let statusId; // Declare the variable to hold the status ID
