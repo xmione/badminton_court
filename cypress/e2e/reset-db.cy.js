@@ -1,5 +1,6 @@
 // cypress/e2e/reset-db.cy.js
 // isolation: true by default clears browser state. You need to login for each spec.
+// Old reset implementation, now using reset_django_database
 describe('Reset Database', { testIsolation: false }, () => {
 
   let statusId;

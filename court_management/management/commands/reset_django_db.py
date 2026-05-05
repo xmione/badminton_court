@@ -10,11 +10,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if not settings.DEBUG:
             raise CommandError('This command can only be used in DEBUG mode')
-        
+
         self.stdout.write('Resetting Django database...')
-        
-        # The correct way to reset the database for testing.
-        # It deletes all data but keeps migrations and content types intact.
+
+        # 1. Ensure all tables exist (in case of migration drift or missing tables)
+        self.stdout.write('Running migrate to sync schema...')
+        call_command('migrate', verbosity=0, interactive=False)
+
+        # 2. Now flush – all tables are guaranteed to exist
         try:
             call_command('flush', verbosity=0, interactive=False)
             self.stdout.write(self.style.SUCCESS('Django database flushed successfully'))
