@@ -703,6 +703,11 @@ async function executeMenuOption(choice) {
       runCommand('npm run uninstall-docker');
       await pause();
       break;
+    case '13.10':
+      console.log('\x1b[33mGenerating a README.md file...\x1b[0m');
+      runCommand('npm run generate-readme');
+      await pause();
+      break;
       
     // Docker Compose Management
     case '14.1':
@@ -731,7 +736,7 @@ async function executeMenuOption(choice) {
       await pause();
       break;
       
-    case '15':
+    case '0':
       console.log('\x1b[32mExiting...\x1b[0m');
       process.exit(0);
       
@@ -868,6 +873,7 @@ async function showMenu() {
     console.log('   13.7. Decrypt .env files');
     console.log('   13.8. Create PostIO container');
     console.log('   13.9. Uninstall Docker');
+    console.log('   13.10. Generate a README.md file');
     console.log('');
     console.log('\x1b[36m14. DOCKER COMPOSE MANAGEMENT\x1b[0m');
     console.log('   14.1. Stop all docker compose containers');
@@ -875,10 +881,10 @@ async function showMenu() {
     console.log('   14.3. Remove all docker compose images');
     console.log('   14.4. System prune all related compose file objects');
     console.log('');
-    console.log('\x1b[36m15. Exit\x1b[0m');
+    console.log('\x1b[36m0. Exit\x1b[0m');
     console.log('');
     
-    const choice = await ask('Select an option (e.g., 1.1, 2.3, or 15): ');
+    const choice = await ask('Select an option (e.g., 1.1, 2.3, or 0 to exit): ');
     
     // Handle menu choices
     await executeMenuOption(choice);
