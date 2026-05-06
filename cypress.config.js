@@ -2,9 +2,10 @@
 const { defineConfig } = require("cypress");
 const fs = require('fs');
 const path = require('path');
-// ---------- Cucumber with esbuild ----------
+
+// ---------- Cucumber integration ----------
 const { addCucumberPreprocessorPlugin } = require('@badeball/cypress-cucumber-preprocessor');
-const { createEsbuildPlugin } = require('@badeball/cypress-cucumber-preprocessor/esbuild');
+const webpackPreprocessor = require('@cypress/webpack-preprocessor');
 // ------------------------------------------
 
 module.exports = defineConfig({
@@ -12,7 +13,7 @@ module.exports = defineConfig({
   e2e: {
     baseUrl: process.env.CYPRESS_INTERNAL_baseUrl || process.env.CYPRESS_baseUrl || "http://localhost:8000",
     supportFile: "cypress/support/e2e.js",
-    // --- Include both legacy and Cucumber feature files ---
+    // Both legacy .cy.js and .feature files
     specPattern: [
       "cypress/e2e/**/*.cy.{js,jsx,ts,tsx}",
       "cypress/e2e/**/*.feature"
@@ -41,61 +42,61 @@ module.exports = defineConfig({
     experimentalSourceRewriting: false,
 
     setupNodeEvents(on, config) {
-      // --- Enable Cucumber preprocessor ---
+      // --- Enable Cucumber plugin (so it patches spec resolution etc.) ---
       addCucumberPreprocessorPlugin(on, config);
 
-      // --- esbuild for .feature files ONLY ---
-      on('file:preprocessor', (file) => {
-        if (file.filePath.endsWith('.feature')) {
-          return createEsbuildPlugin(config)(file);
-        }
-        // For .cy.js, Cypress uses its own default preprocessor
-      });
-      // ------------------------------------
+      // --- Webpack preprocessor with Badeball's loader for .feature files ---
+      const webpackOptions = {
+        module: {
+          rules: [
+            {
+              test: /\.feature$/,
+              use: [
+                {
+                  loader: '@badeball/cypress-cucumber-preprocessor/webpack',
+                  options: config,
+                },
+              ],
+            },
+          ],
+        },
+        resolve: {
+          fallback: {
+            path: require.resolve('path-browserify'),
+            // Add any other Node modules you might use in step definitions here, e.g.:
+            // fs: false,
+            // os: require.resolve('os-browserify'),
+          },
+        },
+      };
+      on('file:preprocessor', webpackPreprocessor({ webpackOptions }));
+      // --------------------------------------------------------------------
 
-      // ------- ENVIRONMENT LOADING (Docker‑safe) -------
-      // In Docker, required vars are set by docker-compose; we skip the file read.
-      const needsEnvFile = !(config.env.APP_DOMAIN || process.env.APP_DOMAIN);
-      if (needsEnvFile) {
-        const envFile = process.env.ENVIRONMENT === 'development' ? '.env.dev' : '.env.docker';
-        console.log(`Cypress: Loading env from file: ${envFile}`);
-        try {
-          const envPath = path.resolve(__dirname, envFile);
-          if (fs.existsSync(envPath)) {
-            const envVars = fs.readFileSync(envPath, 'utf8')
-              .split('\n')
-              .filter(line => line.trim() && !line.startsWith('#'))
-              .reduce((acc, line) => {
-                const [key, ...valueParts] = line.split('=');
-                if (key) acc[key.trim()] = valueParts.join('=').trim();
-                return acc;
-              }, {});
-
-        // console.log('Cypress: Variables read from file:', envVars);
-        // Set all variables from the file into config.env
-            config.env = { ...config.env, ...envVars };
-            // console.log('Cypress: Final config.env object:', config.env);
-          } else {
-            console.warn(`Env file not found: ${envPath} – using available environment variables.`);
-          }
-        } catch (error) {
-          console.error(`Failed to load environment file: ${envFile}`, error);
-          throw new Error(`Failed to load environment variables from ${envFile}`);
-        }
-      } else {
-        console.log('Cypress: Using environment variables from Docker (skipping file read)');
-        // Ensure APP_DOMAIN ends up in config.env for tests
-        config.env.APP_DOMAIN = config.env.APP_DOMAIN || process.env.APP_DOMAIN;
+      // ------- ENVIRONMENT LOADING (always parse file, like the old config) -------
+      const envFile = process.env.ENVIRONMENT === 'development' ? '.env.dev' : '.env.docker';
+      console.log(`Cypress: Loading env from file: ${envFile}`);
+      try {
+        const envVars = fs.readFileSync(path.resolve(__dirname, envFile), 'utf8')
+          .split('\n')
+          .filter(line => line.trim() && !line.startsWith('#'))
+          .reduce((acc, line) => {
+            const [key, ...valueParts] = line.split('=');
+            if (key) {
+              acc[key.trim()] = valueParts.join('=').trim();
+            }
+            return acc;
+          }, {});
+        config.env = { ...config.env, ...envVars };
+      } catch (error) {
+        console.error(`Failed to load environment file: ${envFile}`, error);
+        throw new Error(`Failed to load environment variables from ${envFile}. Please ensure the file exists and contains the required variables.`);
       }
-
-      // Construct POSTE_API_HOST if parts are present
+      // Construct POSTE_API_HOST if needed
       if (config.env.POSTE_PROTOCOL && config.env.POSTE_HOSTNAME && config.env.POSTE_PORT) {
         config.env.POSTE_API_HOST = `${config.env.POSTE_PROTOCOL}://${config.env.POSTE_HOSTNAME}:${config.env.POSTE_PORT}`;
       }
-
-      // baseUrl – already set from global config, but also available from env
-      config.baseUrl = config.env.CYPRESS_baseUrl || config.env.CYPRESS_INTERNAL_baseUrl || config.baseUrl;
-
+      // Set baseUrl from the clean variables
+      config.baseUrl = config.env.CYPRESS_INTERNAL_baseUrl || config.env.CYPRESS_baseUrl || 'http://localhost:8000';
       // Validate required variable
       if (!config.env.APP_DOMAIN) {
         throw new Error('Missing required environment variable: APP_DOMAIN');
@@ -112,7 +113,7 @@ module.exports = defineConfig({
       });
 
       // Process videos after test run
-      on('after:run', (results) => {
+      on('after:run', () => {
         const { exec } = require('child_process');
         if (fs.existsSync(config.videosFolder)) {
           // Process all videos to crop out Cypress UI

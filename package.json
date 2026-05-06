@@ -2,7 +2,7 @@
   "name": "badminton-court-management",
   "version": "1.0.0",
   "description": "Badminton Court Management System",
-"scripts": {
+  "scripts": {
     "menu": "echo '📋 Showing Commands Menu...' && call Scripts\\menu.bat",
     "certs:create": "echo 'Creating openssl certificates...' && node Scripts/generate-certs.js",
     "certs:create:admin": "echo 'Run this in an Administrator terminal!' && node Scripts/generate-certs.js --elevated",
@@ -91,12 +91,13 @@
   },
   "devDependencies": {
     "@badeball/cypress-cucumber-preprocessor": "^24.0.1",
+    "@cypress/webpack-preprocessor": "^7.1.0",
     "cross-env": "^10.1.0",
     "cypress": "^15.3.0",
-    "cypress-cucumber-preprocessor": "^4.3.1",
     "dotenv": "^17.2.3",
     "dotenv-cli": "^11.0.0",
     "inquirer": "^12.9.6",
+    "path-browserify": "^1.0.1",
     "sudo-prompt": "^9.2.1"
   },
   "dependencies": {
@@ -104,7 +105,6 @@
   },
   "cypress-cucumber-preprocessor": {
     "stepDefinitions": [
-      "cypress/e2e/**/*.cy.js",
       "cypress/support/step_definitions/**/*.js"
     ]
   }
